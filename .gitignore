@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Credentials - NEVER commit
+.env
+*.pem
+*.key
+credentials/
+
+# Data files (too large for git)
+data/raw/**/*.parquet
+data/raw/**/*.csv
+data/processed/**/*.parquet
+data/features/**/*.parquet
+data/news/**/*.json
+data/events/**/*.json
+*.h5
+*.hdf5
+
+# Keep directory structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/features/.gitkeep
+!data/news/.gitkeep
+!data/events/.gitkeep
+
+# Database
+*.db
+*.duckdb
+*.sqlite
+
+# Logs
+logs/*.log
+logs/**/*.log
+
+# Model checkpoints (large)
+models/checkpoints/**/*.pkl
+models/checkpoints/**/*.joblib
+models/checkpoints/**/*.pt
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+docker-data/
+
+# State files
+state/*.json
+state/*.pkl
+
+# uv
+uv.lock
