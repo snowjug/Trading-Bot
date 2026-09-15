@@ -47,6 +47,9 @@ class Config:
     ZERODHA_API_KEY: str = os.getenv("ZERODHA_API_KEY", "")
     ANGELONE_API_KEY: str = os.getenv("ANGELONE_API_KEY", "")
     UPSTOX_API_KEY: str = os.getenv("UPSTOX_API_KEY", "")
+    DHAN_CLIENT_ID: str = os.getenv("DHAN_CLIENT_ID", "")
+    DHAN_ACCESS_TOKEN: str = os.getenv("DHAN_ACCESS_TOKEN", "")
+
 
     # Paths
     DATA_RAW: Path = PROJECT_ROOT / "data" / "raw"

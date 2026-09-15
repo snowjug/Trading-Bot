@@ -485,7 +485,7 @@ def main():
         providers = agent.downloader.provider_mgr.list_providers()
         logger.info(f"Data providers: {providers}")
         logger.info(f"Cost model (base, intraday): {IndianCostModel(CostScenario.BASE).round_trip_cost_pct():.3f}%")
-        logger.info("Setup verified ✓")
+        logger.info("Setup verified OK")
     elif args.data_only:
         agent = ResearchAgent()
         agent.data_only()

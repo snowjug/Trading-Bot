@@ -43,3 +43,5 @@ def setup_logging(name: str = "quant_research", level: str = "INFO") -> logging.
 
 # Default logger
 logger = setup_logging()
+get_logger = setup_logging
+

@@ -189,10 +189,11 @@ class RiskEngine:
             self.state.sector_exposure = sector_exposure
         self.state.last_updated = datetime.now()
 
-        # Check if kill switch should be deactivated (new day, drawdown recovered)
-        if self.state.is_kill_switch_active:
+        # Check if drawdown-triggered kill switch should be deactivated
+        if self.state.is_kill_switch_active and self.state.kill_switch_reason == "Max drawdown exceeded":
             if self.state.current_drawdown_pct < self.max_portfolio_drawdown * 0.5:
                 self._deactivate_kill_switch()
+
 
     def _activate_kill_switch(self, reason: str):
         """Activate kill switch — stop all trading."""
@@ -218,3 +219,25 @@ class RiskEngine:
             "kill_switch": self.state.is_kill_switch_active,
             "kill_switch_reason": self.state.kill_switch_reason,
         }
+
+    def can_trade(self, current_equity: float) -> bool:
+        """Quick boolean check if trading is allowed under risk limits."""
+        self.update_state(current_equity)
+        if self.state.is_kill_switch_active:
+            return False
+        if self.state.current_drawdown_pct >= self.max_portfolio_drawdown:
+            self._activate_kill_switch("Max drawdown exceeded")
+            return False
+        return True
+
+    def calculate_position_size(self, capital: float, price: float, atr: float, confidence: float = 0.5) -> int:
+        """Computes quantity using ATR and confidence scaling."""
+        decision = self.evaluate_trade("GENERIC", direction=1, entry_price=price, atr=atr, confidence=confidence)
+        return decision.adjusted_quantity if decision.approved else 0
+
+    def trip_kill_switch(self, reason: str = "Manual kill switch triggered"):
+        self._activate_kill_switch(reason)
+
+    def reset_kill_switch(self):
+        self._deactivate_kill_switch()
+

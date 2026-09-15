@@ -1,0 +1,7 @@
+Rank,Strategy,Score,Sharpe,CAGR%,MaxDD%,PF,Robust,WF,MC_P,Status
+1,dual_momentum_INDEX_NIFTY50,0.653,0.76,6.6,13.7,2.90,0.95,0.80,1.00,PAPER_CANDIDATE
+2,momentum_INFY,0.515,0.55,8.7,29.6,1.62,0.82,0.80,1.00,PAPER_CANDIDATE
+3,sma_crossover_INDEX_NIFTY50,0.447,0.84,8.5,21.1,2.61,0.45,0.80,0.00,VALIDATED
+4,bollinger_mean_reversion_ICICIBANK,0.447,0.31,nan,32.9,1.42,0.90,0.60,1.00,VALIDATED
+5,rsi_mean_reversion_ICICIBANK,0.418,0.35,3.2,36.6,1.80,0.78,0.60,1.00,VALIDATED
+6,macd_crossover_TCS,0.067,0.05,nan,61.4,0.98,0.05,0.20,0.00,RESEARCH
