@@ -166,9 +166,12 @@ class IndianCostModel:
             costs.stt = trade_value * p["stt_intraday_sell"] if not is_buy else 0
         elif order_type == OrderType.FUTURES:
             costs.stt = trade_value * p["stt_futures_sell"] if not is_buy else 0
+        elif order_type == OrderType.OPTIONS:
+            costs.stt = trade_value * p.get("stt_options_sell", 0.000625) if not is_buy else 0
 
         # 3. Exchange transaction charges
-        costs.exchange_charges = trade_value * p["exchange_txn_pct"]
+        exch_rate = 0.00050 if order_type == OrderType.OPTIONS else p["exchange_txn_pct"]
+        costs.exchange_charges = trade_value * exch_rate
 
         # 4. GST (on brokerage + exchange charges)
         costs.gst = (costs.brokerage + costs.exchange_charges) * p["gst_pct"]

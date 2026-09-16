@@ -1,11 +1,12 @@
 {
   "recommended_method": "risk_parity",
-  "expected_sharpe": 0.6556950245004317,
-  "expected_volatility": 0.14139319959453814,
-  "expected_return": 0.15771081747233512,
+  "expected_sharpe": 0.6780391431516516,
+  "expected_volatility": 0.14437022837527272,
+  "expected_return": 0.16288866594417817,
   "weights": {
-    "momentum_BAJFINANCE": 0.3866340087357061,
-    "sector_rotation_TITAN": 0.6133659912642939
+    "momentum_BAJFINANCE": 0.24704312891282393,
+    "sector_rotation_TITAN": 0.4833333333333333,
+    "banknifty_trend_futures_BAJFINANCE": 0.26962353775384285
   },
-  "timestamp": "2026-09-16T11:39:35.643524"
+  "timestamp": "2026-09-16T11:57:07.709780"
 }
