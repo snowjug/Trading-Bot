@@ -48,6 +48,7 @@ All audit reports, test suites, and empirical proofs are published in [`reports/
 - **Overfitting & Multiple Testing**: [`reports/OVERFITTING_AUDIT.md`](reports/OVERFITTING_AUDIT.md) (Deflated Sharpe Ratio & PBO via CSCV)
 - **Walk-Forward Validation**: [`reports/WALK_FORWARD_REPORT.md`](reports/WALK_FORWARD_REPORT.md) (5 rolling out-of-sample test folds)
 - **Final Research Synthesis**: [`reports/FINAL_RESEARCH_REPORT.md`](reports/FINAL_RESEARCH_REPORT.md) (Institutional research report answering Parts A–N)
+- **Real 2026 Market Performance Audit**: [`reports/REAL_2026_PERFORMANCE_AUDIT.md`](reports/REAL_2026_PERFORMANCE_AUDIT.md) (Live & tick-level empirical report for Jan 1 – Sep 16, 2026 across all strategies)
 
 ---
 

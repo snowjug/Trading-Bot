@@ -1,0 +1,8 @@
+strategy,trades,wins,losses,win_rate,net_profit,roi_pct,profit_factor,max_dd,max_dd_pct
+Apex VRP Engine (₹10L Capital),28,23,5,82.14,11356315.15,1135.63,2.58,2075189.51,43.6
+Zen Curvature Spread (₹1L Capital),81,65,16,80.25,3110310.47,3110.31,2.14,660150.06,181.73
+Confluence Scalper (Conservative / Stop First),3,0,3,0.0,-1910.97,-19.11,0.0,1346.17,14.27
+Confluence Scalper (Optimistic / Target First),3,0,3,0.0,-1910.97,-19.11,0.0,1346.17,14.27
+Golden Trend Runner (Conservative / Stop First),8,4,4,50.0,4933.56,49.34,2.48,1881.96,13.36
+Golden Trend Runner (Optimistic / Target First),8,8,0,100.0,18148.21,181.48,999.0,0.0,0.0
+Velocity-5 Momentum Scalper,131,85,46,64.89,158666.63,1586.67,3.8,8749.88,27.94

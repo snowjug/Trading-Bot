@@ -1,0 +1,9 @@
+Strategy,Trades,Wins,Losses,Win Rate (%),Net Realized PnL,ROI (%),Profit Factor,Max Drawdown,Expectancy / Trade
+Apex VRP Engine (1-Lot Fixed / Rs 1.5L Margin),28,23,5,82.1%,"+Rs 38,255.00",+25.5%,2.42,"Rs 7,945.00 (5.5%)","Rs 1,366.25"
+Zen Curvature Spread (1-Lot Fixed / Rs 1L Margin),81,65,16,80.2%,"+Rs 124,412.42",+124.4%,2.14,"Rs 26,406.00 (22.5%)","Rs 1,535.96"
+Confluence Scalper (Conservative / Stop First),3,0,3,0.0%,"-Rs 1,910.97",-19.1%,0.00,"Rs 1,346.17 (14.3%)",Rs -636.99
+Confluence Scalper (Optimistic / Target First),3,0,3,0.0%,"-Rs 1,910.97",-19.1%,0.00,"Rs 1,346.17 (14.3%)",Rs -636.99
+Golden Trend Runner (Conservative / Stop First),8,4,4,50.0%,"+Rs 4,933.56",+49.3%,2.48,"Rs 1,881.96 (13.4%)",Rs 616.69
+Golden Trend Runner (Optimistic / Target First),8,8,0,100.0%,"+Rs 18,148.21",+181.5%,999.00,Rs 0.00 (0.0%),"Rs 2,268.53"
+"Velocity-5 Scalper (Fixed 1-Lot / Rs 10,000 Account)",131,85,46,64.9%,"+Rs 158,666.63",+1586.7%,3.80,"Rs 8,749.88 (27.9%)","Rs 1,211.20"
+Leader Breakout Equities (Rs 10L Portfolio),12,4,8,33.3%,"-Rs 63,558.35",-6.4%,0.72,"Rs 111,170.93 (10.6%)","Rs -5,296.53"
