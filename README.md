@@ -1,7 +1,8 @@
 # ⚡ Apex Quant — Autonomous Indian Algorithmic Trading & Research Engine
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-67%2F67%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-85%2F85%20passing-brightgreen.svg)](tests/)
+[![Audit Status](https://img.shields.io/badge/audit-METHODOLOGY__HARDENED-success.svg)](reports/FINAL_RESEARCH_REPORT.md)
 [![Market](https://img.shields.io/badge/market-NSE%20%7C%20NIFTY%2050%20%7C%20BANK%20NIFTY-orange.svg)](https://www.nseindia.com/)
 [![Broker](https://img.shields.io/badge/broker-DhanHQ%20v2%20REST%20API-purple.svg)](https://dhanhq.co/)
 [![Capital Tiers](https://img.shields.io/badge/capital-₹10%2C000%20to%20₹1%2C00%2C000%2B-blueviolet.svg)](#-the-5-production-trading-strategies)
@@ -14,21 +15,39 @@ Engineered to operate seamlessly across both **High-Margin F&O Portfolios (₹1,
 
 ---
 
-## 📑 Table of Contents
-1. [System Architecture](#-system-architecture)
-2. [The 5 Production Trading Strategies](#-the-5-production-trading-strategies)
-3. [Deep Dive: Strategy Mechanics & Setups](#-deep-dive-strategy-mechanics--setups)
-4. [The ₹10,000 Micro-Capital Playbook](#-the-10000-micro-capital-playbook)
-5. [Backtest Compounding vs Fixed 1-Lot Reality](#-backtest-compounding-vs-fixed-1-lot-reality)
-6. [Year-by-Year Verified Profit Matrix (2015–2026)](#-year-by-year-verified-profit-matrix-20152026)
-7. [Comprehensive Indian Statutory Cost Engine](#-comprehensive-indian-statutory-cost-engine)
-8. [Live Multi-Bot Paper Trading Engine](#-live-multi-bot-paper-trading-engine)
-9. [Repository Structure](#-repository-structure)
-10. [Quick Start & Installation](#-quick-start--installation)
-11. [DhanHQ v2 API Integration](#-dhanhq-v2-api-integration)
-12. [Risk Management & Safety Gates](#-risk-management--safety-gates)
-13. [Testing & Verification](#-testing--verification)
-14. [Disclaimer & Compliance](#-disclaimer--compliance)
+1. [Quantitative Audit & Methodological Hardening](#-quantitative-audit--methodological-hardening)
+2. [System Architecture](#-system-architecture)
+3. [The 5 Production Trading Strategies](#-the-5-production-trading-strategies)
+4. [Deep Dive: Strategy Mechanics & Setups](#-deep-dive-strategy-mechanics--setups)
+5. [The ₹10,000 Micro-Capital Playbook](#-the-10000-micro-capital-playbook)
+6. [Backtest Compounding vs Fixed 1-Lot Reality](#-backtest-compounding-vs-fixed-1-lot-reality)
+7. [Year-by-Year Verified Profit Matrix (2015–2026)](#-year-by-year-verified-profit-matrix-20152026)
+8. [Comprehensive Indian Statutory Cost Engine](#-comprehensive-indian-statutory-cost-engine)
+9. [Live Multi-Bot Paper Trading Engine](#-live-multi-bot-paper-trading-engine)
+10. [Repository Structure](#-repository-structure)
+11. [Quick Start & Installation](#-quick-start--installation)
+12. [DhanHQ v2 API Integration](#-dhanhq-v2-api-integration)
+13. [Risk Management & Safety Gates](#-risk-management--safety-gates)
+14. [Testing & Verification](#-testing--verification)
+15. [Disclaimer & Compliance](#-disclaimer--compliance)
+
+---
+
+## 🛡️ Quantitative Audit & Methodological Hardening
+
+> **Research Transparency Policy**:  
+> *"Try to prove the strategy is wrong. Only keep it if it survives."*  
+> Rather than curve-fitting or optimizing parameters to protect headline CAGRs, this platform underwent a complete 51-point institutional audit to eliminate lookahead, survivorship bias, multiple-testing luck, and intrabar path-dependency.
+
+All audit reports, test suites, and empirical proofs are published in [`reports/`](reports/):
+- **Code Audit**: [`reports/CODE_AUDIT.md`](reports/CODE_AUDIT.md) (Line-by-line vulnerability assessment)
+- **Anti-Lookahead Suite**: [`reports/LOOKAHEAD_AUDIT.md`](reports/LOOKAHEAD_AUDIT.md) (Future price mutation & history-slice proofs)
+- **Options Realism & Intrabar Audit**: [`reports/OPTION_AUDIT.md`](reports/OPTION_AUDIT.md) (Conservative vs Optimistic intrabar execution)
+- **Indian Regulatory Cost Audit**: [`reports/COST_AUDIT.md`](reports/COST_AUDIT.md) (Pre/Post Oct 2024 STT hikes & volatility slippage)
+- **Survivorship Bias Audit**: [`reports/SURVIVORSHIP_AUDIT.md`](reports/SURVIVORSHIP_AUDIT.md) (Historical 2015–2026 NIFTY 50 membership)
+- **Overfitting & Multiple Testing**: [`reports/OVERFITTING_AUDIT.md`](reports/OVERFITTING_AUDIT.md) (Deflated Sharpe Ratio & PBO via CSCV)
+- **Walk-Forward Validation**: [`reports/WALK_FORWARD_REPORT.md`](reports/WALK_FORWARD_REPORT.md) (5 rolling out-of-sample test folds)
+- **Final Research Synthesis**: [`reports/FINAL_RESEARCH_REPORT.md`](reports/FINAL_RESEARCH_REPORT.md) (Institutional research report answering Parts A–N)
 
 ---
 

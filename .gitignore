@@ -71,5 +71,5 @@ docker-data/
 state/*.json
 state/*.pkl
 
-# uv
-uv.lock
+# Scratch scripts
+scratch/
