@@ -1,0 +1,14 @@
+# GitHub Linguist Language Configuration
+# Ignore generated interactive Plotly visualization charts from repo language statistics
+reports/charts/*.html linguist-detectable=false
+reports/charts/*.html linguist-generated=true
+*.html linguist-detectable=false
+*.html linguist-generated=true
+
+# Mark data and logs as generated/non-detectable
+data/** linguist-detectable=false
+data/** linguist-generated=true
+experiments/** linguist-detectable=false
+experiments/** linguist-generated=true
+reports/*.json linguist-detectable=false
+reports/*.csv linguist-detectable=false
