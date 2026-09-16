@@ -1,0 +1,7 @@
+Strategy_Name,Mechanism,Assigned_Capital_INR,Trades_Executed,Winning_Trades,Losing_Trades,Win_Rate_Pct,Total_Gross_PnL_INR,Total_Friction_Taxes_INR,Total_Net_PnL_INR,Return_On_Capital_Pct
+Strategy 1: Apex VRP Engine,Weekly Iron Condor Theta Selling,100000.0,2,2,0,100.0,2125.0,280.0,1845.0,1.85
+Strategy 2: Zen Curvature Spread,Overnight Put Credit Spread,100000.0,5,2,3,40.0,-2450.0,700.0,-3150.0,-3.15
+Strategy 3: Confluence Gamma Scalper,Intraday MIS Option Scalper,20000.0,0,0,0,0.0,0.0,0.0,0.0,0.0
+Strategy 4: Golden Trend Runner,9/21 EMA Trend Option Buyer,50000.0,9,4,5,44.4,1625.78,581.33,1044.45,2.09
+Strategy 5: Velocity-5 Scalper,Intraday Momentum ORB Buyer,20000.0,0,0,0,0.0,0.0,0.0,0.0,0.0
+Strategy 6: Micro Momentum Sniper,Selective Confluence Option Buyer,10000.0,3,3,0,100.0,5652.61,201.0,5451.61,54.52

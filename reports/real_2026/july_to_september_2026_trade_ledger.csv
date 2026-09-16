@@ -1,0 +1,75 @@
+Date,Strategy,Instrument,Assigned_Capital,Position,Gross_PnL,Friction_Taxes,Net_PnL,Win,Exit_Reason,Details
+2026-07-01,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 24006 | Put 23336 / Call 24675 (Range 23895-24531)
+2026-07-01,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24006 | Short Put 23700 vs Low 24059
+2026-07-01,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,-1729.58,61.89,-1791.47,False,STOP_LOSS,Entry 24035.6 | Stop 125.8 | Target 377.4
+2026-07-02,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,1729.73,66.8,1662.93,True,EOD_CLOSE,Entry 24049.9 | Stop 123.8 | Target 371.3
+2026-07-03,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24271 | Short Put 23995 vs Low 24287
+2026-07-03,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,1049.11,65.83,983.28,True,EOD_CLOSE,Entry 24194.6 | Stop 121.4 | Target 364.2
+2026-07-06,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,-1875.0,140.0,-2015.0,False,BREACHED_WING,Spot 24430 | Put 23822 / Call 25039 (Range 23805-24531)
+2026-07-06,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,717.74,65.36,652.38,True,EOD_CLOSE,Entry 24378.2 | Stop 111.3 | Target 334.0
+2026-07-06,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy CE,717.74,65.36,652.38,True,EOD_CLOSE,Entry 24378.2 | Stop 55.1 | Target 165.3
+2026-07-07,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,-1312.5,140.0,-1452.5,False,BREACH_STOP,Spot 24399 | Short Put 24125 vs Low 23805
+2026-07-07,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,-1432.34,62.32,-1494.66,False,STOP_LOSS,Entry 24458.7 | Stop 104.2 | Target 312.5
+2026-07-07,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy CE,-1289.1,62.51,-1351.61,False,STOP_LOSS,Entry 24458.7 | Stop 51.6 | Target 154.7
+2026-07-09,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 23963 | Short Put 23655 vs Low 24000
+2026-07-10,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,992.77,65.75,927.02,True,EOD_CLOSE,Entry 24134.7 | Stop 125.2 | Target 375.6
+2026-07-13,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 24211 | Put 23534 / Call 24888 (Range 24000-24367)
+2026-07-13,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24211 | Short Put 23902 vs Low 24011
+2026-07-13,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,-1721.16,61.91,-1783.07,False,STOP_LOSS,Entry 24228.4 | Stop 125.2 | Target 375.5
+2026-07-13,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy CE,-1549.04,62.15,-1611.19,False,STOP_LOSS,Entry 24228.4 | Stop 62.0 | Target 185.9
+2026-07-15,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24078 | Short Put 23771 vs Low 24050
+2026-07-15,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,-1692.38,61.95,-1754.33,False,STOP_LOSS,Entry 24157.1 | Stop 123.1 | Target 369.2
+2026-07-15,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy CE,-1523.14,62.19,-1585.33,False,STOP_LOSS,Entry 24157.1 | Stop 60.9 | Target 182.8
+2026-07-17,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24334 | Short Put 24026 vs Low 24136
+2026-07-17,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,2032.26,67.21,1965.05,True,EOD_CLOSE,Entry 24186.5 | Stop 116.1 | Target 348.4
+2026-07-20,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 24238 | Put 23576 / Call 24901 (Range 23606-24266)
+2026-07-21,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,-1312.5,140.0,-1452.5,False,BREACH_STOP,Spot 24188 | Short Put 23894 vs Low 23807
+2026-07-23,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 23870 | Short Put 23560 vs Low 23606
+2026-07-27,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 23996 | Put 23356 / Call 24636 (Range 23892-24429)
+2026-07-27,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 23996 | Short Put 23704 vs Low 23955
+2026-07-29,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24250 | Short Put 23970 vs Low 24187
+2026-07-30,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,461.99,64.99,397.0,True,EOD_CLOSE,Entry 24283.6 | Stop 106.6 | Target 319.9
+2026-07-30,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy CE,-1319.68,62.47,-1382.15,False,STOP_LOSS,Entry 24283.6 | Stop 52.8 | Target 158.4
+2026-07-31,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24384 | Short Put 24108 vs Low 24428
+2026-07-31,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,558.94,65.14,493.8,True,EOD_CLOSE,Entry 24342.9 | Stop 102.7 | Target 308.2
+2026-07-31,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy CE,558.94,65.14,493.8,True,EOD_CLOSE,Entry 24342.9 | Stop 50.8 | Target 152.5
+2026-08-03,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 24774 | Put 24152 / Call 25397 (Range 24428-24774)
+2026-08-03,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy CE,4045.82,70.07,3975.75,True,TARGET_HIT,Entry 24429.4 | Stop 98.1 | Target 294.2
+2026-08-03,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy CE,3641.24,69.49,3571.75,True,TARGET_HIT,Entry 24429.4 | Stop 48.5 | Target 145.6
+2026-08-04,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24615 | Short Put 24326 vs Low 24498
+2026-08-06,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24636 | Short Put 24348 vs Low 24511
+2026-08-10,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 24584 | Put 23949 / Call 25218 (Range 24266-24621)
+2026-08-10,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,-1312.5,140.0,-1452.5,False,BREACH_STOP,Spot 24584 | Short Put 24294 vs Low 24266
+2026-08-12,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24436 | Short Put 24161 vs Low 24297
+2026-08-14,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24366 | Short Put 24101 vs Low 24155
+2026-08-17,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 24288 | Put 23708 / Call 24867 (Range 24026-24360)
+2026-08-18,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24155 | Short Put 23890 vs Low 24026
+2026-08-20,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24232 | Short Put 23981 vs Low 24144
+2026-08-24,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 24219 | Put 23631 / Call 24807 (Range 24077-24379)
+2026-08-24,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24219 | Short Put 23950 vs Low 24115
+2026-08-24,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-1031.23,62.88,-1094.11,False,STOP_LOSS,Entry 24206.8 | Stop 75.0 | Target 225.0
+2026-08-25,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-943.99,63.01,-1007.0,False,STOP_LOSS,Entry 24144.3 | Stop 68.7 | Target 206.0
+2026-08-26,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24208 | Short Put 23962 vs Low 24077
+2026-08-27,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-1011.46,62.91,-1074.37,False,STOP_LOSS,Entry 24207.8 | Stop 73.6 | Target 220.7
+2026-08-28,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 24176 | Short Put 23927 vs Low 23953
+2026-08-28,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-1057.3,62.84,-1120.14,False,STOP_LOSS,Entry 24090.8 | Stop 76.9 | Target 230.7
+2026-08-31,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 24080 | Put 23513 / Call 24648 (Range 23787-24143)
+2026-08-31,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-48.82,64.26,-113.08,False,EOD_CLOSE,Entry 24076.8 | Stop 77.0 | Target 230.9
+2026-09-01,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,-1312.5,140.0,-1452.5,False,BREACH_STOP,Spot 24056 | Short Put 23790 vs Low 23787
+2026-09-01,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-1071.59,62.82,-1134.41,False,STOP_LOSS,Entry 23993.6 | Stop 77.9 | Target 233.8
+2026-09-02,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,523.9,65.08,458.82,True,EOD_CLOSE,Entry 23952.6 | Stop 77.3 | Target 232.0
+2026-09-03,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 23873 | Short Put 23613 vs Low 23738
+2026-09-07,Strategy 1: Apex VRP Engine,NIFTY Weekly Iron Condor,100000.0,Sell OTM Condor,1062.5,140.0,922.5,True,EXPIRED_OTM,Spot 23779 | Put 23220 / Call 24338 (Range 23231-23890)
+2026-09-07,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,-1312.5,140.0,-1452.5,False,BREACH_STOP,Spot 23779 | Short Put 23524 vs Low 23432
+2026-09-07,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,1604.61,66.61,1538.0,True,EOD_CLOSE,Entry 23895.8 | Stop 83.8 | Target 251.4
+2026-09-07,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy PE,1604.61,66.61,1538.0,True,EOD_CLOSE,Entry 23895.8 | Stop 41.5 | Target 124.5
+2026-09-08,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,1413.51,66.33,1347.18,True,EOD_CLOSE,Entry 23737.9 | Stop 84.8 | Target 254.3
+2026-09-08,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy PE,1413.51,66.33,1347.18,True,EOD_CLOSE,Entry 23737.9 | Stop 42.0 | Target 125.9
+2026-09-09,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,743.75,140.0,603.75,True,OTM_EXPIRY,Spot 23432 | Short Put 23163 vs Low 23231
+2026-09-09,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,2634.49,68.06,2566.43,True,EOD_CLOSE,Entry 23623.1 | Stop 85.1 | Target 255.3
+2026-09-09,Strategy 6: Micro Momentum Sniper,NIFTY 25 Qty Option Buyer,10000.0,Buy PE,2634.49,68.06,2566.43,True,EOD_CLOSE,Entry 23623.1 | Stop 42.1 | Target 126.4
+2026-09-10,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-636.64,63.44,-700.08,False,EOD_CLOSE,Entry 23431.5 | Stop 85.7 | Target 257.1
+2026-09-11,Strategy 2: Zen Curvature Spread,NIFTY Put Credit Spread,100000.0,Sell Bull Put Spread,-1312.5,140.0,-1452.5,False,BREACH_STOP,Spot 23398 | Short Put 23121 vs Low 23116
+2026-09-11,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-247.5,63.98,-311.48,False,EOD_CLOSE,Entry 23380.1 | Stop 87.0 | Target 261.1
+2026-09-15,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-1234.85,62.6,-1297.45,False,STOP_LOSS,Entry 23231.4 | Stop 89.8 | Target 269.4
+2026-09-16,Strategy 4: Golden Trend Runner,NIFTY 25 Qty Option Buyer,50000.0,Buy PE,-1360.15,62.41,-1422.56,False,STOP_LOSS,Entry 23118.6 | Stop 98.9 | Target 296.8

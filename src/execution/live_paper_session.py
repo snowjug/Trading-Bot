@@ -52,6 +52,7 @@ class MultiBotLiveSession:
             "Strategy 3: Confluence Gamma Scalper",
             "Strategy 4: Golden Trend Runner",
             "Strategy 5: Velocity-5 Momentum Scalper",
+            "Strategy 6: Micro Momentum Sniper",
         ]
 
         self.bot_states = {
@@ -148,6 +149,21 @@ class MultiBotLiveSession:
         s2 = self.bot_states["Strategy 2: Zen Curvature Overnight"]
         if s2["active_trade"] is None and not s2["closed_trades"]:
             s2["status"] = "ARMED_FOR_03:20_PM_ENTRY"
+
+        # 6. Strategy 6: Micro Momentum Sniper
+        if "Strategy 6: Micro Momentum Sniper" not in self.bot_states:
+            self.bot_states["Strategy 6: Micro Momentum Sniper"] = {
+                "allocated_capital": 10000.0,
+                "current_capital": 10000.0,
+                "status": "ARMED_FOR_CONFLUENCE_BREAKOUT",
+                "active_trade": None,
+                "closed_trades": [],
+                "net_pnl": 0.0,
+            }
+        else:
+            s6 = self.bot_states["Strategy 6: Micro Momentum Sniper"]
+            if s6["active_trade"] is None and not s6["closed_trades"]:
+                s6["status"] = "ARMED_FOR_CONFLUENCE_BREAKOUT"
 
         self.save_session()
 
@@ -316,6 +332,50 @@ class MultiBotLiveSession:
             self.log_event(
                 f"BOT 2 DEPLOYED OVERNIGHT SPREAD: {s2['active_trade']['contract']} (Net Credit: Rs 45.0 pts)"
             )
+
+        # ─── BOT 6: MICRO MOMENTUM SNIPER BUYER (1 LOT OPTION) ───
+        s6 = self.bot_states["Strategy 6: Micro Momentum Sniper"]
+        if s6["active_trade"] is None and not s6["closed_trades"]:
+            # Sniper Trigger: If NIFTY breaks down below open with momentum
+            if n_last < mkt["nifty"]["open"] - 30.0 and mkt.get("vix", 15.0) <= 18.5:
+                put_strike = round((n_last - 20) / 50.0) * 50.0
+                s6["active_trade"] = {
+                    "id": f"SNIPER-LIVE-{int(time.time() % 10000)}",
+                    "contract": f"NIFTY {int(put_strike)} PE (1:3 Sniper)",
+                    "entry_time": datetime.now().strftime("%H:%M:%S"),
+                    "spot_entry": n_last,
+                    "entry_premium": 110.0,
+                    "target_premium": 160.0, # 1:3 RR
+                    "stop_premium": 94.0,    # 16 pt stop
+                    "current_premium": 110.0,
+                    "qty": 25,
+                    "status": "OPEN_SNIPER",
+                }
+                s6["status"] = "IN_POSITION (SNIPER_PE)"
+                self.log_event(f"BOT 6 EXECUTED SNIPER PE: {s6['active_trade']['contract']} @ Rs 110.0")
+        elif s6["active_trade"]:
+            t6 = s6["active_trade"]
+            spot_diff = t6["spot_entry"] - n_last # PE gains as spot falls
+            curr_prem = max(1.0, t6["entry_premium"] + (spot_diff * 0.55))
+            t6["current_premium"] = curr_prem
+            pnl6 = (curr_prem - t6["entry_premium"]) * t6["qty"] - 65.0
+            t6["unrealized_pnl"] = pnl6
+            s6["net_pnl"] = pnl6
+
+            if curr_prem >= t6["target_premium"]:
+                t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                t6["exit_reason"] = "TARGET_1:3_HIT (+45%)"
+                s6["closed_trades"].append(t6)
+                s6["active_trade"] = None
+                s6["status"] = "PROFIT_LOCKED_WAITING_NEXT_DAY"
+                self.log_event(f"BOT 6 TARGET REACHED: Realized Net Profit Rs {pnl6:+,.2f}")
+            elif curr_prem <= t6["stop_premium"]:
+                t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                t6["exit_reason"] = "STOP_LOSS_HIT (-15%)"
+                s6["closed_trades"].append(t6)
+                s6["active_trade"] = None
+                s6["status"] = "STOPPED_OUT_PRESERVING_CAPITAL"
+                self.log_event(f"BOT 6 STOP LOSS HIT: Preserved Capital, Net Loss Rs {pnl6:+,.2f}")
 
     def print_multi_bot_status(self, mkt: dict):
         now_str = datetime.now().strftime("%H:%M:%S")
