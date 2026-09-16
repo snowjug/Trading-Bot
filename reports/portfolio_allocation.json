@@ -1,11 +1,11 @@
 {
   "recommended_method": "risk_parity",
-  "expected_sharpe": 0.1681081185236231,
-  "expected_volatility": 0.10034846342713029,
-  "expected_return": 0.08186939138347148,
+  "expected_sharpe": 0.6556950245004317,
+  "expected_volatility": 0.14139319959453814,
+  "expected_return": 0.15771081747233512,
   "weights": {
-    "dual_momentum_INDEX_NIFTY50": 0.65,
-    "momentum_INFY": 0.35
+    "momentum_BAJFINANCE": 0.3866340087357061,
+    "sector_rotation_TITAN": 0.6133659912642939
   },
-  "timestamp": "2026-09-16T09:43:45.398371"
+  "timestamp": "2026-09-16T11:39:35.643524"
 }

@@ -136,6 +136,7 @@ class BacktestEngine:
 
         # Merge signals with prices
         df = price_df[["datetime", "open", "high", "low", "close", "volume"]].copy()
+        df = df.dropna(subset=["close", "open"])
         df = df.merge(
             signals_df[["datetime", "signal", "confidence"]],
             on="datetime", how="left",

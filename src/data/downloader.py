@@ -206,7 +206,8 @@ class DataDownloader:
             # Try index format
             path = self.processed_dir / f"INDEX_{symbol}_daily.parquet"
         if path.exists():
-            return pd.read_parquet(path)
+            df = pd.read_parquet(path)
+            return df.dropna(subset=["close", "open"]).reset_index(drop=True)
         logger.warning(f"No data found for {symbol}")
         return pd.DataFrame()
 

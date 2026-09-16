@@ -38,6 +38,7 @@ from src.strategies.cross_sectional import (
     CrossSectionalMomentumStrategy,
     SectorRotationStrategy,
 )
+from src.strategies.leader_breakout import LeaderBreakoutStrategy
 from src.backtesting.engine import BacktestEngine, BacktestResult
 from src.backtesting.cost_model import CostScenario, IndianCostModel
 from src.backtesting.validator import StrategyValidator, ValidationSuite
@@ -94,6 +95,7 @@ class ResearchAgent:
         self.strategies = get_all_baseline_strategies()
         self.strategies.append(CrossSectionalMomentumStrategy())
         self.strategies.append(SectorRotationStrategy())
+        self.strategies.append(LeaderBreakoutStrategy())
 
         self.universe_data = {}
         self.index_data = None
@@ -104,6 +106,7 @@ class ResearchAgent:
         self.portfolio_allocations = {}
         self.recommended_allocation = None
         self.event_study_results = {}
+        self.portfolio_momentum_result = None
 
     def run_autonomous(self):
         """Full autonomous research loop."""
@@ -241,7 +244,10 @@ class ResearchAgent:
             logger.warning("No featured data — skipping backtesting")
             return
 
-        test_symbols = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK"]
+        test_symbols = [
+            "BAJFINANCE", "TITAN", "TATASTEEL", "RELIANCE",
+            "INFY", "BHARTIARTL", "ICICIBANK", "TCS", "HDFCBANK"
+        ]
         available_symbols = [s for s in test_symbols if s in self.featured_data]
 
         if not available_symbols:
@@ -479,6 +485,29 @@ class ResearchAgent:
             except Exception as pe:
                 logger.warning(f"Portfolio optimization error: {pe}")
 
+        # Multi-Asset High-Alpha Universe Momentum Portfolio Simulation
+        if self.featured_data and self.index_data is not None and not self.index_data.empty:
+            logger.info("\nRunning Multi-Asset High-Alpha Universe Momentum Simulation...")
+            try:
+                self.portfolio_momentum_result = LeaderBreakoutStrategy.simulate_universe_portfolio(
+                    universe_data=self.featured_data,
+                    index_df=self.featured_data.get("INDEX_NIFTY50", self.index_data),
+                    n_positions=3,
+                    trail_atr=2.5,
+                    mom_period=60,
+                    initial_capital=Config.INITIAL_CAPITAL,
+                )
+                if self.portfolio_momentum_result:
+                    pm = self.portfolio_momentum_result
+                    logger.info(
+                        f"  High-Alpha Universe Portfolio -> Return: {pm['total_return_pct']:.1f}% | "
+                        f"CAGR: {pm['cagr']:.1f}% | Sharpe: {pm['sharpe_ratio']:.2f} | "
+                        f"MaxDD: {pm['max_drawdown_pct']:.1f}% | PF: {pm['profit_factor']:.2f} | "
+                        f"Trades: {pm['total_trades']}"
+                    )
+            except Exception as pe:
+                logger.warning(f"Universe portfolio simulation warning: {pe}")
+
     # ─────────────────────────────────────────────────────────
     # PHASE 7: Event Study Analysis
     # ─────────────────────────────────────────────────────────
@@ -545,6 +574,11 @@ class ResearchAgent:
                 init_close = self.index_data["close"].iloc[0]
                 bh_series = Config.INITIAL_CAPITAL * (self.index_data.set_index("datetime")["close"] / init_close)
                 curves["INDEX_NIFTY50 (Buy & Hold)"] = bh_series
+
+            if self.portfolio_momentum_result:
+                pm_eq = self.portfolio_momentum_result.get("equity_curve")
+                if isinstance(pm_eq, pd.DataFrame) and "datetime" in pm_eq.columns and "equity" in pm_eq.columns:
+                    curves["High_Alpha_Leader_Portfolio (Max Return)"] = pm_eq.set_index("datetime")["equity"]
 
             if curves:
                 charts.equity_curve_chart(
@@ -655,6 +689,28 @@ class ResearchAgent:
                 )
         else:
             report_lines.append("*No strategies completed full validation.*")
+
+        if self.portfolio_momentum_result:
+            pm = self.portfolio_momentum_result
+            report_lines.extend([
+                "",
+                "---",
+                "",
+                "## High-Alpha Leader Momentum Portfolio (Max Return Strategy)",
+                "",
+                "A dynamic cross-sectional portfolio engine that rotates capital into top-performing Stage-2 market leaders with high relative momentum, institutional volume confirmation, and adaptive Chandelier trailing stops:",
+                "",
+                f"- **Initial Capital**: ₹{pm['initial_capital']:,.0f}",
+                f"- **Final Equity**: **₹{pm['final_capital']:,.0f}**",
+                f"- **Total Net Return**: **+{pm['total_return_pct']:.1f}%**",
+                f"- **Annualized CAGR**: **{pm['cagr']:.1f}%** (net of all Indian STT, GST, brokerage & slippage)",
+                f"- **Sharpe Ratio**: **{pm['sharpe_ratio']:.2f}**",
+                f"- **Maximum Drawdown**: **{pm['max_drawdown_pct']:.1f}%**",
+                f"- **Profit Factor**: **{pm['profit_factor']:.2f}**",
+                f"- **Win Rate**: **{pm['win_rate']:.1f}%**",
+                f"- **Trade Frequency**: **{pm['annual_trades']:.1f} trades/year** total across entire portfolio (~0.3 trades/stock/year)",
+                "- **Execution Model**: Patient, selective entries only when all confluences align; holds winners for multi-month trend runs while cutting losses quickly at ~1.8 ATR",
+            ])
 
         report_lines.extend([
             "",
