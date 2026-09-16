@@ -1,0 +1,12 @@
+{
+  "git_sha": "2d6ed5e6d6dbeeabfa295377ac01c17f75000f80",
+  "reproduction_timestamp": "2026-09-16T19:49:07.192978",
+  "source_data_rows": 174,
+  "golden_trend": {
+    "trades": 72,
+    "net_pnl": 25204.44,
+    "win_rate": 44.44,
+    "sharpe": 2.19
+  },
+  "status": "INDEPENDENTLY_REPRODUCED"
+}
