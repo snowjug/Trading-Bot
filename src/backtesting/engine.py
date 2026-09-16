@@ -130,6 +130,10 @@ class BacktestEngine:
         
         Execution model: signal on bar T → execute on open of bar T+1
         """
+        # Defensive check: swap if arguments were passed in reverse order
+        if "close" in signals_df.columns and "signal" in price_df.columns:
+            signals_df, price_df = price_df, signals_df
+
         # Merge signals with prices
         df = price_df[["datetime", "open", "high", "low", "close", "volume"]].copy()
         df = df.merge(

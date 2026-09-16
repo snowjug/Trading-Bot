@@ -1,0 +1,11 @@
+{
+  "recommended_method": "risk_parity",
+  "expected_sharpe": 0.1681081185236231,
+  "expected_volatility": 0.10034846342713029,
+  "expected_return": 0.08186939138347148,
+  "weights": {
+    "dual_momentum_INDEX_NIFTY50": 0.65,
+    "momentum_INFY": 0.35
+  },
+  "timestamp": "2026-09-16T09:43:45.398371"
+}

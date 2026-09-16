@@ -91,15 +91,22 @@ class FeatureStore:
         symbol: str,
         index_df: pd.DataFrame | None = None,
         cache: bool = True,
+        use_cached: bool = True,
     ) -> pd.DataFrame:
         """
         Compute all features for a symbol's OHLCV data.
         Returns DataFrame with all features added.
         """
-        logger.info(f"Computing features for {symbol} ({len(df)} rows)")
-
         if df.empty:
             return df
+
+        if use_cached:
+            cached_df = self.load_features(symbol)
+            if not cached_df.empty and len(cached_df) >= len(df):
+                logger.info(f"Loaded cached features for {symbol} ({len(cached_df)} rows)")
+                return cached_df
+
+        logger.info(f"Computing features for {symbol} ({len(df)} rows)")
 
         # Price features
         featured = PriceFeatures.compute_all(df)
