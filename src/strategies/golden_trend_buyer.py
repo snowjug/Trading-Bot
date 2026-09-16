@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 from src.strategies.base import Strategy
 from src.regime.detector import RegimeState
+from src.backtesting.cost_model import IndianCostModel, OrderType
+from src.backtesting.intrabar_simulator import IntrabarSimulator, IntrabarMode
 from src.utils.logging import setup_logging
 
 logger = setup_logging("strategies.golden_trend_buyer")
@@ -188,11 +190,20 @@ class GoldenTrendOptionBuyerStrategy(Strategy):
             "confidence": confidences,
         })
 
-    def run_simulation(self, df: pd.DataFrame, lot_size_default: int = 50) -> dict:
+    def run_simulation(
+        self,
+        df: pd.DataFrame,
+        lot_size_default: int = 50,
+        intrabar_mode: IntrabarMode = IntrabarMode.CONSERVATIVE,
+        cost_model: IndianCostModel | None = None,
+    ) -> dict:
         """
         Execute historical simulation with 1 Lot ATM options, 1:3 RR targets,
-        trailing intraday stops, and Indian statutory costs.
+        intrabar path-dependency resolution, and versioned Indian statutory costs.
+        STATUS: SIMULATION ONLY / UNVERIFIED (Approximate option delta proxy).
         """
+        if cost_model is None:
+            cost_model = IndianCostModel()
         calc_df = self.compute_indicators(df)
         sig_df = self.generate_signals(df)
         merged = pd.merge(calc_df, sig_df[["datetime", "signal"]], on="datetime")
@@ -228,30 +239,45 @@ class GoldenTrendOptionBuyerStrategy(Strategy):
             stop_opt = stop_pts * opt_delta
 
             if is_ce:
-                max_fav_pts = high - entry_spot
-                max_adv_pts = entry_spot - low
                 close_pts = close - entry_spot
             else:
-                max_fav_pts = entry_spot - low
-                max_adv_pts = high - entry_spot
                 close_pts = entry_spot - close
 
-            # Intraday execution
-            if max_adv_pts >= stop_pts and max_fav_pts < (0.35 * atr):
+            # Intraday execution determination via IntrabarSimulator
+            resolution = IntrabarSimulator.resolve_exit(
+                is_long=is_ce,
+                entry_price=entry_spot,
+                target_pts=target_pts,
+                stop_pts=stop_pts,
+                high=high,
+                low=low,
+                close=close,
+                mode=intrabar_mode,
+            )
+            hit = resolution.exit_reason
+            spot_exit = resolution.exit_price
+
+            if resolution.is_stop:
                 opt_pnl = -stop_opt
-                hit = "STOP"
-                spot_exit = entry_spot - stop_pts if is_ce else entry_spot + stop_pts
-            elif max_fav_pts >= target_pts:
+            elif resolution.is_target:
                 opt_pnl = target_opt
-                hit = "TARGET_1:3"
-                spot_exit = entry_spot + target_pts if is_ce else entry_spot - target_pts
             else:
                 opt_pnl = max(-stop_opt, min(target_opt, close_pts * opt_delta))
-                hit = "EOD_RUN"
-                spot_exit = close
+
+            entry_prem_approx = 100.0
+            exit_prem_approx = max(0.5, entry_prem_approx + opt_pnl)
 
             gross_pnl = opt_pnl * lot_size
-            net_pnl = gross_pnl - self.friction_per_trade
+            cost_comp = cost_model.compute_round_trip(
+                entry_price=entry_prem_approx,
+                exit_price=exit_prem_approx,
+                qty=lot_size,
+                order_type=OrderType.OPTIONS,
+                trade_date=date.to_pydatetime() if hasattr(date, "to_pydatetime") else date,
+                atr=atr,
+            )
+            friction = cost_comp.total
+            net_pnl = gross_pnl - friction
             capital += net_pnl
             capital = max(100.0, capital)
 

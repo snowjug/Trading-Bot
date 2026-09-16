@@ -1,0 +1,9 @@
+{
+  "sacred_split_date": "2024-01-01T00:00:00",
+  "num_bars": 667,
+  "start_date": "2024-01-01 00:00:00",
+  "end_date": "2026-09-11 00:00:00",
+  "sha256_hash": "7e7057a0ce23ffbbf48be2ff0573bb31e47b62fbff7c2fffa4e46e4768ca0713",
+  "created_at": "2026-09-16T16:51:46.681844",
+  "policy": "STRICT_QUARANTINE_NO_TUNING_PERMITTED"
+}
