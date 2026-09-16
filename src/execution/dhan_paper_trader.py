@@ -51,8 +51,16 @@ class DhanPaperSandbox:
         self.use_sandbox_server = use_sandbox_server
         self.base_url = self.SANDBOX_URL if self.use_sandbox_server else self.PROD_URL
 
-        self.client_id = client_id or os.getenv("DHAN_CLIENT_ID", "")
-        self.access_token = access_token or os.getenv("DHAN_ACCESS_TOKEN", "")
+        self.client_id = (
+            client_id
+            or (os.getenv("DHAN_SANDBOX_CLIENT_ID") if self.use_sandbox_server else None)
+            or os.getenv("DHAN_CLIENT_ID", "")
+        )
+        self.access_token = (
+            access_token
+            or (os.getenv("DHAN_SANDBOX_TOKEN") if self.use_sandbox_server else None)
+            or os.getenv("DHAN_ACCESS_TOKEN", "")
+        )
         self.state_file = Path(state_file)
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -254,10 +262,26 @@ def run_sandbox_cli():
         default="prod",
         help="Target server: 'prod' (https://api.dhan.co/v2 in paper mode) or 'sandbox' (https://sandbox.dhan.co/v2)",
     )
+    parser.add_argument(
+        "--token",
+        type=str,
+        default=None,
+        help="Custom Access Token (e.g., Sandbox Token from https://sandbox.dhan.co/v2/#/)",
+    )
+    parser.add_argument(
+        "--client-id",
+        type=str,
+        default=None,
+        help="Dhan Client ID",
+    )
     args = parser.parse_args()
 
     use_sandbox = (args.env == "sandbox")
-    sandbox = DhanPaperSandbox(use_sandbox_server=use_sandbox)
+    sandbox = DhanPaperSandbox(
+        client_id=args.client_id,
+        access_token=args.token,
+        use_sandbox_server=use_sandbox,
+    )
 
     print("=" * 75)
     print("  DHANHQ v2 API — PAPER TRADING & SANDBOX CLI")
