@@ -31,6 +31,7 @@ from src.utils.logging import setup_logging
 from src.execution.paper_broker import PaperBroker
 from src.execution.dhan_contract_resolver import DhanContractResolver, is_quote_fresh
 from src.execution.cost_model import IndianCostModel
+from src.risk.risk_engine import RiskEngine
 
 logger = setup_logging("execution.live_session")
 REPORTS_DIR = Path("reports")
@@ -51,8 +52,10 @@ class MultiBotLiveSession:
         state_file: Optional[str] = None,
         reset_for_today: bool = False,
         reports_dir: Optional[Union[str, Path]] = None,
+        risk_engine: Optional[RiskEngine] = None,
     ):
         Config.assert_no_live_trading()
+        self.risk_engine = risk_engine or RiskEngine()
         self.session_file = Path(state_file or session_file)
         self.session_file.parent.mkdir(parents=True, exist_ok=True)
         self.reports_dir = Path(reports_dir) if reports_dir is not None else (self.session_file.parent if state_file else REPORTS_DIR)
@@ -158,8 +161,17 @@ class MultiBotLiveSession:
             "rejected_signals": self.rejected_signals[-150:],
             "final_settlement": final_settlement,
         }
-        with open(self.session_file, "w") as f:
-            json.dump(data, f, indent=2, default=str)
+        parent_dir = self.session_file.parent
+        parent_dir.mkdir(parents=True, exist_ok=True)
+        tmp_file = parent_dir / f".tmp_{self.session_file.name}_{os.getpid()}"
+        try:
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, default=str)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_file, self.session_file)
+        except Exception as e:
+            logger.error(f"Failed to save session atomically: {e}")
         try:
             self.generate_audit_reports()
         except Exception as e:
@@ -509,14 +521,130 @@ LIVE_TRADING_ENABLED: FALSE
             "vix": mkt["vix"],
         }
 
+    def trip_kill_switch(self, reason: str = "Manual kill switch triggered"):
+        """Trips kill switch and immediately emergency flattens all open positions."""
+        if hasattr(self, "risk_engine") and self.risk_engine:
+            self.risk_engine.trip_kill_switch(reason)
+        self._emergency_flatten_all_positions(reason=f"KILL_SWITCH: {reason}")
+
+    def reset_kill_switch(self):
+        """Explicitly resets kill switch."""
+        if hasattr(self, "risk_engine") and self.risk_engine:
+            self.risk_engine.reset_kill_switch()
+        self.log_event("Kill switch manually reset. Bot monitoring resumed.")
+
+    def _emergency_flatten_all_positions(self, reason: str = "EMERGENCY_FLATTEN"):
+        """Emergency flatten: Immediately force closes all open positions across all bots."""
+        flattened_count = 0
+        for name, b_state in self.bot_states.items():
+            at = b_state.get("active_trade")
+            if at and at.get("status") != "CLOSED":
+                now_str = datetime.now().strftime("%H:%M:%S")
+                exit_fill = at.get("current_val") or at.get("current_premium") or at.get("entry_fill") or 0.0
+                qty = at.get("qty", 25)
+                entry_fill = at.get("entry_fill", exit_fill)
+                side = at.get("side", "BUY")
+                costs = IndianCostModel.calculate_roundtrip_costs(entry_fill, exit_fill, qty)
+                
+                if side == "SELL":
+                    real_gross = round((entry_fill - exit_fill) * qty, 2)
+                else:
+                    real_gross = round((exit_fill - entry_fill) * qty, 2)
+                real_net = round(real_gross - costs.total_costs, 2)
+
+                at["exit_time"] = now_str
+                at["exit_fill"] = exit_fill
+                at["exit_reason"] = reason
+                at["status"] = "CLOSED"
+                at["trade_state"] = "CLOSED"
+                at["statutory_friction"] = costs.total_costs
+                at["gross_pnl"] = real_gross
+                at["net_pnl"] = real_net
+                at["unrealized_pnl"] = 0.0
+                b_state["closed_trades"].append(at)
+                b_state["active_trade"] = None
+                b_state["status"] = "EMERGENCY_FLATTENED"
+                b_state["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in b_state.get("closed_trades", [])), 2)
+                self.log_event(f"EMERGENCY FLATTEN: {name} | {at.get('contract')} force closed | Net Rs {real_net:+,.2f} | Reason: {reason}")
+                flattened_count += 1
+        if flattened_count > 0:
+            self.save_session()
+
+    def _eod_force_square_off_all_positions(self):
+        """Authoritative EOD 15:35 square-off: Closes all open positions before market close."""
+        closed_count = 0
+        for name, b_state in self.bot_states.items():
+            at = b_state.get("active_trade")
+            if at and at.get("status") != "CLOSED":
+                now_str = datetime.now().strftime("%H:%M:%S")
+                qty = at.get("qty", 25)
+                entry_fill = at.get("entry_fill", 0.0)
+                side = at.get("side", "BUY")
+
+                exit_fill = None
+                if side == "SELL":
+                    curr_ask = at.get("current_ask")
+                    if curr_ask is not None and curr_ask > 0:
+                        exit_fill = round(curr_ask + 1.0, 2)
+                else:
+                    curr_bid = at.get("current_bid")
+                    if curr_bid is not None and curr_bid > 0:
+                        exit_fill = max(0.05, round(curr_bid - 0.50, 2))
+
+                if exit_fill is None or exit_fill <= 0:
+                    exit_fill = at.get("current_val") or at.get("current_premium") or entry_fill or 0.05
+                    exit_fill = round(float(exit_fill), 2)
+                    exit_reason = "EOD_FORCED_EXIT (DATA_UNAVAILABLE_MARK)"
+                else:
+                    exit_reason = "EOD_FORCED_EXIT"
+
+                costs = IndianCostModel.calculate_roundtrip_costs(entry_fill, exit_fill, qty)
+                if side == "SELL":
+                    real_gross = round((entry_fill - exit_fill) * qty, 2)
+                else:
+                    real_gross = round((exit_fill - entry_fill) * qty, 2)
+                real_net = round(real_gross - costs.total_costs, 2)
+
+                at["exit_time"] = now_str
+                at["exit_fill"] = exit_fill
+                at["exit_reason"] = exit_reason
+                at["status"] = "CLOSED"
+                at["trade_state"] = "CLOSED"
+                at["statutory_friction"] = costs.total_costs
+                at["gross_pnl"] = real_gross
+                at["net_pnl"] = real_net
+                at["unrealized_pnl"] = 0.0
+                b_state["closed_trades"].append(at)
+                b_state["active_trade"] = None
+                b_state["status"] = "SQUARED_OFF"
+                b_state["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in b_state.get("closed_trades", [])), 2)
+                self.log_event(f"EOD SQUARE-OFF: {name} | {at.get('contract')} @ Rs {exit_fill:.2f} | Net Rs {real_net:+,.2f} | Reason: {exit_reason}")
+                closed_count += 1
+        if closed_count > 0:
+            self.save_session()
+
     def evaluate_all_bots(self, mkt: Optional[dict], current_time: Optional[dtime] = None):
+        now_time = current_time or datetime.now().time()
+
+        # 1. Check Kill Switch (Fail Closed across all bots)
+        if hasattr(self, "risk_engine") and self.risk_engine and self.risk_engine.state.is_kill_switch_active:
+            reason = self.risk_engine.state.kill_switch_reason or "Emergency Kill Switch Activated"
+            logger.critical(f"KILL SWITCH ACTIVE: {reason}. Halting all bots and emergency flattening open positions.")
+            self._emergency_flatten_all_positions(reason=f"KILL_SWITCH: {reason}")
+            return
+
+        # 2. Authoritative 15:35 EOD Square-Off (Must execute regardless of quote availability)
+        if now_time >= dtime(15, 35):
+            logger.info("15:35 EOD boundary reached. Executing mandatory square-off for all open positions.")
+            self._eod_force_square_off_all_positions()
+            return
+
         if mkt is None or not isinstance(mkt, dict):
             logger.warning("Market state unavailable. Strict Fail-Closed: DATA UNAVAILABLE -> NO SIGNAL -> NO TRADE.")
             return
 
         n_last = mkt["nifty"]["last"]
         b_last = mkt["bank"]["last"]
-        now_time = current_time or datetime.now().time()
 
         # Batch prefetch quotes for all candidate contracts in a single HTTP request to eliminate rate limits
         try:

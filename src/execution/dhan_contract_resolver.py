@@ -210,6 +210,7 @@ class DhanContractResolver:
                 for sid in clean_ids:
                     item = seg_data.get(sid) or seg_data.get(int(sid))
                     if isinstance(item, dict) and item.get("last_price", 0) > 0:
+                        ltp = float(item.get("last_price", 0.0))
                         depth = item.get("depth", {})
                         buy_depth = depth.get("buy", [])
                         sell_depth = depth.get("sell", [])

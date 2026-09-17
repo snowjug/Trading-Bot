@@ -2,6 +2,11 @@
 Risk engine — independent risk management layer.
 Enforces position sizing, loss limits, drawdown limits, and kill switches.
 """
+import os
+import json
+import tempfile
+from pathlib import Path
+from typing import Optional, Union, Dict, List
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass, field
@@ -60,6 +65,7 @@ class RiskEngine:
         weekly_loss_limit: float = 0.05,
         max_simultaneous_positions: int = 10,
         risk_per_trade_pct: float = 0.01,
+        kill_switch_file: Optional[Path] = None,
     ):
         self.initial_capital = initial_capital
         self.max_position_pct = max_position_pct
@@ -69,12 +75,52 @@ class RiskEngine:
         self.weekly_loss_limit = weekly_loss_limit
         self.max_simultaneous_positions = max_simultaneous_positions
         self.risk_per_trade_pct = risk_per_trade_pct
+        self.kill_switch_file = Path(kill_switch_file) if kill_switch_file else (Config.STATE_DIR / "kill_switch.json")
+        self.kill_switch_file.parent.mkdir(parents=True, exist_ok=True)
 
         # State tracking
         self.state = RiskState(equity=initial_capital, peak_equity=initial_capital)
         self.daily_trades: list[dict] = []
         self.weekly_trades: list[dict] = []
         self._trade_log: list[dict] = []
+        self._load_kill_switch_state()
+
+    def _load_kill_switch_state(self):
+        """Restore kill switch state across process restarts (Fail-Closed)."""
+        if self.kill_switch_file and self.kill_switch_file.exists():
+            try:
+                with open(self.kill_switch_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if data.get("is_kill_switch_active", False):
+                        self.state.is_kill_switch_active = True
+                        self.state.kill_switch_reason = data.get("reason", "Persisted kill switch from previous session")
+                        logger.critical(
+                            f"RESTORED PERSISTED KILL SWITCH: {self.state.kill_switch_reason}. "
+                            "Trading halted until explicitly reset."
+                        )
+            except Exception as e:
+                logger.warning(f"Failed to read kill switch state file: {e}")
+
+    def _save_kill_switch_state(self, is_active: bool, reason: str):
+        """Atomically persist kill switch state to disk."""
+        if not self.kill_switch_file:
+            return
+        data = {
+            "is_kill_switch_active": bool(is_active),
+            "reason": str(reason),
+            "timestamp": datetime.now().isoformat(),
+        }
+        try:
+            parent_dir = self.kill_switch_file.parent
+            parent_dir.mkdir(parents=True, exist_ok=True)
+            tmp_file = parent_dir / f".tmp_{self.kill_switch_file.name}_{os.getpid()}"
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_file, self.kill_switch_file)
+        except Exception as e:
+            logger.error(f"Failed to persist kill switch state atomically: {e}")
 
     def evaluate_trade(
         self,
@@ -196,15 +242,17 @@ class RiskEngine:
 
 
     def _activate_kill_switch(self, reason: str):
-        """Activate kill switch — stop all trading."""
+        """Activate kill switch — stop all trading and persist to disk."""
         self.state.is_kill_switch_active = True
         self.state.kill_switch_reason = reason
+        self._save_kill_switch_state(True, reason)
         logger.critical(f"KILL SWITCH ACTIVATED: {reason}")
 
     def _deactivate_kill_switch(self):
-        """Deactivate kill switch."""
+        """Deactivate kill switch and clear persisted state."""
         self.state.is_kill_switch_active = False
         self.state.kill_switch_reason = ""
+        self._save_kill_switch_state(False, "")
         logger.info("Kill switch deactivated — risk levels normalized")
 
     def get_state_summary(self) -> dict:

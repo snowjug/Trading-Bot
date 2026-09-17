@@ -120,8 +120,17 @@ class DhanPaperSandbox:
         return []
 
     def _save_trades(self):
-        with open(self.state_file, "w") as f:
-            json.dump(self.trades, f, indent=2, default=str)
+        parent_dir = self.state_file.parent
+        parent_dir.mkdir(parents=True, exist_ok=True)
+        tmp_file = parent_dir / f".tmp_{self.state_file.name}_{os.getpid()}"
+        try:
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(self.trades, f, indent=2, default=str)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_file, self.state_file)
+        except Exception as e:
+            logger.error(f"Failed to save trades atomically: {e}")
 
     def test_connection(self) -> Dict:
         """Verify API token against /fundlimit endpoint."""
@@ -287,6 +296,34 @@ class DhanPaperSandbox:
                 "reason": f"STALE_QUOTE: Quote timestamp {quote_timestamp} exceeds freshness limit ({Config.MAX_QUOTE_AGE_SECONDS}s).",
             }
 
+        # 2b. Microstructure Sanity: Validate bid/ask book consistency (Fail Closed)
+        if bid is not None and ask is not None and isinstance(bid, (int, float)) and isinstance(ask, (int, float)):
+            if bid > 0 and ask > 0:
+                spread = ask - bid
+                if spread < 0:
+                    logger.warning(
+                        f"Order rejected for {symbol} ({sec_id_clean}): Inverted order book (bid={bid} > ask={ask}). "
+                        "Refusing to execute against corrupted market depth."
+                    )
+                    return {
+                        "order_id": f"REJ-INVERTED-{int(time.time() * 1000)}",
+                        "status": "INVERTED_MARKET_SPREAD",
+                        "is_filled": False,
+                        "reason": f"INVERTED_MARKET_SPREAD: Book inverted (bid={bid} > ask={ask}).",
+                    }
+                ref_p = option_premium if (option_premium and option_premium > 0) else ask
+                if ref_p > 0 and (spread / ref_p) > 0.50:
+                    logger.warning(
+                        f"Order rejected for {symbol} ({sec_id_clean}): Excessive spread width "
+                        f"({spread:.2f} / {ref_p:.2f} > 50%). Refusing execution."
+                    )
+                    return {
+                        "order_id": f"REJ-SPREAD-{int(time.time() * 1000)}",
+                        "status": "EXCESSIVE_SPREAD_WIDTH",
+                        "is_filled": False,
+                        "reason": f"EXCESSIVE_SPREAD_WIDTH: Spread {spread:.2f} exceeds 50% of reference price.",
+                    }
+
         # 3. Realistic Executable Order-Side Pricing (Require Ask for BUY, Bid for SELL. Zero LTP fallback)
         tx_type = transaction_type.upper()
         if tx_type == "BUY":
@@ -353,8 +390,24 @@ class DhanPaperSandbox:
                 resp = self.session.post(f"{self.SANDBOX_URL}/orders", json=payload, timeout=10)
                 server_response = {"status_code": resp.status_code, "body": resp.text[:300]}
                 logger.info(f"Dhan Sandbox POST /orders response: {server_response}")
+                if resp.status_code not in (200, 201):
+                    logger.error(f"Dhan Sandbox order rejected with status {resp.status_code}: {resp.text[:200]}")
+                    return {
+                        "order_id": f"REJ-SANDBOX-ERR-{int(time.time() * 1000)}",
+                        "status": "REJECTED_BY_BROKER",
+                        "is_filled": False,
+                        "reason": f"BROKER_REJECTION: Dhan Sandbox responded with HTTP {resp.status_code}",
+                        "sandbox_server_response": server_response,
+                    }
             except Exception as e:
-                server_response = {"error": str(e)}
+                logger.error(f"Dhan Sandbox POST /orders failed with connection error/timeout: {e}")
+                return {
+                    "order_id": f"REJ-SANDBOX-CONN-{int(time.time() * 1000)}",
+                    "status": "CONNECTION_FAILURE",
+                    "is_filled": False,
+                    "reason": f"CONNECTION_FAILURE: {str(e)}",
+                    "sandbox_server_response": {"error": str(e)},
+                }
 
         order_id = f"DHAN-{'SBOX' if self.use_sandbox_server else 'PAPER'}-{int(time.time() * 1000)}"
         now_iso = datetime.now().isoformat()
