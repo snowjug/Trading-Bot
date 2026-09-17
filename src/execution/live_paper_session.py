@@ -176,16 +176,53 @@ class MultiBotLiveSession:
                     "lots": 1,
                     "qty": c_res["lot_size"],
                     "unrealized_pnl": 0.0,
+                    "valuation_status": "LIVE_QUOTE",
                 }
                 s1["status"] = "IN_POSITION (THETA_DECAY)"
                 self.log_event(f"BOT 1 ENTERED THETA HARVEST: Credit Rs {net_credit:.1f}")
         elif s1["active_trade"]:
             t1 = s1["active_trade"]
-            t1["current_val"] = max(2.0, t1["current_val"] - 0.05)
-            pts_profit = t1["net_credit_collected"] - t1["current_val"]
-            pnl1 = (pts_profit * t1["qty"]) - 80.0
-            t1["unrealized_pnl"] = round(pnl1, 2)
-            s1["net_pnl"] = round(pnl1, 2)
+            c_sec = t1.get("call_security_id")
+            p_sec = t1.get("put_security_id")
+            c_q = DhanContractResolver.fetch_option_quote(c_sec) if c_sec else None
+            p_q = DhanContractResolver.fetch_option_quote(p_sec) if p_sec else None
+            if not c_q or not c_q.get("ltp") or not p_q or not p_q.get("ltp"):
+                logger.warning("Bot 1: Real option quotes unavailable for active strangle. Pausing valuation.")
+                t1["valuation_status"] = "DATA_UNAVAILABLE"
+            else:
+                c_exit = c_q.get("ask") or c_q["ltp"]
+                p_exit = p_q.get("ask") or p_q["ltp"]
+                curr_val = round(c_exit + p_exit, 2)
+                t1["current_val"] = curr_val
+                t1["valuation_status"] = "LIVE_QUOTE"
+                pts_profit = t1["net_credit_collected"] - curr_val
+                pnl1 = round((pts_profit * t1["qty"]) - 80.0, 2)
+                t1["unrealized_pnl"] = pnl1
+                s1["net_pnl"] = pnl1
+
+                if curr_val <= round(t1["net_credit_collected"] * 0.50, 2):
+                    t1["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t1["exit_reason"] = "THETA_TARGET_HIT (50% DECAY)"
+                    t1["status"] = "CLOSED_PROFIT_LOCKED"
+                    s1["closed_trades"].append(t1)
+                    s1["active_trade"] = None
+                    s1["status"] = "PROFIT_LOCKED (STOPPED_FOR_DAY)"
+                    self.log_event(f"BOT 1 THETA HARVEST PROFIT: Net Rs {pnl1:+,.2f}")
+                elif curr_val >= round(t1["net_credit_collected"] * 1.50, 2):
+                    t1["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t1["exit_reason"] = "STRANGLE_STOP_HIT (+50% DEBIT)"
+                    t1["status"] = "CLOSED_STOPPED"
+                    s1["closed_trades"].append(t1)
+                    s1["active_trade"] = None
+                    s1["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
+                    self.log_event(f"BOT 1 STRANGLE STOP: Net Rs {pnl1:+,.2f}")
+                elif now_time >= dtime(15, 15):
+                    t1["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t1["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t1["status"] = "CLOSED_EOD"
+                    s1["closed_trades"].append(t1)
+                    s1["active_trade"] = None
+                    s1["status"] = "SQUARED_OFF"
 
         # ─── BOT 5: VELOCITY-5 MOMENTUM SCALPER ───
         s5 = self.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
@@ -211,6 +248,7 @@ class MultiBotLiveSession:
                         "current_premium": prem,
                         "qty": c5["lot_size"],
                         "status": "OPEN_CE_ORB",
+                        "valuation_status": "LIVE_QUOTE",
                     }
                     s5["status"] = "IN_POSITION (ORB_CE_BREAKOUT)"
                     self.log_event(f"BOT 5 EXECUTED CE ORB: {c5['custom_symbol']} ({c5['security_id']}) @ Rs {prem:.1f}")
@@ -234,6 +272,7 @@ class MultiBotLiveSession:
                         "current_premium": prem,
                         "qty": p5["lot_size"],
                         "status": "OPEN_PE_ORB",
+                        "valuation_status": "LIVE_QUOTE",
                     }
                     s5["status"] = "IN_POSITION (ORB_PE_BREAKDOWN)"
                     self.log_event(f"BOT 5 EXECUTED PE ORB: {p5['custom_symbol']} ({p5['security_id']}) @ Rs {prem:.1f}")
@@ -241,45 +280,43 @@ class MultiBotLiveSession:
         elif s5["active_trade"]:
             t5 = s5["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t5["security_id"]) if t5.get("security_id") else None
-            if q and q.get("ltp"):
+            if not q or not q.get("ltp"):
+                logger.warning("Bot 5: Real option quote unavailable for active position. Pausing valuation.")
+                t5["valuation_status"] = "DATA_UNAVAILABLE"
+            else:
                 curr_prem = q.get("bid") or q["ltp"]
                 t5["current_premium"] = curr_prem
-            else:
-                is_ce = "CALL" in t5["contract"] or "CE" in t5.get("trading_symbol", "")
-                spot_diff = (n_last - t5["spot_entry"]) if is_ce else (t5["spot_entry"] - n_last)
-                curr_prem = max(0.50, round(t5["entry_premium"] + (spot_diff * 0.50), 2))
-                t5["current_premium"] = curr_prem
+                t5["valuation_status"] = "LIVE_QUOTE"
+                pnl5 = round((curr_prem - t5["entry_premium"]) * t5["qty"] - 45.0, 2)
+                t5["unrealized_pnl"] = pnl5
+                s5["net_pnl"] = pnl5
 
-            pnl5 = round((curr_prem - t5["entry_premium"]) * t5["qty"] - 45.0, 2)
-            t5["unrealized_pnl"] = pnl5
-            s5["net_pnl"] = pnl5
+                if curr_prem >= t5["target_premium"]:
+                    t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t5["exit_reason"] = "TARGET_HIT (+30%)"
+                    t5["status"] = "CLOSED_PROFIT_LOCKED"
+                    s5["closed_trades"].append(t5)
+                    s5["active_trade"] = None
+                    s5["status"] = "PROFIT_LOCKED (STOPPED_FOR_DAY)"
+                    self.log_event(f"BOT 5 TARGET HIT: {t5['contract']} @ Rs {curr_prem:.1f} | Profit: +Rs {pnl5:,.2f}")
 
-            if curr_prem >= t5["target_premium"]:
-                t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t5["exit_reason"] = "TARGET_HIT (+30%)"
-                t5["status"] = "CLOSED_PROFIT_LOCKED"
-                s5["closed_trades"].append(t5)
-                s5["active_trade"] = None
-                s5["status"] = "PROFIT_LOCKED (STOPPED_FOR_DAY)"
-                self.log_event(f"BOT 5 TARGET HIT: {t5['contract']} @ Rs {curr_prem:.1f} | Profit: +Rs {pnl5:,.2f}")
+                elif curr_prem <= t5["stop_premium"]:
+                    t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t5["exit_reason"] = "STOP_LOSS (-15%)"
+                    t5["status"] = "CLOSED_STOPPED"
+                    s5["closed_trades"].append(t5)
+                    s5["active_trade"] = None
+                    s5["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
+                    self.log_event(f"BOT 5 STOP HIT: {t5['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl5:,.2f}")
 
-            elif curr_prem <= t5["stop_premium"]:
-                t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t5["exit_reason"] = "STOP_LOSS (-15%)"
-                t5["status"] = "CLOSED_STOPPED"
-                s5["closed_trades"].append(t5)
-                s5["active_trade"] = None
-                s5["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
-                self.log_event(f"BOT 5 STOP HIT: {t5['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl5:,.2f}")
-
-            elif now_time >= dtime(15, 15):
-                t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t5["exit_reason"] = "EOD_MIS_SQUAREOFF"
-                t5["status"] = "CLOSED_EOD"
-                s5["closed_trades"].append(t5)
-                s5["active_trade"] = None
-                s5["status"] = "SQUARED_OFF"
-                self.log_event(f"BOT 5 EOD SQUARE-OFF: {t5['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl5:,.2f}")
+                elif now_time >= dtime(15, 15):
+                    t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t5["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t5["status"] = "CLOSED_EOD"
+                    s5["closed_trades"].append(t5)
+                    s5["active_trade"] = None
+                    s5["status"] = "SQUARED_OFF"
+                    self.log_event(f"BOT 5 EOD SQUARE-OFF: {t5['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl5:,.2f}")
 
         # ─── BOT 4: GOLDEN TREND RUNNER ───
         s4 = self.bot_states["Strategy 4: Golden Trend Runner"]
@@ -307,6 +344,7 @@ class MultiBotLiveSession:
                         "current_premium": prem,
                         "qty": c4["lot_size"],
                         "status": "OPEN_RUNNER",
+                        "valuation_status": "LIVE_QUOTE",
                     }
                     s4["status"] = "IN_POSITION (RIDING_1:3_TREND)"
                     self.log_event(
@@ -315,44 +353,42 @@ class MultiBotLiveSession:
         elif s4["active_trade"]:
             t4 = s4["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t4["security_id"]) if t4.get("security_id") else None
-            if q and q.get("ltp"):
+            if not q or not q.get("ltp"):
+                logger.warning("Bot 4: Real option quote unavailable for active position. Pausing valuation.")
+                t4["valuation_status"] = "DATA_UNAVAILABLE"
+            else:
                 curr_prem = q.get("bid") or q["ltp"]
                 t4["current_premium"] = curr_prem
-            else:
-                entry_p = t4.get("spot_entry") or t4.get("entry_spot") or n_last
-                spot_diff = n_last - entry_p
-                curr_prem = max(0.50, round(t4["entry_premium"] + (spot_diff * 0.55), 2))
-                t4["current_premium"] = curr_prem
+                t4["valuation_status"] = "LIVE_QUOTE"
+                pnl4 = round((curr_prem - t4["entry_premium"]) * t4["qty"] - 45.0, 2)
+                t4["unrealized_pnl"] = pnl4
+                s4["net_pnl"] = pnl4
 
-            pnl4 = round((curr_prem - t4["entry_premium"]) * t4["qty"] - 45.0, 2)
-            t4["unrealized_pnl"] = pnl4
-            s4["net_pnl"] = pnl4
+                if curr_prem >= t4["target_premium"]:
+                    t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t4["exit_reason"] = "TARGET_1:3_HIT (+50%)"
+                    t4["status"] = "CLOSED_PROFIT_LOCKED"
+                    s4["closed_trades"].append(t4)
+                    s4["active_trade"] = None
+                    s4["status"] = "PROFIT_LOCKED (STOPPED_FOR_DAY)"
+                    self.log_event(f"BOT 4 1:3 TARGET HIT: {t4['contract']} @ Rs {curr_prem:.1f} | Net: +Rs {pnl4:,.2f}")
 
-            if curr_prem >= t4["target_premium"]:
-                t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t4["exit_reason"] = "TARGET_1:3_HIT (+50%)"
-                t4["status"] = "CLOSED_PROFIT_LOCKED"
-                s4["closed_trades"].append(t4)
-                s4["active_trade"] = None
-                s4["status"] = "PROFIT_LOCKED (STOPPED_FOR_DAY)"
-                self.log_event(f"BOT 4 1:3 TARGET HIT: {t4['contract']} @ Rs {curr_prem:.1f} | Net: +Rs {pnl4:,.2f}")
+                elif curr_prem <= t4["stop_premium"]:
+                    t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t4["exit_reason"] = "STOP_LOSS (-15%)"
+                    t4["status"] = "CLOSED_STOPPED"
+                    s4["closed_trades"].append(t4)
+                    s4["active_trade"] = None
+                    s4["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
+                    self.log_event(f"BOT 4 STOP HIT: {t4['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl4:,.2f}")
 
-            elif curr_prem <= t4["stop_premium"]:
-                t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t4["exit_reason"] = "STOP_LOSS (-15%)"
-                t4["status"] = "CLOSED_STOPPED"
-                s4["closed_trades"].append(t4)
-                s4["active_trade"] = None
-                s4["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
-                self.log_event(f"BOT 4 STOP HIT: {t4['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl4:,.2f}")
-
-            elif now_time >= dtime(15, 15):
-                t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t4["exit_reason"] = "EOD_MIS_SQUAREOFF"
-                t4["status"] = "CLOSED_EOD"
-                s4["closed_trades"].append(t4)
-                s4["active_trade"] = None
-                s4["status"] = "SQUARED_OFF"
+                elif now_time >= dtime(15, 15):
+                    t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t4["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t4["status"] = "CLOSED_EOD"
+                    s4["closed_trades"].append(t4)
+                    s4["active_trade"] = None
+                    s4["status"] = "SQUARED_OFF"
 
         # ─── BOT 3: CONFLUENCE GAMMA SCALPER ───
         s3 = self.bot_states["Strategy 3: Confluence Gamma Scalper"]
@@ -379,6 +415,7 @@ class MultiBotLiveSession:
                         "current_premium": prem,
                         "qty": c3["lot_size"],
                         "status": f"OPEN_GAMMA_{opt_t}",
+                        "valuation_status": "LIVE_QUOTE",
                     }
                     s3["status"] = f"IN_POSITION (GAMMA_{opt_t})"
                     self.log_event(f"BOT 3 TRIGGERED GAMMA EXPANSION: {c3['custom_symbol']} ({c3['security_id']}) @ Rs {prem:.1f}")
@@ -387,33 +424,38 @@ class MultiBotLiveSession:
         elif s3["active_trade"]:
             t3 = s3["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t3["security_id"]) if t3.get("security_id") else None
-            if q and q.get("ltp"):
+            if not q or not q.get("ltp"):
+                logger.warning("Bot 3: Real option quote unavailable for active position. Pausing valuation.")
+                t3["valuation_status"] = "DATA_UNAVAILABLE"
+            else:
                 curr_prem = q.get("bid") or q["ltp"]
                 t3["current_premium"] = curr_prem
-            else:
-                is_ce = "CALL" in t3["contract"] or "CE" in t3.get("trading_symbol", "")
-                spot_diff = (n_last - t3["spot_entry"]) if is_ce else (t3["spot_entry"] - n_last)
-                curr_prem = max(0.50, round(t3["entry_premium"] + (spot_diff * 0.55), 2))
-                t3["current_premium"] = curr_prem
+                t3["valuation_status"] = "LIVE_QUOTE"
+                pnl3 = round((curr_prem - t3["entry_premium"]) * t3["qty"] - 45.0, 2)
+                t3["unrealized_pnl"] = pnl3
+                s3["net_pnl"] = pnl3
 
-            pnl3 = round((curr_prem - t3["entry_premium"]) * t3["qty"] - 45.0, 2)
-            t3["unrealized_pnl"] = pnl3
-            s3["net_pnl"] = pnl3
-
-            if curr_prem >= t3["target_premium"]:
-                t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t3["exit_reason"] = "GAMMA_TARGET_HIT (+35%)"
-                s3["closed_trades"].append(t3)
-                s3["active_trade"] = None
-                s3["status"] = "PROFIT_LOCKED"
-                self.log_event(f"BOT 3 GAMMA TARGET: Net Rs {pnl3:+,.2f}")
-            elif curr_prem <= t3["stop_premium"]:
-                t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t3["exit_reason"] = "GAMMA_STOP_HIT (-12%)"
-                s3["closed_trades"].append(t3)
-                s3["active_trade"] = None
-                s3["status"] = "STOPPED_OUT"
-                self.log_event(f"BOT 3 GAMMA STOP: Net Rs {pnl3:+,.2f}")
+                if curr_prem >= t3["target_premium"]:
+                    t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t3["exit_reason"] = "GAMMA_TARGET_HIT (+35%)"
+                    s3["closed_trades"].append(t3)
+                    s3["active_trade"] = None
+                    s3["status"] = "PROFIT_LOCKED"
+                    self.log_event(f"BOT 3 GAMMA TARGET: Net Rs {pnl3:+,.2f}")
+                elif curr_prem <= t3["stop_premium"]:
+                    t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t3["exit_reason"] = "GAMMA_STOP_HIT (-12%)"
+                    s3["closed_trades"].append(t3)
+                    s3["active_trade"] = None
+                    s3["status"] = "STOPPED_OUT"
+                    self.log_event(f"BOT 3 GAMMA STOP: Net Rs {pnl3:+,.2f}")
+                elif now_time >= dtime(15, 15):
+                    t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t3["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t3["status"] = "CLOSED_EOD"
+                    s3["closed_trades"].append(t3)
+                    s3["active_trade"] = None
+                    s3["status"] = "SQUARED_OFF"
 
         # ─── BOT 2: ZEN CURVATURE OVERNIGHT ───
         s2 = self.bot_states["Strategy 2: Zen Curvature Overnight"]
@@ -427,28 +469,52 @@ class MultiBotLiveSession:
             else:
                 s_p = short_c.get("bid") or short_c["ltp"]
                 l_p = long_c.get("ask") or long_c["ltp"]
-                net_credit = max(5.0, round(s_p - l_p, 2))
-                s2["active_trade"] = {
-                    "id": f"ZEN-OVERNIGHT-{int(time.time() % 10000)}",
-                    "contract": f"{short_c['custom_symbol']} / {long_c['custom_symbol']}",
-                    "short_security_id": short_c["security_id"],
-                    "long_security_id": long_c["security_id"],
-                    "entry_time": datetime.now().strftime("%H:%M:%S"),
-                    "spot_entry": n_last,
-                    "net_credit": net_credit,
-                    "qty": short_c["lot_size"],
-                    "status": "OPEN_OVERNIGHT",
-                    "unrealized_pnl": 0.0,
-                }
-                s2["status"] = "IN_POSITION (OVERNIGHT_HOLD)"
-                self.log_event(
-                    f"BOT 2 DEPLOYED OVERNIGHT SPREAD: {s2['active_trade']['contract']} (Credit: Rs {net_credit:.1f} pts)"
-                )
+                net_credit = round(s_p - l_p, 2)
+                if net_credit <= 0:
+                    logger.warning(f"Bot 2: Overnight call spread net credit <= 0 ({net_credit}) -> NO TRADE.")
+                else:
+                    s2["active_trade"] = {
+                        "id": f"ZEN-OVERNIGHT-{int(time.time() % 10000)}",
+                        "contract": f"{short_c['custom_symbol']} / {long_c['custom_symbol']}",
+                        "short_security_id": short_c["security_id"],
+                        "long_security_id": long_c["security_id"],
+                        "entry_time": datetime.now().strftime("%H:%M:%S"),
+                        "spot_entry": n_last,
+                        "net_credit": net_credit,
+                        "qty": short_c["lot_size"],
+                        "status": "OPEN_OVERNIGHT",
+                        "unrealized_pnl": 0.0,
+                        "valuation_status": "LIVE_QUOTE",
+                    }
+                    s2["status"] = "IN_POSITION (OVERNIGHT_HOLD)"
+                    self.log_event(
+                        f"BOT 2 DEPLOYED OVERNIGHT SPREAD: {s2['active_trade']['contract']} (Credit: Rs {net_credit:.1f} pts)"
+                    )
+        elif s2["active_trade"]:
+            t2 = s2["active_trade"]
+            s_sec = t2.get("short_security_id")
+            l_sec = t2.get("long_security_id")
+            s_q = DhanContractResolver.fetch_option_quote(s_sec) if s_sec else None
+            l_q = DhanContractResolver.fetch_option_quote(l_sec) if l_sec else None
+            if not s_q or not s_q.get("ltp") or not l_q or not l_q.get("ltp"):
+                logger.warning("Bot 2: Real option quotes unavailable for active spread. Pausing valuation.")
+                t2["valuation_status"] = "DATA_UNAVAILABLE"
+            else:
+                curr_short = s_q.get("ask") or s_q["ltp"]
+                curr_long = l_q.get("bid") or l_q["ltp"]
+                curr_debit = round(curr_short - curr_long, 2)
+                t2["current_debit"] = curr_debit
+                t2["valuation_status"] = "LIVE_QUOTE"
+                pts_pnl = t2["net_credit"] - curr_debit
+                pnl2 = round(pts_pnl * t2["qty"] - 80.0, 2)
+                t2["unrealized_pnl"] = pnl2
+                s2["net_pnl"] = pnl2
 
         # ─── BOT 6: MICRO MOMENTUM SNIPER BUYER (1 LOT OPTION) ───
         s6 = self.bot_states["Strategy 6: Micro Momentum Sniper"]
         if s6["active_trade"] is None and not s6["closed_trades"]:
             vix_val = mkt.get("vix")
+            n_open = mkt["nifty"].get("open", n_last)
             if vix_val is not None and n_last < n_open - 30.0 and vix_val <= 18.5:
                 c6 = DhanContractResolver.resolve_option_contract(n_last, vix_val, "PE", strike_offset_steps=0)
                 if not c6 or not c6.get("is_executable") or not c6.get("ltp"):
@@ -471,32 +537,45 @@ class MultiBotLiveSession:
                         "current_premium": prem,
                         "qty": c6["lot_size"],
                         "status": "OPEN_SNIPER",
+                        "valuation_status": "LIVE_QUOTE",
                     }
                     s6["status"] = "IN_POSITION (SNIPER_PE)"
                     self.log_event(f"BOT 6 EXECUTED SNIPER PE: {c6['custom_symbol']} ({c6['security_id']}) @ Rs {prem:.1f}")
         elif s6["active_trade"]:
             t6 = s6["active_trade"]
-            spot_diff = t6["spot_entry"] - n_last  # PE gains as spot falls
-            curr_prem = max(0.50, round(t6["entry_premium"] + (spot_diff * 0.55), 2))
-            t6["current_premium"] = curr_prem
-            pnl6 = round((curr_prem - t6["entry_premium"]) * t6["qty"] - 65.0, 2)
-            t6["unrealized_pnl"] = pnl6
-            s6["net_pnl"] = pnl6
+            q = DhanContractResolver.fetch_option_quote(t6["security_id"]) if t6.get("security_id") else None
+            if not q or not q.get("ltp"):
+                logger.warning("Bot 6: Real option quote unavailable for active position. Pausing valuation.")
+                t6["valuation_status"] = "DATA_UNAVAILABLE"
+            else:
+                curr_prem = q.get("bid") or q["ltp"]
+                t6["current_premium"] = curr_prem
+                t6["valuation_status"] = "LIVE_QUOTE"
+                pnl6 = round((curr_prem - t6["entry_premium"]) * t6["qty"] - 65.0, 2)
+                t6["unrealized_pnl"] = pnl6
+                s6["net_pnl"] = pnl6
 
-            if curr_prem >= t6["target_premium"]:
-                t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t6["exit_reason"] = "TARGET_1:3_HIT (+45%)"
-                s6["closed_trades"].append(t6)
-                s6["active_trade"] = None
-                s6["status"] = "PROFIT_LOCKED_WAITING_NEXT_DAY"
-                self.log_event(f"BOT 6 TARGET REACHED: Realized Net Profit Rs {pnl6:+,.2f}")
-            elif curr_prem <= t6["stop_premium"]:
-                t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
-                t6["exit_reason"] = "STOP_LOSS_HIT (-15%)"
-                s6["closed_trades"].append(t6)
-                s6["active_trade"] = None
-                s6["status"] = "STOPPED_OUT_PRESERVING_CAPITAL"
-                self.log_event(f"BOT 6 STOP LOSS HIT: Preserved Capital, Net Loss Rs {pnl6:+,.2f}")
+                if curr_prem >= t6["target_premium"]:
+                    t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t6["exit_reason"] = "TARGET_1:3_HIT (+45%)"
+                    s6["closed_trades"].append(t6)
+                    s6["active_trade"] = None
+                    s6["status"] = "PROFIT_LOCKED_WAITING_NEXT_DAY"
+                    self.log_event(f"BOT 6 TARGET REACHED: Realized Net Profit Rs {pnl6:+,.2f}")
+                elif curr_prem <= t6["stop_premium"]:
+                    t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t6["exit_reason"] = "STOP_LOSS_HIT (-15%)"
+                    s6["closed_trades"].append(t6)
+                    s6["active_trade"] = None
+                    s6["status"] = "STOPPED_OUT_PRESERVING_CAPITAL"
+                    self.log_event(f"BOT 6 STOP LOSS HIT: Preserved Capital, Net Loss Rs {pnl6:+,.2f}")
+                elif now_time >= dtime(15, 15):
+                    t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t6["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t6["status"] = "CLOSED_EOD"
+                    s6["closed_trades"].append(t6)
+                    s6["active_trade"] = None
+                    s6["status"] = "SQUARED_OFF"
 
     def print_multi_bot_status(self, mkt: Optional[dict]):
         now_str = datetime.now().strftime("%H:%M:%S")

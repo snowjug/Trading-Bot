@@ -89,7 +89,7 @@ class DhanScripMaster:
             # Extract clean underlying identifier (e.g. NIFTY, BANKNIFTY)
             full_df["UNDERLYING"] = full_df["SEM_CUSTOM_SYMBOL"].str.split().str[0].str.upper()
             full_df["SEM_STRIKE_PRICE"] = pd.to_numeric(full_df["SEM_STRIKE_PRICE"], errors="coerce")
-            full_df["SEM_LOT_UNITS"] = pd.to_numeric(full_df["SEM_LOT_UNITS"], errors="coerce").fillna(25).astype(int)
+            full_df["SEM_LOT_UNITS"] = pd.to_numeric(full_df["SEM_LOT_UNITS"], errors="coerce")
             full_df["SEM_SMST_SECURITY_ID"] = full_df["SEM_SMST_SECURITY_ID"].astype(str)
 
             # Standardize expiry date column
@@ -124,7 +124,7 @@ class DhanScripMaster:
             df = pd.read_csv(cls.CACHE_FILE, dtype={"SEM_SMST_SECURITY_ID": str})
             df["EXPIRY_DATE_CLEAN"] = pd.to_datetime(df["SEM_EXPIRY_DATE"], errors="coerce").dt.date
             df["SEM_STRIKE_PRICE"] = pd.to_numeric(df["SEM_STRIKE_PRICE"], errors="coerce")
-            df["SEM_LOT_UNITS"] = pd.to_numeric(df["SEM_LOT_UNITS"], errors="coerce").fillna(25).astype(int)
+            df["SEM_LOT_UNITS"] = pd.to_numeric(df["SEM_LOT_UNITS"], errors="coerce")
             cls._df_cache = df
             return cls._df_cache
         except Exception as e:
@@ -206,10 +206,42 @@ class DhanScripMaster:
 
         contract_row = exp_contracts[exp_contracts["SEM_STRIKE_PRICE"] == closest_strike].iloc[0]
 
-        sec_id = str(contract_row["SEM_SMST_SECURITY_ID"])
-        trading_symbol = str(contract_row["SEM_TRADING_SYMBOL"])
-        custom_symbol = str(contract_row["SEM_CUSTOM_SYMBOL"])
-        lot_size = int(contract_row["SEM_LOT_UNITS"])
+        # 1. Validate authentic numeric security ID
+        sec_id = str(contract_row.get("SEM_SMST_SECURITY_ID", "")).strip()
+        if not sec_id or not sec_id.isdigit() or int(sec_id) <= 0:
+            logger.warning(f"Malformed or non-numeric securityId '{sec_id}' -> contract not tradable.")
+            return None
+
+        # 2. Validate lot size (strictly reject missing or non-positive lot sizes -> NO TRADE)
+        raw_lot = contract_row.get("SEM_LOT_UNITS")
+        if pd.isna(raw_lot) or raw_lot is None:
+            logger.warning(f"Missing lot size for contract {sec_id} -> NO TRADE.")
+            return None
+        try:
+            lot_size = int(raw_lot)
+            if lot_size <= 0:
+                logger.warning(f"Invalid non-positive lot size {lot_size} -> NO TRADE.")
+                return None
+        except (ValueError, TypeError):
+            logger.warning(f"Corrupt lot size '{raw_lot}' -> NO TRADE.")
+            return None
+
+        # 3. Validate trading symbol and custom symbol
+        trading_symbol = str(contract_row.get("SEM_TRADING_SYMBOL", "")).strip()
+        custom_symbol = str(contract_row.get("SEM_CUSTOM_SYMBOL", "")).strip()
+        if not trading_symbol or trading_symbol == "nan" or not custom_symbol or custom_symbol == "nan":
+            logger.warning(f"Missing symbol metadata for securityId {sec_id} -> contract not tradable.")
+            return None
+
+        # 4. Validate strike and expiry
+        if closest_strike <= 0:
+            logger.warning(f"Non-positive strike {closest_strike} -> contract not tradable.")
+            return None
+
+        if selected_expiry < ref_date:
+            logger.warning(f"Expired contract date {selected_expiry} < {ref_date} -> contract not tradable.")
+            return None
+
         expiry_str = selected_expiry.strftime("%Y-%m-%d")
         dte_days = max(0, (selected_expiry - ref_date).days)
 

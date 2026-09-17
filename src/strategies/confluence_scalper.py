@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 from src.strategies.base import Strategy
 from src.regime.detector import RegimeState
-from src.deriv.options_engine import BlackScholesEngine
 from src.backtesting.cost_model import IndianCostModel, OrderType
 from src.backtesting.intrabar_simulator import IntrabarSimulator, IntrabarMode
 from src.utils.logging import setup_logging
