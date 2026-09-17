@@ -993,5 +993,77 @@ def test_data_unavailable_authoritative_payload_cannot_expose_numerical_unrealiz
         assert payload["bot_states"]["Strategy 1: Apex VRP Engine"]["net_pnl"] == 0.0
 
 
+# ─── 30. FINAL SETTLEMENT RECONCILES STRICTLY TO CLOSED TRADE LEDGER ───
+def test_api_status_final_settlement_reconciles_strictly_to_closed_trade_ledger(tmp_path):
+    """
+    Verify top-level summary derived strictly from authoritative closed trades:
+    total_realized_gross = sum(closed_trade.gross_pnl)
+    total_statutory_friction = sum(closed_trade.statutory_friction)
+    total_net_realized_pnl = sum(closed_trade.net_pnl)
+
+    Must NOT include DATA_UNAVAILABLE open-position P&L.
+    Must NOT include unrealized P&L in realized totals.
+    For the current session trades (GAMMA-8585, VELOCITY-8585, SNIPER-LIVE-8585):
+    Gross: 5674.50, Costs: 155.00, Net: 5519.50.
+    """
+    import json
+    from starlette.testclient import TestClient
+    from src.monitoring.dashboard import app
+
+    state_path = tmp_path / "live_paper_session.json"
+    session = MultiBotLiveSession(state_file=str(state_path))
+
+    # Bot with an open trade under DATA_UNAVAILABLE (must NOT be counted in realized totals)
+    s1 = session.bot_states["Strategy 1: Apex VRP Engine"]
+    s1["active_trade"] = {
+        "id": "APEX-OPEN",
+        "valuation_status": "DATA_UNAVAILABLE",
+        "gross_pnl": None,
+        "net_pnl": None,
+        "unrealized_pnl": None,
+    }
+
+    # Populate the 3 closed trades from today's session
+    s3 = session.bot_states["Strategy 3: Confluence Gamma Scalper"]
+    s3["closed_trades"] = [
+        {"id": "GAMMA-8585", "gross_pnl": -1189.50, "statutory_friction": 45.00, "net_pnl": -1234.50}
+    ]
+    s3["net_pnl"] = -1234.50
+
+    s5 = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
+    s5["closed_trades"] = [
+        {"id": "VELOCITY-8585", "gross_pnl": 2863.25, "statutory_friction": 45.00, "net_pnl": 2818.25}
+    ]
+    s5["net_pnl"] = 2818.25
+
+    s6 = session.bot_states["Strategy 6: Micro Momentum Sniper"]
+    s6["closed_trades"] = [
+        {"id": "SNIPER-LIVE-8585", "gross_pnl": 4000.75, "statutory_friction": 65.00, "net_pnl": 3935.75}
+    ]
+    s6["net_pnl"] = 3935.75
+
+    session.save_session()
+
+    # Verify saved session has correct final_settlement
+    saved_data = json.loads(state_path.read_text(encoding="utf-8"))
+    settlement = saved_data.get("final_settlement", {})
+    assert settlement["total_realized_gross"] == 5674.50
+    assert settlement["total_statutory_friction"] == 155.00
+    assert settlement["total_net_realized_pnl"] == 5519.50
+    assert settlement["total_closed_trades"] == 3
+
+    # Verify /api/status payload delivers reconciled settlement
+    with patch("src.monitoring.dashboard.Path", return_value=state_path):
+        client = TestClient(app)
+        resp = client.get("/api/status")
+        assert resp.status_code == 200
+        payload = resp.json()
+        api_settlement = payload.get("final_settlement", {})
+        assert api_settlement["total_realized_gross"] == 5674.50
+        assert api_settlement["total_statutory_friction"] == 155.00
+        assert api_settlement["total_net_realized_pnl"] == 5519.50
+        assert api_settlement["total_closed_trades"] == 3
+
+
 
 

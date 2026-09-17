@@ -132,6 +132,7 @@ class MultiBotLiveSession:
                 logger.warning(f"Could not load previous session: {e}")
 
     def save_session(self):
+        all_closed = []
         for b in self.bot_states.values():
             act = b.get("active_trade")
             if act and act.get("valuation_status") == "DATA_UNAVAILABLE":
@@ -139,6 +140,14 @@ class MultiBotLiveSession:
                 act["gross_pnl"] = None
                 act["net_pnl"] = None
                 b["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in b.get("closed_trades", [])), 2)
+            all_closed.extend(b.get("closed_trades", []))
+
+        final_settlement = {
+            "total_realized_gross": round(sum(t.get("gross_pnl", 0.0) for t in all_closed), 2),
+            "total_statutory_friction": round(sum(t.get("statutory_friction", t.get("costs", 0.0)) for t in all_closed), 2),
+            "total_net_realized_pnl": round(sum(t.get("net_pnl", 0.0) for t in all_closed), 2),
+            "total_closed_trades": len(all_closed),
+        }
 
         data = {
             "last_updated": datetime.now().isoformat(),
@@ -147,6 +156,7 @@ class MultiBotLiveSession:
             "session_log": self.session_log[-120:],
             "signals": self.signals[-150:],
             "rejected_signals": self.rejected_signals[-150:],
+            "final_settlement": final_settlement,
         }
         with open(self.session_file, "w") as f:
             json.dump(data, f, indent=2, default=str)

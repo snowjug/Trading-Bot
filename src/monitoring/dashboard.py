@@ -293,8 +293,13 @@ async function updateDashboard() {
     netEl.innerText = (netPnl >= 0 ? '+' : '') + '₹' + fmt(netPnl);
     netEl.className = 'stat-value mono ' + (netPnl >= 0 ? 'green' : 'red');
 
-    document.getElementById('gross-pnl-val').innerText = '₹' + fmt(grossPnl);
-    document.getElementById('charges-val').innerText = '-₹' + fmt(friction);
+    const grossEl = document.getElementById('gross-pnl-val');
+    grossEl.innerText = (grossPnl >= 0 ? '+' : '') + '₹' + fmt(grossPnl);
+    grossEl.className = 'stat-value mono ' + (grossPnl >= 0 ? 'green' : 'red');
+
+    const chargesEl = document.getElementById('charges-val');
+    chargesEl.innerText = (friction > 0 ? '-' : '') + '₹' + fmt(friction);
+    chargesEl.className = 'stat-value mono red';
 
     // Dynamic Strategy Count
     const botStates = data.bot_states || {};
@@ -444,17 +449,25 @@ async def api_status():
             with open(session_file, "r") as f:
                 data = json.load(f)
 
-            # Authoritative State/API Payload Invariant:
-            # If valuation_status == DATA_UNAVAILABLE: unrealized_pnl, gross_pnl, net_pnl MUST be None (null)
+            all_closed = []
             for b in data.get("bot_states", {}).values():
                 act = b.get("active_trade")
                 if act and act.get("valuation_status") == "DATA_UNAVAILABLE":
                     act["unrealized_pnl"] = None
                     act["gross_pnl"] = None
                     act["net_pnl"] = None
-                closed_pnl = sum(c.get("net_pnl", 0.0) for c in b.get("closed_trades", []))
+                closed = b.get("closed_trades", [])
+                all_closed.extend(closed)
+                closed_pnl = sum(c.get("net_pnl", 0.0) for c in closed)
                 live_unrealized = act.get("unrealized_pnl") if (act and act.get("valuation_status") != "DATA_UNAVAILABLE") else None
                 b["net_pnl"] = round(closed_pnl + (live_unrealized or 0.0), 2)
+
+            data["final_settlement"] = {
+                "total_realized_gross": round(sum(t.get("gross_pnl", 0.0) for t in all_closed), 2),
+                "total_statutory_friction": round(sum(t.get("statutory_friction", t.get("costs", 0.0)) for t in all_closed), 2),
+                "total_net_realized_pnl": round(sum(t.get("net_pnl", 0.0) for t in all_closed), 2),
+                "total_closed_trades": len(all_closed),
+            }
 
             return data
         except Exception as e:
