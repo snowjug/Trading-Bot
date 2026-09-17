@@ -28,7 +28,7 @@ if hasattr(sys.stdout, "reconfigure"):
 from src.config import Config
 from src.utils.logging import setup_logging
 from src.execution.paper_broker import PaperBroker
-from src.execution.dhan_contract_resolver import DhanContractResolver
+from src.execution.dhan_contract_resolver import DhanContractResolver, is_quote_fresh
 
 logger = setup_logging("execution.live_session")
 
@@ -158,11 +158,19 @@ class MultiBotLiveSession:
             put_k = round((n_last - 300) / 50.0) * 50.0
             c_res = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE", strike=call_k)
             p_res = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "PE", strike=put_k)
-            if not c_res or not p_res or not c_res.get("is_executable") or not p_res.get("is_executable"):
-                logger.warning("Bot 1: Real option quotes unavailable for Strangle strikes -> NO TRADE.")
+            c_bid = c_res.get("bid") if c_res else None
+            p_bid = p_res.get("bid") if p_res else None
+            if (
+                not c_res or not p_res
+                or c_bid is None or c_bid <= 0
+                or p_bid is None or p_bid <= 0
+                or not is_quote_fresh(c_res.get("quote_timestamp"))
+                or not is_quote_fresh(p_res.get("quote_timestamp"))
+            ):
+                logger.warning("Bot 1: Real executable Bid quotes unavailable for Strangle sell entry -> NO TRADE.")
             else:
-                c_prem = c_res.get("bid") or c_res["ltp"]
-                p_prem = p_res.get("bid") or p_res["ltp"]
+                c_prem = float(c_bid)
+                p_prem = float(p_bid)
                 net_credit = round(c_prem + p_prem, 2)
                 s1["active_trade"] = {
                     "id": f"APEX-THETA-{int(time.time() % 10000)}",
@@ -186,15 +194,25 @@ class MultiBotLiveSession:
             p_sec = t1.get("put_security_id")
             c_q = DhanContractResolver.fetch_option_quote(c_sec) if c_sec else None
             p_q = DhanContractResolver.fetch_option_quote(p_sec) if p_sec else None
-            if not c_q or not c_q.get("ltp") or not p_q or not p_q.get("ltp"):
-                logger.warning("Bot 1: Real option quotes unavailable for active strangle. Pausing valuation.")
+            c_ask = c_q.get("ask") if c_q else None
+            p_ask = p_q.get("ask") if p_q else None
+            if (
+                not c_q or not p_q
+                or c_ask is None or c_ask <= 0
+                or p_ask is None or p_ask <= 0
+                or not is_quote_fresh(c_q.get("timestamp"))
+                or not is_quote_fresh(p_q.get("timestamp"))
+            ):
+                logger.warning("Bot 1: Executable Ask quotes unavailable for active short strangle. Pausing valuation.")
                 t1["valuation_status"] = "DATA_UNAVAILABLE"
             else:
-                c_exit = c_q.get("ask") or c_q["ltp"]
-                p_exit = p_q.get("ask") or p_q["ltp"]
+                c_exit = float(c_ask)
+                p_exit = float(p_ask)
                 curr_val = round(c_exit + p_exit, 2)
                 t1["current_val"] = curr_val
                 t1["valuation_status"] = "LIVE_QUOTE"
+                t1["info_call_ltp"] = c_q.get("ltp")
+                t1["info_put_ltp"] = p_q.get("ltp")
                 pts_profit = t1["net_credit_collected"] - curr_val
                 pnl1 = round((pts_profit * t1["qty"]) - 80.0, 2)
                 t1["unrealized_pnl"] = pnl1
@@ -230,10 +248,11 @@ class MultiBotLiveSession:
             n_open = mkt["nifty"].get("open", n_last)
             if n_last > n_open + 15.0:
                 c5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE")
-                if not c5 or not c5.get("is_executable") or not c5.get("ltp"):
-                    logger.warning("Bot 5: Real option quote unavailable for CE breakout -> NO TRADE.")
+                c5_ask = c5.get("ask") if c5 else None
+                if not c5 or c5_ask is None or c5_ask <= 0 or not is_quote_fresh(c5.get("quote_timestamp")):
+                    logger.warning("Bot 5: Executable Ask quote unavailable for CE breakout -> NO TRADE.")
                 else:
-                    prem = c5.get("ask") or c5["ltp"]
+                    prem = float(c5_ask)
                     s5["active_trade"] = {
                         "id": f"VELOCITY-{int(time.time() % 10000)}",
                         "contract": c5["custom_symbol"],
@@ -254,10 +273,11 @@ class MultiBotLiveSession:
                     self.log_event(f"BOT 5 EXECUTED CE ORB: {c5['custom_symbol']} ({c5['security_id']}) @ Rs {prem:.1f}")
             elif n_last < n_open - 15.0:
                 p5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "PE")
-                if not p5 or not p5.get("is_executable") or not p5.get("ltp"):
-                    logger.warning("Bot 5: Real option quote unavailable for PE breakdown -> NO TRADE.")
+                p5_ask = p5.get("ask") if p5 else None
+                if not p5 or p5_ask is None or p5_ask <= 0 or not is_quote_fresh(p5.get("quote_timestamp")):
+                    logger.warning("Bot 5: Executable Ask quote unavailable for PE breakdown -> NO TRADE.")
                 else:
-                    prem = p5.get("ask") or p5["ltp"]
+                    prem = float(p5_ask)
                     s5["active_trade"] = {
                         "id": f"VELOCITY-{int(time.time() % 10000)}",
                         "contract": p5["custom_symbol"],
@@ -280,13 +300,15 @@ class MultiBotLiveSession:
         elif s5["active_trade"]:
             t5 = s5["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t5["security_id"]) if t5.get("security_id") else None
-            if not q or not q.get("ltp"):
-                logger.warning("Bot 5: Real option quote unavailable for active position. Pausing valuation.")
+            bid = q.get("bid") if q else None
+            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
+                logger.warning("Bot 5: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t5["valuation_status"] = "DATA_UNAVAILABLE"
             else:
-                curr_prem = q.get("bid") or q["ltp"]
+                curr_prem = float(bid)
                 t5["current_premium"] = curr_prem
                 t5["valuation_status"] = "LIVE_QUOTE"
+                t5["info_ltp"] = q.get("ltp")
                 pnl5 = round((curr_prem - t5["entry_premium"]) * t5["qty"] - 45.0, 2)
                 t5["unrealized_pnl"] = pnl5
                 s5["net_pnl"] = pnl5
@@ -325,10 +347,11 @@ class MultiBotLiveSession:
             b_open = mkt["bank"].get("open", b_last)
             if n_last > n_open + 10.0 and b_last >= b_open:
                 c4 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE")
-                if not c4 or not c4.get("is_executable") or not c4.get("ltp"):
-                    logger.warning("Bot 4: Real option quote unavailable for Golden Pullback -> NO TRADE.")
+                c4_ask = c4.get("ask") if c4 else None
+                if not c4 or c4_ask is None or c4_ask <= 0 or not is_quote_fresh(c4.get("quote_timestamp")):
+                    logger.warning("Bot 4: Executable Ask quote unavailable for Golden Pullback -> NO TRADE.")
                 else:
-                    prem = c4.get("ask") or c4["ltp"]
+                    prem = float(c4_ask)
                     s4["active_trade"] = {
                         "id": f"GOLDEN-{int(time.time() % 10000)}",
                         "contract": f"{c4['custom_symbol']} (1:3 Runner)",
@@ -353,13 +376,15 @@ class MultiBotLiveSession:
         elif s4["active_trade"]:
             t4 = s4["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t4["security_id"]) if t4.get("security_id") else None
-            if not q or not q.get("ltp"):
-                logger.warning("Bot 4: Real option quote unavailable for active position. Pausing valuation.")
+            bid = q.get("bid") if q else None
+            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
+                logger.warning("Bot 4: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t4["valuation_status"] = "DATA_UNAVAILABLE"
             else:
-                curr_prem = q.get("bid") or q["ltp"]
+                curr_prem = float(bid)
                 t4["current_premium"] = curr_prem
                 t4["valuation_status"] = "LIVE_QUOTE"
+                t4["info_ltp"] = q.get("ltp")
                 pnl4 = round((curr_prem - t4["entry_premium"]) * t4["qty"] - 45.0, 2)
                 t4["unrealized_pnl"] = pnl4
                 s4["net_pnl"] = pnl4
@@ -397,10 +422,11 @@ class MultiBotLiveSession:
             if abs(n_last - n_open) >= 35.0:
                 opt_t = "CE" if n_last > n_open else "PE"
                 c3 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), opt_t)
-                if not c3 or not c3.get("is_executable") or not c3.get("ltp"):
-                    logger.warning("Bot 3: Real option quote unavailable for Gamma Scalp -> NO TRADE.")
+                c3_ask = c3.get("ask") if c3 else None
+                if not c3 or c3_ask is None or c3_ask <= 0 or not is_quote_fresh(c3.get("quote_timestamp")):
+                    logger.warning("Bot 3: Executable Ask quote unavailable for Gamma Scalp -> NO TRADE.")
                 else:
-                    prem = c3.get("ask") or c3["ltp"]
+                    prem = float(c3_ask)
                     s3["active_trade"] = {
                         "id": f"GAMMA-{int(time.time() % 10000)}",
                         "contract": f"{c3['custom_symbol']} (Gamma Scalp)",
@@ -424,13 +450,15 @@ class MultiBotLiveSession:
         elif s3["active_trade"]:
             t3 = s3["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t3["security_id"]) if t3.get("security_id") else None
-            if not q or not q.get("ltp"):
-                logger.warning("Bot 3: Real option quote unavailable for active position. Pausing valuation.")
+            bid = q.get("bid") if q else None
+            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
+                logger.warning("Bot 3: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t3["valuation_status"] = "DATA_UNAVAILABLE"
             else:
-                curr_prem = q.get("bid") or q["ltp"]
+                curr_prem = float(bid)
                 t3["current_premium"] = curr_prem
                 t3["valuation_status"] = "LIVE_QUOTE"
+                t3["info_ltp"] = q.get("ltp")
                 pnl3 = round((curr_prem - t3["entry_premium"]) * t3["qty"] - 45.0, 2)
                 t3["unrealized_pnl"] = pnl3
                 s3["net_pnl"] = pnl3
@@ -464,11 +492,19 @@ class MultiBotLiveSession:
             long_k = short_k + 150
             short_c = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE", strike=short_k)
             long_c = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE", strike=long_k)
-            if not short_c or not long_c or not short_c.get("is_executable") or not long_c.get("is_executable"):
-                logger.warning("Bot 2: Real quotes unavailable for overnight call spread -> NO TRADE.")
+            short_bid = short_c.get("bid") if short_c else None
+            long_ask = long_c.get("ask") if long_c else None
+            if (
+                not short_c or not long_c
+                or short_bid is None or short_bid <= 0
+                or long_ask is None or long_ask <= 0
+                or not is_quote_fresh(short_c.get("quote_timestamp"))
+                or not is_quote_fresh(long_c.get("quote_timestamp"))
+            ):
+                logger.warning("Bot 2: Executable quotes (Bid on short, Ask on long) unavailable for overnight spread -> NO TRADE.")
             else:
-                s_p = short_c.get("bid") or short_c["ltp"]
-                l_p = long_c.get("ask") or long_c["ltp"]
+                s_p = float(short_bid)
+                l_p = float(long_ask)
                 net_credit = round(s_p - l_p, 2)
                 if net_credit <= 0:
                     logger.warning(f"Bot 2: Overnight call spread net credit <= 0 ({net_credit}) -> NO TRADE.")
@@ -496,15 +532,25 @@ class MultiBotLiveSession:
             l_sec = t2.get("long_security_id")
             s_q = DhanContractResolver.fetch_option_quote(s_sec) if s_sec else None
             l_q = DhanContractResolver.fetch_option_quote(l_sec) if l_sec else None
-            if not s_q or not s_q.get("ltp") or not l_q or not l_q.get("ltp"):
-                logger.warning("Bot 2: Real option quotes unavailable for active spread. Pausing valuation.")
+            s_ask = s_q.get("ask") if s_q else None
+            l_bid = l_q.get("bid") if l_q else None
+            if (
+                not s_q or not l_q
+                or s_ask is None or s_ask <= 0
+                or l_bid is None or l_bid <= 0
+                or not is_quote_fresh(s_q.get("timestamp"))
+                or not is_quote_fresh(l_q.get("timestamp"))
+            ):
+                logger.warning("Bot 2: Executable quotes (Ask on short, Bid on long) unavailable for spread valuation. Pausing valuation.")
                 t2["valuation_status"] = "DATA_UNAVAILABLE"
             else:
-                curr_short = s_q.get("ask") or s_q["ltp"]
-                curr_long = l_q.get("bid") or l_q["ltp"]
+                curr_short = float(s_ask)
+                curr_long = float(l_bid)
                 curr_debit = round(curr_short - curr_long, 2)
                 t2["current_debit"] = curr_debit
                 t2["valuation_status"] = "LIVE_QUOTE"
+                t2["info_short_ltp"] = s_q.get("ltp")
+                t2["info_long_ltp"] = l_q.get("ltp")
                 pts_pnl = t2["net_credit"] - curr_debit
                 pnl2 = round(pts_pnl * t2["qty"] - 80.0, 2)
                 t2["unrealized_pnl"] = pnl2
@@ -517,10 +563,11 @@ class MultiBotLiveSession:
             n_open = mkt["nifty"].get("open", n_last)
             if vix_val is not None and n_last < n_open - 30.0 and vix_val <= 18.5:
                 c6 = DhanContractResolver.resolve_option_contract(n_last, vix_val, "PE", strike_offset_steps=0)
-                if not c6 or not c6.get("is_executable") or not c6.get("ltp"):
-                    logger.warning("Bot 6: Real option quote unavailable for sniper breakdown -> NO TRADE.")
+                c6_ask = c6.get("ask") if c6 else None
+                if not c6 or c6_ask is None or c6_ask <= 0 or not is_quote_fresh(c6.get("quote_timestamp")):
+                    logger.warning("Bot 6: Executable Ask quote unavailable for sniper breakdown -> NO TRADE.")
                 else:
-                    prem = c6.get("ask") or c6["ltp"]
+                    prem = float(c6_ask)
                     target_p = round(prem * 1.45, 2)
                     stop_p = round(prem * 0.85, 2)
                     s6["active_trade"] = {
@@ -544,13 +591,15 @@ class MultiBotLiveSession:
         elif s6["active_trade"]:
             t6 = s6["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t6["security_id"]) if t6.get("security_id") else None
-            if not q or not q.get("ltp"):
-                logger.warning("Bot 6: Real option quote unavailable for active position. Pausing valuation.")
+            bid = q.get("bid") if q else None
+            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
+                logger.warning("Bot 6: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t6["valuation_status"] = "DATA_UNAVAILABLE"
             else:
-                curr_prem = q.get("bid") or q["ltp"]
+                curr_prem = float(bid)
                 t6["current_premium"] = curr_prem
                 t6["valuation_status"] = "LIVE_QUOTE"
+                t6["info_ltp"] = q.get("ltp")
                 pnl6 = round((curr_prem - t6["entry_premium"]) * t6["qty"] - 65.0, 2)
                 t6["unrealized_pnl"] = pnl6
                 s6["net_pnl"] = pnl6

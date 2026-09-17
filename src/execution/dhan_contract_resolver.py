@@ -290,6 +290,11 @@ class DhanContractResolver:
         real_ltp = quote["ltp"] if quote else None
         real_bid = quote["bid"] if quote else None
         real_ask = quote["ask"] if quote else None
+        quote_ts = quote["timestamp"] if quote else None
+        fresh = is_quote_fresh(quote_ts) if quote_ts else False
+
+        is_buy_exec = bool(quote is not None and real_ask is not None and real_ask > 0 and fresh)
+        is_sell_exec = bool(quote is not None and real_bid is not None and real_bid > 0 and fresh)
 
         return {
             "security_id": sec_id,
@@ -305,16 +310,72 @@ class DhanContractResolver:
             "is_tradable": contract_meta["is_tradable"],
             # Real Market Quote Data
             "market_quote": quote,
-            "ltp": real_ltp,
-            "bid": real_bid,
-            "ask": real_ask,
-            "quote_timestamp": quote["timestamp"] if quote else None,
-            "is_executable": (quote is not None and real_ltp is not None and real_ltp > 0),
+            "ltp": real_ltp,  # Informational only — never an execution price
+            "bid": real_bid,  # Executable sell/exit price
+            "ask": real_ask,  # Executable buy/entry price
+            "quote_timestamp": quote_ts,
+            "is_fresh": fresh,
+            "is_buy_executable": is_buy_exec,
+            "is_sell_executable": is_sell_exec,
+            "is_executable": is_buy_exec or is_sell_exec,
             # Analytical Greeks (Analytical only - never used as paper execution price)
             "analytical_theoretical_premium": round(max(0.05, theoretical_prem), 2),
             "analytical_delta": round(delta, 3),
             "analytical_vix": vix,
         }
+
+
+def is_quote_fresh(timestamp: Any, max_age_seconds: Optional[int] = None) -> bool:
+    """
+    Validates whether a quote timestamp is fresh within the configured max age.
+    Rejects missing, empty, or excessively old quotes.
+    """
+    if timestamp is None:
+        return False
+
+    from src.config import Config
+    max_age = max_age_seconds if max_age_seconds is not None else Config.MAX_QUOTE_AGE_SECONDS
+
+    now = datetime.now()
+    quote_dt = None
+
+    if isinstance(timestamp, (int, float)):
+        quote_dt = datetime.fromtimestamp(timestamp)
+    elif isinstance(timestamp, datetime):
+        quote_dt = timestamp
+    elif isinstance(timestamp, str):
+        ts_clean = timestamp.strip()
+        if not ts_clean:
+            return False
+        try:
+            quote_dt = datetime.fromisoformat(ts_clean)
+        except Exception:
+            for fmt in (
+                "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%dT%H:%M:%S",
+                "%Y-%m-%d %H:%M:%S.%f",
+                "%Y-%m-%dT%H:%M:%S.%f",
+            ):
+                try:
+                    quote_dt = datetime.strptime(ts_clean, fmt)
+                    break
+                except Exception:
+                    pass
+
+    if quote_dt is None:
+        return False
+
+    # Normalize timezone awareness
+    if quote_dt.tzinfo is not None and now.tzinfo is None:
+        quote_dt = quote_dt.replace(tzinfo=None)
+    elif quote_dt.tzinfo is None and now.tzinfo is not None:
+        now = now.replace(tzinfo=None)
+
+    age_sec = (now - quote_dt).total_seconds()
+    if age_sec > max_age or age_sec < -60.0:
+        return False
+
+    return True
 
 
 def norm_cdf(x: float) -> float:

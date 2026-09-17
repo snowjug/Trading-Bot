@@ -91,12 +91,21 @@ This audit certifies that the Dhan Paper-Trading execution pipeline has been har
 
 ---
 
-## 4. Execution Realism Model
+## 4. Execution Realism Model (Hardened Bid/Ask Architecture)
 
-### Order Fill Rules
-- **BUY Orders**: Fill price = $\text{Ask} + 0.50\text{ pt}$ (if Ask > 0) or $\text{LTP} + 0.50\text{ pt}$ (documented conservative fallback).
-- **SELL Orders**: Fill price = $\max(0.05, \text{Bid} - 0.50\text{ pt})$ (if Bid > 0) or $\max(0.05, \text{LTP} - 0.50\text{ pt})$.
-- **Missing Quote**: If Bid, Ask, and LTP are unavailable or $\le 0$, the order is marked `REJECTED_MISSING_QUOTE` and aborted. **An order is NEVER filled merely because a signal occurred.**
+### Order Fill & Valuation Rules
+- **BUY Orders**: Strictly requires a valid, positive, fresh **Ask** quote ($\text{Ask} > 0$).
+  $$\text{Fill Price} = \text{Ask} + 0.50\text{ pt (configured slippage)}$$
+  **Zero LTP Fallback**: If Ask is missing, invalid, or stale, execution is aborted immediately with `DATA_UNAVAILABLE` / `NO_EXECUTION`. LTP is NEVER substituted for Ask.
+- **SELL Orders / Exits**: Strictly requires a valid, positive, fresh **Bid** quote ($\text{Bid} > 0$).
+  $$\text{Fill Price} = \max(0.05, \text{Bid} - 0.50\text{ pt (configured slippage)})$$
+  **Zero LTP Fallback**: If Bid is missing, invalid, or stale, execution is aborted immediately with `DATA_UNAVAILABLE` / `NO_EXECUTION`. LTP is NEVER substituted for Bid.
+- **Open-Position Valuation**:
+  - **Long Options**: Conservative exit valuation requires executable **Bid**. If Bid is missing/stale, valuation is paused (`DATA_UNAVAILABLE`). No synthetic P&L is calculated, and no stop/target is triggered on fabricated prices.
+  - **Short Options**: Cost-to-close valuation requires executable **Ask**. If Ask is missing/stale, valuation is paused (`DATA_UNAVAILABLE`).
+  - **LTP Demotion**: Last Traded Price (LTP) is retained as informational market data only (`info_ltp` / `quote_ltp`) and is strictly forbidden from triggering orders, determining fills, or calculating unrealized P&L.
+- **Quote Freshness / Staleness Policy**: Quotes with timestamps exceeding `Config.MAX_QUOTE_AGE_SECONDS` (300 seconds) or future timestamps beyond 60s clock skew are rejected (`STALE_QUOTE`) via `is_quote_fresh()`.
+- **Fail-Closed Guarantee**: Missing or invalid executable quote $\implies$ `DATA_UNAVAILABLE` $\implies$ `NO_EXECUTION`. An order is NEVER filled merely because a signal occurred.
 
 ### Statutory Costs & Friction
 Computed per trade via `src/research/independent_pnl.py`:
@@ -134,15 +143,16 @@ python -m pytest tests/test_dhan_paper_safety_and_dynamic_flow.py -v
 
 | Requirement | Description | Status | Evidence |
 | :--- | :--- | :---: | :--- |
-| **Req 1: Real Option Market Prices** | Stop using Black-Scholes for fills; use real LTP/bid/ask; timestamp quotes. | **PASS** | `test_realistic_paper_fill_using_executable_quotes` |
+| **Req 1: Real Option Market Prices** | Stop using Black-Scholes for fills; use authentic Bid/Ask; quote timestamps. | **PASS** | `test_realistic_paper_fill_using_executable_quotes` |
 | **Req 2: Real Dhan Security IDs** | Resolve numeric IDs from official scrip master; validate tradability. | **PASS** | `test_real_contract_resolution_from_scrip_master` |
 | **Req 3: Remove Fabricated Fallbacks** | No 24000/56000/14.50; fail closed if data unavailable (`NO TRADE`). | **PASS** | `test_missing_market_data_leads_to_no_trade` |
 | **Req 4: Paper-Only Safety** | `LIVE_TRADING_ENABLED=False`; block production order POST; isolate sandbox. | **PASS** | `test_production_orders_safety_barrier`, `test_sandbox_and_production_environment_separation` |
 | **Req 5: End-to-End Paper Flow** | Market data $\to$ contract $\to$ quote $\to$ signal $\to$ fill $\to$ exit $\to$ P&L $\to$ journal. | **PASS** | `test_exit_and_pnl_calculation` |
-| **Req 6: Execution Realism** | Conservative Ask/Bid fills; slippage (+0.5 pt); statutory costs; no blind fills. | **PASS** | `test_realistic_paper_fill_using_executable_quotes` |
-| **Req 7: Automated Test Suite** | 9 dedicated automated unit and integration tests passing. | **PASS** | `pytest tests/test_dhan_paper_safety_and_dynamic_flow.py` (9/9 PASSED) |
-| **Req 8: Audit Documentation** | Complete inventory of sources, fallbacks, safety mechanisms, and commands. | **PASS** | [`reports/PAPER_TRADING_READINESS.md`](file:///c:/Users/HP/Desktop/Trading%20Bot/reports/PAPER_TRADING_READINESS.md) |
-| **Final Rule: Strategy Integrity** | Zero strategy optimization; zero parameter tweaks; zero new strategies. | **PASS** | Strategy source hashes unchanged; 96/96 repo regression tests PASSED |
+| **Req 6: Hardened Bid/Ask Realism** | BUY requires Ask; SELL requires Bid; zero LTP fallback; quote freshness $\le$ 300s. | **PASS** | `test_buy_with_missing_ask_valid_ltp_no_execution`, `test_sell_with_missing_bid_valid_ltp_no_execution`, `test_stale_quote_rejected` |
+| **Req 7: Valuation Realism** | LONG valuation requires Bid; SHORT valuation requires Ask; missing quote pauses valuation without P&L fabrication. | **PASS** | `test_long_valuation_with_missing_bid_data_unavailable`, `test_short_valuation_with_missing_ask_data_unavailable` |
+| **Req 8: Automated Test Suite** | 23 dedicated automated unit and integration tests passing. | **PASS** | `pytest tests/test_dhan_paper_safety_and_dynamic_flow.py` (23/23 PASSED) |
+| **Req 9: Audit Documentation** | Explicit documentation of Ask/Bid requirements, LTP demotion, and fail-closed policies. | **PASS** | [`reports/PAPER_TRADING_READINESS.md`](file:///c:/Users/HP/Desktop/Trading%20Bot/reports/PAPER_TRADING_READINESS.md) |
+| **Final Rule: Strategy Integrity** | Zero strategy optimization; zero parameter tweaks; zero new strategies. | **PASS** | Strategy source hashes unchanged; 117/117 repo regression tests PASSED |
 
 ---
 

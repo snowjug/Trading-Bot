@@ -110,8 +110,8 @@ def test_missing_option_quote_leads_to_no_trade(tmp_path):
     )
 
     assert resp["is_filled"] is False
-    assert resp["status"] == "REJECTED_MISSING_QUOTE"
-    assert "DATA UNAVAILABLE" in resp["reason"]
+    assert resp["status"] == "DATA_UNAVAILABLE"
+    assert "NO_EXECUTION" in resp["reason"]
     assert len(sandbox.trades) == 0, "No trade record should be appended for rejected order"
 
 
@@ -140,7 +140,7 @@ def test_invalid_security_id_leads_to_no_trade(tmp_path):
     assert len(sandbox.trades) == 0
 
 
-# ─── 6. REALISTIC PAPER FILL (BID / ASK / LTP + SLIPPAGE) ───
+# ─── 6. REALISTIC PAPER FILL (BID / ASK EXECUTABLE + SLIPPAGE) ───
 def test_realistic_paper_fill_using_executable_quotes(tmp_path):
     """Verify BUY fills at Ask + 0.50 slippage and SELL fills at Bid - 0.50 slippage."""
     sandbox = DhanPaperSandbox(
@@ -150,13 +150,15 @@ def test_realistic_paper_fill_using_executable_quotes(tmp_path):
         state_dir=str(tmp_path),
     )
 
+    now_iso = datetime.now().isoformat()
+
     # Case A: BUY with executable Ask (ask=120.00, ltp=119.00)
     buy_quote = {
         "security_id": "57379",
         "ltp": 119.00,
         "bid": 118.50,
         "ask": 120.00,
-        "timestamp": "2026-09-17T10:15:00",
+        "timestamp": now_iso,
     }
     buy_resp = sandbox.place_order(
         strategy_name="Velocity-5",
@@ -172,7 +174,7 @@ def test_realistic_paper_fill_using_executable_quotes(tmp_path):
     # Fill price must be Ask + 0.50 pt slippage = 120.50
     assert buy_resp["fill_premium"] == 120.50
     assert buy_resp["execution_mode"] == "ASK_PLUS_SLIPPAGE"
-    assert buy_resp["quote_timestamp"] == "2026-09-17T10:15:00"
+    assert buy_resp["quote_timestamp"] == now_iso
 
     # Case B: SELL with executable Bid (bid=135.00, ltp=135.50)
     sell_quote = {
@@ -180,7 +182,7 @@ def test_realistic_paper_fill_using_executable_quotes(tmp_path):
         "ltp": 135.50,
         "bid": 135.00,
         "ask": 136.00,
-        "timestamp": "2026-09-17T10:25:00",
+        "timestamp": now_iso,
     }
     sell_resp = sandbox.place_order(
         strategy_name="Velocity-5",
@@ -207,6 +209,8 @@ def test_exit_and_pnl_calculation(tmp_path):
         state_dir=str(tmp_path),
     )
 
+    now_iso = datetime.now().isoformat()
+
     # Entry: BUY 25 qty @ Ask 100.0 (+0.50 slippage = 100.50)
     entry = sandbox.place_order(
         strategy_name="Golden Trend",
@@ -214,7 +218,7 @@ def test_exit_and_pnl_calculation(tmp_path):
         security_id="57379",
         transaction_type="BUY",
         quantity=25,
-        quote={"ltp": 100.0, "ask": 100.0, "timestamp": "2026-09-17T11:00:00"},
+        quote={"ltp": 100.0, "ask": 100.0, "timestamp": now_iso},
     )
     assert entry["fill_premium"] == 100.50
     entry_cost = entry["entry_costs_inr"]
@@ -227,7 +231,7 @@ def test_exit_and_pnl_calculation(tmp_path):
         security_id="57379",
         transaction_type="SELL",
         quantity=25,
-        quote={"ltp": 130.0, "bid": 130.0, "timestamp": "2026-09-17T11:30:00"},
+        quote={"ltp": 130.0, "bid": 130.0, "timestamp": now_iso},
     )
     assert exit_order["fill_premium"] == 129.50
 
@@ -431,4 +435,352 @@ def test_invalid_contract_metadata_causes_no_trade():
             as_of_date=date(2026, 9, 17),
         )
         assert res is None, "Non-numeric security ID must fail-closed and return None"
+
+
+# ─── 15. BUY WITH VALID ASK -> EXECUTES AT ASK + SLIPPAGE ───
+def test_buy_with_valid_ask_executes_at_ask_plus_slippage(tmp_path):
+    """BUY orders must fill at authentic Ask + configured slippage (0.50 pts)."""
+    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    now_iso = datetime.now().isoformat()
+
+    quote = {
+        "security_id": "57379",
+        "ltp": 150.0,
+        "bid": 149.50,
+        "ask": 151.00,
+        "timestamp": now_iso,
+    }
+    resp = sandbox.place_order(
+        strategy_name="ORB Scalp",
+        symbol="NIFTY 24150 CE",
+        security_id="57379",
+        transaction_type="BUY",
+        quantity=25,
+        quote=quote,
+    )
+
+    assert resp["is_filled"] is True
+    assert resp["status"] == "FILLED"
+    assert resp["fill_premium"] == 151.50  # Ask (151.00) + 0.50 slippage
+    assert resp["execution_mode"] == "ASK_PLUS_SLIPPAGE"
+    assert len(sandbox.trades) == 1
+
+
+# ─── 16. BUY WITH MISSING ASK + VALID LTP -> NO EXECUTION ───
+def test_buy_with_missing_ask_valid_ltp_no_execution(tmp_path):
+    """BUY orders with missing Ask must NEVER fall back to LTP; must fail closed."""
+    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    now_iso = datetime.now().isoformat()
+
+    # LTP exists and is valid (150.0), but Ask is None
+    quote = {
+        "security_id": "57379",
+        "ltp": 150.0,
+        "bid": 149.0,
+        "ask": None,
+        "timestamp": now_iso,
+    }
+    resp = sandbox.place_order(
+        strategy_name="ORB Scalp",
+        symbol="NIFTY 24150 CE",
+        security_id="57379",
+        transaction_type="BUY",
+        quantity=25,
+        quote=quote,
+    )
+
+    assert resp["is_filled"] is False
+    assert resp["status"] == "DATA_UNAVAILABLE"
+    assert "NO_EXECUTION" in resp["reason"]
+    assert "LTP cannot substitute for Ask" in resp["reason"]
+    assert len(sandbox.trades) == 0, "No trade must be recorded when Ask is missing"
+
+
+# ─── 17. SELL WITH VALID BID -> EXECUTES AT BID - SLIPPAGE ───
+def test_sell_with_valid_bid_executes_at_bid_minus_slippage(tmp_path):
+    """SELL orders must fill at authentic Bid - configured slippage (0.50 pts)."""
+    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    now_iso = datetime.now().isoformat()
+
+    quote = {
+        "security_id": "57379",
+        "ltp": 160.0,
+        "bid": 159.00,
+        "ask": 161.00,
+        "timestamp": now_iso,
+    }
+    resp = sandbox.place_order(
+        strategy_name="Exit Scalp",
+        symbol="NIFTY 24150 CE",
+        security_id="57379",
+        transaction_type="SELL",
+        quantity=25,
+        quote=quote,
+    )
+
+    assert resp["is_filled"] is True
+    assert resp["status"] == "FILLED"
+    assert resp["fill_premium"] == 158.50  # Bid (159.00) - 0.50 slippage
+    assert resp["execution_mode"] == "BID_MINUS_SLIPPAGE"
+    assert len(sandbox.trades) == 1
+
+
+# ─── 18. SELL WITH MISSING BID + VALID LTP -> NO EXECUTION ───
+def test_sell_with_missing_bid_valid_ltp_no_execution(tmp_path):
+    """SELL orders with missing Bid must NEVER fall back to LTP; must fail closed."""
+    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    now_iso = datetime.now().isoformat()
+
+    # LTP exists (160.0), but Bid is None
+    quote = {
+        "security_id": "57379",
+        "ltp": 160.0,
+        "bid": None,
+        "ask": 161.0,
+        "timestamp": now_iso,
+    }
+    resp = sandbox.place_order(
+        strategy_name="Exit Scalp",
+        symbol="NIFTY 24150 CE",
+        security_id="57379",
+        transaction_type="SELL",
+        quantity=25,
+        quote=quote,
+    )
+
+    assert resp["is_filled"] is False
+    assert resp["status"] == "DATA_UNAVAILABLE"
+    assert "NO_EXECUTION" in resp["reason"]
+    assert "LTP cannot substitute for Bid" in resp["reason"]
+    assert len(sandbox.trades) == 0, "No trade must be recorded when Bid is missing"
+
+
+# ─── 19. LONG VALUATION WITH MISSING BID -> DATA_UNAVAILABLE, NO SYNTHETIC P&L ───
+def test_long_valuation_with_missing_bid_data_unavailable(tmp_path):
+    """Long position exit valuation requires authentic Bid. Missing Bid pauses valuation with no synthetic P&L."""
+    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"))
+    s5 = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
+
+    s5["active_trade"] = {
+        "id": "VELOCITY-LONG",
+        "contract": "NIFTY-24150-CE",
+        "security_id": "57379",
+        "trading_symbol": "NIFTY-24150-CE",
+        "entry_time": "09:30:00",
+        "spot_entry": 24150.0,
+        "entry_premium": 120.0,
+        "target_premium": 156.0,
+        "stop_premium": 102.0,
+        "current_premium": 120.0,
+        "qty": 25,
+        "status": "OPEN_CE_ORB",
+        "unrealized_pnl": 0.0,
+        "valuation_status": "LIVE_QUOTE",
+    }
+    s5["status"] = "IN_POSITION (ORB_CE_BREAKOUT)"
+
+    now_iso = datetime.now().isoformat()
+    # Mock quote with LTP way above target (170 > 156), but Bid is missing (None)
+    mock_quote = {
+        "security_id": "57379",
+        "ltp": 170.0,
+        "bid": None,
+        "ask": 172.0,
+        "timestamp": now_iso,
+    }
+
+    with patch.object(DhanContractResolver, "fetch_option_quote", return_value=mock_quote):
+        mkt = {
+            "nifty": {"last": 24250.0, "open": 24100.0},
+            "bank": {"last": 52000.0, "open": 51800.0},
+            "vix": 14.0,
+        }
+        session.evaluate_all_bots(mkt, current_time=dtime(10, 0))
+
+    t5 = s5["active_trade"]
+    # Position must NOT close, valuation status must be DATA_UNAVAILABLE, zero synthetic PnL
+    assert t5 is not None, "Position must not be prematurely closed"
+    assert t5["valuation_status"] == "DATA_UNAVAILABLE"
+    assert t5["current_premium"] == 120.0, "Premium must not update to LTP"
+    assert t5["unrealized_pnl"] == 0.0, "P&L must not be calculated from LTP"
+    assert s5["net_pnl"] == 0.0
+
+
+# ─── 20. SHORT VALUATION WITH MISSING ASK -> DATA_UNAVAILABLE, NO SYNTHETIC P&L ───
+def test_short_valuation_with_missing_ask_data_unavailable(tmp_path):
+    """Short position valuation requires authentic Ask (cost to close). Missing Ask pauses valuation."""
+    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"))
+    s1 = session.bot_states["Strategy 1: Apex VRP Engine"]
+
+    s1["active_trade"] = {
+        "id": "APEX-SHORT",
+        "contract": "NIFTY STRANGLE",
+        "call_security_id": "57379",
+        "put_security_id": "57380",
+        "net_credit_collected": 150.0,
+        "current_val": 150.0,
+        "qty": 25,
+        "unrealized_pnl": 0.0,
+        "valuation_status": "LIVE_QUOTE",
+    }
+    s1["status"] = "IN_POSITION (THETA_DECAY)"
+
+    now_iso = datetime.now().isoformat()
+    # Mock call quote with valid LTP and Bid, but Ask is missing (None)
+    call_quote = {
+        "security_id": "57379",
+        "ltp": 50.0,
+        "bid": 49.0,
+        "ask": None,  # Missing Ask
+        "timestamp": now_iso,
+    }
+    put_quote = {
+        "security_id": "57380",
+        "ltp": 60.0,
+        "bid": 59.0,
+        "ask": 61.0,
+        "timestamp": now_iso,
+    }
+
+    def mock_fetch(sec_id, **kwargs):
+        if sec_id == "57379":
+            return call_quote
+        return put_quote
+
+    with patch.object(DhanContractResolver, "fetch_option_quote", side_effect=mock_fetch):
+        mkt = {
+            "nifty": {"last": 24150.0, "open": 24150.0},
+            "bank": {"last": 52000.0, "open": 52000.0},
+            "vix": 14.0,
+        }
+        session.evaluate_all_bots(mkt, current_time=dtime(10, 0))
+
+    t1 = s1["active_trade"]
+    assert t1 is not None
+    assert t1["valuation_status"] == "DATA_UNAVAILABLE"
+    assert t1["current_val"] == 150.0, "Valuation must not fabricate cost to close"
+    assert t1["unrealized_pnl"] == 0.0
+
+
+# ─── 21. INVALID / ZERO / NEGATIVE BID OR ASK -> REJECTED ───
+def test_invalid_zero_or_negative_bid_ask_rejected(tmp_path):
+    """Orders with zero, negative, or non-numeric Bid or Ask must be rejected with DATA_UNAVAILABLE."""
+    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    now_iso = datetime.now().isoformat()
+
+    invalid_values = [0.0, 0, -1.0, -100.5, "INVALID", None]
+
+    for val in invalid_values:
+        # Test BUY with invalid ask
+        buy_resp = sandbox.place_order(
+            strategy_name="Test",
+            symbol="NIFTY 24150 CE",
+            security_id="57379",
+            transaction_type="BUY",
+            quantity=25,
+            quote={"ltp": 100.0, "ask": val, "timestamp": now_iso},
+        )
+        assert buy_resp["is_filled"] is False
+        assert buy_resp["status"] == "DATA_UNAVAILABLE"
+
+        # Test SELL with invalid bid
+        sell_resp = sandbox.place_order(
+            strategy_name="Test",
+            symbol="NIFTY 24150 CE",
+            security_id="57379",
+            transaction_type="SELL",
+            quantity=25,
+            quote={"ltp": 100.0, "bid": val, "timestamp": now_iso},
+        )
+        assert sell_resp["is_filled"] is False
+        assert sell_resp["status"] == "DATA_UNAVAILABLE"
+
+
+# ─── 22. STALE QUOTE REJECTED BY FRESHNESS POLICY ───
+def test_stale_quote_rejected(tmp_path):
+    """Quotes exceeding Config.MAX_QUOTE_AGE_SECONDS must be rejected with DATA_UNAVAILABLE (STALE_QUOTE)."""
+    from src.execution.dhan_contract_resolver import is_quote_fresh
+
+    # Verify helper function
+    assert is_quote_fresh(None) is False
+    assert is_quote_fresh("") is False
+    assert is_quote_fresh("invalid-date") is False
+    assert is_quote_fresh(datetime.now()) is True
+    assert is_quote_fresh((datetime.now() - timedelta(seconds=10)).isoformat()) is True
+    # Stale: 600s old exceeds default 300s limit
+    assert is_quote_fresh((datetime.now() - timedelta(seconds=600)).isoformat()) is False
+
+    # Verify order rejection in DhanPaperSandbox
+    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    stale_iso = (datetime.now() - timedelta(seconds=600)).isoformat()
+
+    stale_quote = {
+        "security_id": "57379",
+        "ltp": 120.0,
+        "ask": 120.5,
+        "bid": 119.5,
+        "timestamp": stale_iso,
+    }
+    resp = sandbox.place_order(
+        strategy_name="Test",
+        symbol="NIFTY 24150 CE",
+        security_id="57379",
+        transaction_type="BUY",
+        quantity=25,
+        quote=stale_quote,
+    )
+
+    assert resp["is_filled"] is False
+    assert resp["status"] == "DATA_UNAVAILABLE"
+    assert "STALE_QUOTE" in resp["reason"]
+    assert len(sandbox.trades) == 0
+
+
+# ─── 23. LTP IS NEVER USED AS AN EXECUTABLE SUBSTITUTE ───
+def test_ltp_is_never_used_as_executable_substitute(tmp_path):
+    """Verify both functionally and structurally that LTP never substitutes for Bid or Ask."""
+    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    now_iso = datetime.now().isoformat()
+
+    # Pass ONLY LTP (ask and bid are None)
+    ltp_only_quote = {
+        "security_id": "57379",
+        "ltp": 150.0,
+        "bid": None,
+        "ask": None,
+        "timestamp": now_iso,
+    }
+
+    # BUY attempt must not fill
+    buy_resp = sandbox.place_order(
+        strategy_name="Test",
+        symbol="NIFTY 24150 CE",
+        security_id="57379",
+        transaction_type="BUY",
+        quantity=25,
+        quote=ltp_only_quote,
+    )
+    assert buy_resp["is_filled"] is False
+    assert "fill_premium" not in buy_resp
+
+    # SELL attempt must not fill
+    sell_resp = sandbox.place_order(
+        strategy_name="Test",
+        symbol="NIFTY 24150 CE",
+        security_id="57379",
+        transaction_type="SELL",
+        quantity=25,
+        quote=ltp_only_quote,
+    )
+    assert sell_resp["is_filled"] is False
+    assert "fill_premium" not in sell_resp
+
+    # Static inspection: check live_paper_session.py for any 'or q["ltp"]' or 'or ltp' in pricing
+    import inspect
+    import src.execution.live_paper_session as lps
+    src_code = inspect.getsource(lps)
+    import re
+    assert not re.search(r"(bid|ask)\s+or\s+.*ltp", src_code, re.IGNORECASE)
+    assert not re.search(r"curr_prem\s*=\s*q\[['\"]ltp['\"]\]", src_code)
+
 

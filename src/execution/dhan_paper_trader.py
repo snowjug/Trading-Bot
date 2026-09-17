@@ -32,7 +32,7 @@ load_dotenv()
 from src.config import Config
 from src.utils.logging import setup_logging
 from src.research.independent_pnl import IndependentPnLCalculator
-from src.execution.dhan_contract_resolver import DhanContractResolver
+from src.execution.dhan_contract_resolver import DhanContractResolver, is_quote_fresh
 
 logger = setup_logging("execution.dhan_sandbox")
 
@@ -228,9 +228,9 @@ class DhanPaperSandbox:
         """
         Executes paper order under strict execution realism and fail-closed rules:
         - NEVER marks an order FILLED without an authentic executable market quote.
-        - BUY fills at executable Ask + 0.50 pt slippage (or LTP + 0.50 pt slippage).
-        - SELL fills at executable Bid - 0.50 pt slippage (or LTP - 0.50 pt slippage).
-        - Rejects order if security_id is empty or if real quote is unavailable.
+        - BUY fills strictly at executable Ask + 0.50 pt slippage (LTP is NEVER used as fallback).
+        - SELL fills strictly at executable Bid - 0.50 pt slippage (LTP is NEVER used as fallback).
+        - Rejects order if security_id is empty, or if Ask/Bid is missing, invalid, or stale.
         - Guaranteed 0 production order HTTP calls; intercepted by hard fail-safe.
         """
         Config.assert_no_live_trading()
@@ -274,35 +274,59 @@ class DhanPaperSandbox:
                 "reason": "INVALID_SECURITY_ID: Contract securityId is required and must be valid.",
             }
 
-        # 2. Strict Fail-Closed Validation: Reject if real option market quote is unavailable
-        if option_premium is None or option_premium <= 0:
+        # 2. Strict Freshness Validation: Reject if quote is stale
+        if quote_timestamp is not None and not is_quote_fresh(quote_timestamp):
             logger.warning(
-                f"Order rejected for {symbol} ({sec_id_clean}): Real market quote unavailable. "
-                "Refusing to invent execution price."
+                f"Order rejected for {symbol} ({sec_id_clean}): Stale quote timestamp {quote_timestamp}. "
+                "Refusing to trade on outdated market data."
             )
             return {
-                "order_id": f"REJ-NO-QUOTE-{int(time.time() * 1000)}",
-                "status": "REJECTED_MISSING_QUOTE",
+                "order_id": f"REJ-STALE-QUOTE-{int(time.time() * 1000)}",
+                "status": "DATA_UNAVAILABLE",
                 "is_filled": False,
-                "reason": "DATA UNAVAILABLE: Real market quote is missing. Never invent execution prices.",
+                "reason": f"STALE_QUOTE: Quote timestamp {quote_timestamp} exceeds freshness limit ({Config.MAX_QUOTE_AGE_SECONDS}s).",
             }
 
-        # 3. Realistic Execution Pricing (Ask for BUY, Bid for SELL with slippage)
+        # 3. Realistic Executable Order-Side Pricing (Require Ask for BUY, Bid for SELL. Zero LTP fallback)
         tx_type = transaction_type.upper()
         if tx_type == "BUY":
-            if ask is not None and ask > 0:
-                fill_premium = round(ask + 0.50, 2)
-                execution_mode = "ASK_PLUS_SLIPPAGE"
-            else:
-                fill_premium = round(option_premium + 0.50, 2)
-                execution_mode = "LTP_PLUS_SLIPPAGE"
-        else:  # SELL
-            if bid is not None and bid > 0:
-                fill_premium = max(0.05, round(bid - 0.50, 2))
-                execution_mode = "BID_MINUS_SLIPPAGE"
-            else:
-                fill_premium = max(0.05, round(option_premium - 0.50, 2))
-                execution_mode = "LTP_MINUS_SLIPPAGE"
+            if ask is None or not isinstance(ask, (int, float)) or ask <= 0:
+                logger.warning(
+                    f"Order rejected for {symbol} ({sec_id_clean}): Valid Ask quote unavailable (ask={ask}, ltp={option_premium}). "
+                    "LTP is not an executable order-side price and cannot substitute for Ask."
+                )
+                return {
+                    "order_id": f"REJ-NO-ASK-{int(time.time() * 1000)}",
+                    "status": "DATA_UNAVAILABLE",
+                    "is_filled": False,
+                    "reason": "NO_EXECUTION: BUY orders require valid, positive Ask quote. LTP cannot substitute for Ask.",
+                }
+            fill_premium = round(ask + 0.50, 2)
+            execution_mode = "ASK_PLUS_SLIPPAGE"
+
+        elif tx_type == "SELL":
+            if bid is None or not isinstance(bid, (int, float)) or bid <= 0:
+                logger.warning(
+                    f"Order rejected for {symbol} ({sec_id_clean}): Valid Bid quote unavailable (bid={bid}, ltp={option_premium}). "
+                    "LTP is not an executable order-side price and cannot substitute for Bid."
+                )
+                return {
+                    "order_id": f"REJ-NO-BID-{int(time.time() * 1000)}",
+                    "status": "DATA_UNAVAILABLE",
+                    "is_filled": False,
+                    "reason": "NO_EXECUTION: SELL orders require valid, positive Bid quote. LTP cannot substitute for Bid.",
+                }
+            fill_premium = max(0.05, round(bid - 0.50, 2))
+            execution_mode = "BID_MINUS_SLIPPAGE"
+
+        else:
+            logger.warning(f"Order rejected: Unsupported transaction type {transaction_type}.")
+            return {
+                "order_id": f"REJ-BAD-TXTYPE-{int(time.time() * 1000)}",
+                "status": "REJECTED_INVALID_TX_TYPE",
+                "is_filled": False,
+                "reason": f"INVALID_TX_TYPE: Unsupported transaction type {transaction_type}",
+            }
 
         costs = self.cost_calc.compute_trade_costs(
             entry_price=fill_premium,
@@ -458,19 +482,19 @@ def run_sandbox_cli():
 
     # 4. Check executable market quote
     print("\n[4] Checking Real Executable Market Quote...")
-    if not contract.get("is_executable") or not contract.get("ltp"):
-        print("  [FAIL-CLOSED SAFETY] Real option market quote unavailable from Dhan API feed.")
-        print("  ✓ Strict Policy: Zero trade execution on theoretical Black-Scholes price.")
+    if not contract.get("is_buy_executable") or not contract.get("ask") or contract["ask"] <= 0:
+        print("  [FAIL-CLOSED SAFETY] Executable Ask quote unavailable from Dhan API feed.")
+        print("  ✓ Strict Policy: LTP is not an executable order-side price. Ask quote required for BUY.")
         print("  ✓ Status: NO TRADE PLACED (Safe read-only state maintained).")
         print("\n" + "=" * 78)
         print("  DYNAMIC PAPER TRADING VERIFICATION COMPLETE (0 REAL ORDERS SUBMITTED)")
         print("=" * 78)
         return
 
-    entry_prem = float(contract.get("ask") or contract["ltp"])
+    entry_prem = float(contract["ask"])
     stop_prem = round(max(0.50, entry_prem - 16.0), 2)
     target_prem = round(entry_prem + 48.0, 2)
-    print(f"  ✓ Executable Quote: LTP ₹{contract['ltp']:.2f} | Bid: {contract['bid']} | Ask: {contract['ask']}")
+    print(f"  ✓ Executable Quote: Ask ₹{contract['ask']:.2f} | Bid: {contract.get('bid')} | LTP (info): {contract.get('ltp')}")
     print(f"  ✓ Dynamic Stop/Tgt: ₹{stop_prem:.2f} / ₹{target_prem:.2f} (1:3 Asymmetric RR)")
 
     # 5. Execute Dynamic Paper Trade
