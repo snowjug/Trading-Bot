@@ -265,7 +265,17 @@ class DhanAPIClient:
             data = resp.json()
             if "timestamp" in data and len(data["timestamp"]) > 0:
                 df = pd.DataFrame(data)
-                df["datetime"] = pd.to_datetime(df["timestamp"], unit="s")
+                # Dhan returns UNIX epochs. Converting with unit="s" alone yields a
+                # UTC-naive timestamp, but the rest of this system compares against
+                # a naive IST clock, so every candle read 5h30m in the past — which
+                # would make any freshness gate on candle data permanently stale.
+                # VERIFIED 2026-09-17 against the live API: epoch 1789616700 is the
+                # 09:15 IST opening candle, not 03:45.
+                df["datetime"] = (
+                    pd.to_datetime(df["timestamp"], unit="s", utc=True)
+                    .dt.tz_convert("Asia/Kolkata")
+                    .dt.tz_localize(None)
+                )
                 return df[["datetime", "open", "high", "low", "close", "volume", "timestamp"]]
         return pd.DataFrame()
 
@@ -299,7 +309,17 @@ class DhanAPIClient:
             data = resp.json()
             if "timestamp" in data and len(data["timestamp"]) > 0:
                 df = pd.DataFrame(data)
-                df["datetime"] = pd.to_datetime(df["timestamp"], unit="s")
+                # Dhan returns UNIX epochs. Converting with unit="s" alone yields a
+                # UTC-naive timestamp, but the rest of this system compares against
+                # a naive IST clock, so every candle read 5h30m in the past — which
+                # would make any freshness gate on candle data permanently stale.
+                # VERIFIED 2026-09-17 against the live API: epoch 1789616700 is the
+                # 09:15 IST opening candle, not 03:45.
+                df["datetime"] = (
+                    pd.to_datetime(df["timestamp"], unit="s", utc=True)
+                    .dt.tz_convert("Asia/Kolkata")
+                    .dt.tz_localize(None)
+                )
                 return df[["datetime", "open", "high", "low", "close", "volume", "timestamp"]]
         return pd.DataFrame()
 
@@ -345,7 +365,12 @@ class DhanAPIClient:
                 side_data = data.get(side, {})
                 if isinstance(side_data, dict) and "timestamp" in side_data and len(side_data["timestamp"]) > 0:
                     df = pd.DataFrame(side_data)
-                    df["datetime"] = pd.to_datetime(df["timestamp"], unit="s")
+                    # Epoch -> naive IST (see fetch_intraday_candles for rationale).
+                    df["datetime"] = (
+                        pd.to_datetime(df["timestamp"], unit="s", utc=True)
+                        .dt.tz_convert("Asia/Kolkata")
+                        .dt.tz_localize(None)
+                    )
                     results[side] = df
         return results
 

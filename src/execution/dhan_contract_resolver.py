@@ -89,6 +89,8 @@ class DhanContractResolver:
         dhan_session: Optional[requests.Session] = None,
         base_url: str = "https://api.dhan.co/v2",
         allow_historical_bhavcopy_playback: bool = False,
+        allow_stale_index_data: bool = False,
+        max_index_age_seconds: int = 900,
     ) -> Optional[Dict[str, Any]]:
         """
         Fetches current live market state (NIFTY 50 spot, BANKNIFTY spot, and INDIA VIX).
@@ -186,6 +188,23 @@ class DhanContractResolver:
             if open_bank is None:
                 b_bar = get_today_session_bar("BANKNIFTY")
                 open_bank = float(b_bar["open"]) if b_bar else None
+
+        # VERIFIED AGAINST THE LIVE API (2026-09-17 21:22 IST, ~6h after close):
+        # /marketfeed/ltp returns `last_price` with NO timestamp of any kind, so a
+        # stale closing price is indistinguishable from a live one. Freshness is
+        # therefore taken from the intraday session bar's EXCHANGE timestamp, and
+        # the whole market state fails closed when that is stale or absent.
+        if not allow_stale_index_data:
+            from src.execution.live_market_bars import get_today_session_bar
+
+            n_bar = get_today_session_bar("NIFTY")
+            bar_ts = (n_bar or {}).get("market_timestamp")
+            if not bar_ts or not is_quote_fresh(bar_ts, max_age_seconds=max_index_age_seconds):
+                logger.warning(
+                    f"Index market data is stale or undateable (last exchange bar: {bar_ts}). "
+                    "Strict Fail-Closed: DATA UNAVAILABLE -> NO SIGNAL -> NO TRADE."
+                )
+                return None
 
         # Strict Fail-Closed Rule: NEVER fabricate numbers if data is unavailable.
         # BANKNIFTY is never derived from NIFTY, and an open is never the spot price.

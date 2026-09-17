@@ -66,6 +66,7 @@ def _dhan_intraday_session_bar(symbol: str, trading_day: date) -> Optional[Dict[
         if not client.access_token or not client.client_id:
             return None
         day_str = trading_day.strftime("%Y-%m-%d")
+        to_dt = datetime.combine(trading_day, datetime.min.time()).replace(hour=15, minute=30)
         df = client.fetch_intraday_candles(
             security_id=sec_id,
             exchange_segment="IDX_I",
@@ -77,6 +78,17 @@ def _dhan_intraday_session_bar(symbol: str, trading_day: date) -> Optional[Dict[
         if df is None or df.empty:
             return None
         df = df.sort_values("datetime")
+
+        # VERIFIED AGAINST THE LIVE API (2026-09-17): /charts/intraday ignores the
+        # requested `toDate` and appends a post-close settlement candle (e.g. a
+        # 19:25 stamp after a 15:30 close, 240 minutes after the prior candle).
+        # Candles outside the requested window are dropped so the session bar
+        # reflects the trading session rather than a settlement marker.
+        if to_dt is not None:
+            df = df[df["datetime"] <= pd.Timestamp(to_dt)]
+        if df.empty:
+            return None
+
         o = float(df["open"].iloc[0])
         h = float(df["high"].max())
         low = float(df["low"].min())
@@ -87,6 +99,9 @@ def _dhan_intraday_session_bar(symbol: str, trading_day: date) -> Optional[Dict[
         return {
             "open": o, "high": h, "low": low, "close": c, "volume": v,
             "source": "DHAN_INTRADAY_5M",
+            # The EXCHANGE time of the last candle. Without this the bar carries
+            # only a local fetch time, which looks fresh even hours after close.
+            "market_timestamp": df["datetime"].iloc[-1].to_pydatetime().isoformat(),
         }
     except Exception as e:
         logger.debug(f"Dhan intraday session bar unavailable for {symbol}: {e}")

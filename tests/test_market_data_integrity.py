@@ -47,10 +47,14 @@ def _index_payload(nifty=23250.0, vix=13.2, bank=56300.0):
 
 
 def _session_bar(open_px, close_px=None):
+    # market_timestamp is required: the index path now refuses undateable or
+    # stale bars (verified against the live API — /marketfeed/ltp carries no
+    # timestamp of its own, so freshness comes from the intraday bar).
     return {
         "open": open_px, "high": open_px + 50, "low": open_px - 50,
         "close": close_px if close_px is not None else open_px + 10,
         "volume": 100000.0, "source": "TEST_INTRADAY",
+        "market_timestamp": datetime.now().isoformat(),
     }
 
 
