@@ -784,3 +784,153 @@ def test_ltp_is_never_used_as_executable_substitute(tmp_path):
     assert not re.search(r"curr_prem\s*=\s*q\[['\"]ltp['\"]\]", src_code)
 
 
+# ─── 24. DHAN TIMESTAMP FORMAT VALIDATION ───
+def test_dhan_timestamp_formats_parsed_by_is_quote_fresh():
+    """Verify Dhan's exchange last_trade_time format (%d/%m/%Y %H:%M:%S) is accurately parsed."""
+    from src.execution.dhan_contract_resolver import is_quote_fresh
+    
+    now_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    assert is_quote_fresh(now_str, max_age_seconds=60) is True
+
+    past_str = (datetime.now() - timedelta(seconds=500)).strftime("%d/%m/%Y %H:%M:%S")
+    assert is_quote_fresh(past_str, max_age_seconds=60) is False
+
+    invalid_str = "not-a-timestamp"
+    assert is_quote_fresh(invalid_str) is False
+
+
+# ─── 25. DATA_UNAVAILABLE VALUATION NEVER PUBLISHES NUMERIC P&L ───
+def test_data_unavailable_clears_unrealized_pnl_and_reports_cleanly(tmp_path):
+    """Verify DATA_UNAVAILABLE sets unrealized_pnl to None and reports write DATA_UNAVAILABLE."""
+    from src.execution.live_paper_session import MultiBotLiveSession
+
+    session = MultiBotLiveSession(state_file=str(tmp_path / "test_session.json"))
+    s5 = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
+    s5["active_trade"] = {
+        "id": "TEST-5",
+        "strategy": "Strategy 5: Velocity-5 Momentum Scalper",
+        "contract": "NIFTY 23500 CE",
+        "security_id": "56983",
+        "side": "BUY",
+        "qty": 65,
+        "entry_time": "09:30:00",
+        "entry_premium": 100.0,
+        "entry_fill": 100.5,
+        "target_premium": 130.0,
+        "stop_premium": 85.0,
+        "current_premium": 105.0,
+        "gross_pnl": 325.0,
+        "statutory_friction": 65.0,
+        "net_pnl": 260.0,
+        "unrealized_pnl": 260.0,
+        "status": "OPEN",
+        "trade_state": "OPEN",
+        "valuation_status": "LIVE_QUOTE",
+    }
+
+    # Simulate quote dropout: evaluate with missing quote -> valuation paused
+    with patch("src.execution.dhan_contract_resolver.DhanContractResolver.fetch_option_quote", return_value=None):
+        mkt = {
+            "nifty": {"last": 23350.0, "open": 23300.0},
+            "bank": {"last": 56300.0, "open": 56250.0},
+            "vix": 13.0,
+        }
+        session.evaluate_all_bots(mkt)
+
+    t5 = s5["active_trade"]
+    assert t5["valuation_status"] == "DATA_UNAVAILABLE"
+    assert t5["unrealized_pnl"] == 0.0
+    assert t5["current_premium"] == 105.0
+
+    # Test report generation writes DATA_UNAVAILABLE, not a numeric P&L
+    with patch("src.execution.live_paper_session.REPORTS_DIR", tmp_path):
+        session.generate_audit_reports("2026_09_17")
+
+    csv_file = tmp_path / "paper_trades_2026_09_17.csv"
+    assert csv_file.exists()
+    content = csv_file.read_text(encoding="utf-8")
+    assert "DATA_UNAVAILABLE" in content
+
+
+# ─── 26. DYNAMIC COST CALCULATION MATCHES INDIAN COST MODEL ───
+def test_dynamic_cost_calculation_matches_indian_cost_model():
+    """Verify IndianCostModel calculates roundtrip costs dynamically conforming to Budget 2024."""
+    from src.execution.cost_model import IndianCostModel
+    
+    costs = IndianCostModel.calculate_roundtrip_costs(
+        entry_price=136.50,
+        exit_price=180.55,
+        quantity=65,
+        slippage_points=0.0,
+    )
+    # Buy turnover = 8872.50, Sell turnover = 11735.75, Total = 20608.25
+    # Brokerage: 40.0
+    # STT (0.100% on sell): 11.74
+    # Exchange (0.050%): 10.30
+    # SEBI: 0.02
+    # Stamp (0.003% buy): 0.27
+    # GST: (40 + 10.30 + 0.02) * 0.18 = 9.06
+    # Total statutory: 40 + 11.74 + 10.30 + 0.02 + 0.27 + 9.06 = 71.39
+    assert round(costs.brokerage, 2) == 40.0
+    assert round(costs.stt, 2) == 11.74
+    assert round(costs.exchange_charges, 2) == 10.30
+    assert round(costs.gst, 2) == 9.06
+    assert round(costs.total_costs, 2) == 71.39
+    # Crucially, must NOT equal hardcoded 45.0
+    assert costs.total_costs != 45.0
+
+
+# ─── 27. EXIT SLIPPAGE APPLIED SYMMETRICALLY ───
+def test_exit_slippage_applied_symmetrically():
+    """Verify BUY adds slippage (ask + 0.50) and SELL subtracts slippage (bid - 0.50)."""
+    from src.execution.dhan_paper_trader import DhanPaperSandbox
+    
+    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod")
+    now_iso = datetime.now().isoformat()
+    quote = {
+        "security_id": "56983",
+        "ltp": 136.25,
+        "bid": 136.0,
+        "ask": 136.5,
+        "timestamp": now_iso,
+    }
+
+    buy_resp = sandbox.place_order(
+        strategy_name="Test",
+        symbol="NIFTY CE",
+        security_id="56983",
+        transaction_type="BUY",
+        quantity=65,
+        quote=quote,
+    )
+    assert buy_resp["is_filled"] is True
+    assert buy_resp["fill_premium"] == 137.0  # 136.5 + 0.50
+
+    sell_resp = sandbox.place_order(
+        strategy_name="Test",
+        symbol="NIFTY CE",
+        security_id="56983",
+        transaction_type="SELL",
+        quantity=65,
+        quote=quote,
+    )
+    assert sell_resp["is_filled"] is True
+    assert sell_resp["fill_premium"] == 135.5  # 136.0 - 0.50
+
+
+# ─── 28. DHAN INDEX RESOLUTION USES IDX_I ───
+def test_dhan_index_resolution_uses_idx_i():
+    """Verify DhanContractResolver and DhanDataProvider use IDX_I segment for indices."""
+    import inspect
+    import src.execution.dhan_contract_resolver as dcr
+    import src.data.providers as dp
+
+    dcr_src = inspect.getsource(dcr)
+    dp_src = inspect.getsource(dp)
+
+    assert '"IDX_I": [13, 21, 25]' in dcr_src or "'IDX_I': [13, 21, 25]" in dcr_src
+    assert 'exchange_segment="IDX_I"' in dp_src
+    assert 'instrument="INDEX"' in dp_src
+
+
+

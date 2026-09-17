@@ -93,19 +93,22 @@ class DhanContractResolver:
         session = dhan_session or get_dhan_session()
         if session:
             try:
-                # Dhan v2 LTP query endpoint
+                # Dhan v2 LTP query endpoint for official indices
                 resp = session.post(
                     f"{base_url}/marketfeed/ltp",
-                    json={"NSE_EQ": [13, 25]},  # 13: NIFTY 50 ETF / EQ, 25: BANK NIFTY
+                    json={"IDX_I": [13, 21, 25]},  # 13: NIFTY 50, 21: INDIA VIX, 25: BANK NIFTY
                     timeout=3,
                 )
                 if resp.status_code == 200:
                     data = resp.json().get("data", {})
-                    seg_data = data.get("NSE_EQ", {})
+                    seg_data = data.get("IDX_I", {})
                     n_p = float(seg_data.get("13", {}).get("last_price", 0))
+                    v_p = float(seg_data.get("21", {}).get("last_price", 0))
                     b_p = float(seg_data.get("25", {}).get("last_price", 0))
                     if n_p > 0:
                         spot_nifty = n_p
+                    if v_p > 0:
+                        vix = v_p
                     if b_p > 0:
                         spot_bank = b_p
             except Exception as e:
@@ -212,13 +215,16 @@ class DhanContractResolver:
                         sell_depth = depth.get("sell", [])
                         bid = float(buy_depth[0].get("price", 0)) if buy_depth else None
                         ask = float(sell_depth[0].get("price", 0)) if sell_depth else None
-                        ltp = float(item["last_price"])
+                        ltt = item.get("last_trade_time")
+                        market_ts = str(ltt).strip() if ltt else None
                         q = {
                             "security_id": sid,
                             "ltp": ltp,
                             "bid": bid if bid and bid > 0 else None,
                             "ask": ask if ask and ask > 0 else None,
-                            "timestamp": now_dt.isoformat(),
+                            "market_timestamp": market_ts,
+                            "received_at": now_dt.isoformat(),
+                            "timestamp": market_ts if market_ts else now_dt.isoformat(),
                             "is_tradable": True,
                             "source": "DHAN_LIVE_QUOTE",
                         }
@@ -436,10 +442,13 @@ def is_quote_fresh(timestamp: Any, max_age_seconds: Optional[int] = None) -> boo
             quote_dt = datetime.fromisoformat(ts_clean)
         except Exception:
             for fmt in (
+                "%d/%m/%Y %H:%M:%S",
+                "%d-%m-%Y %H:%M:%S",
                 "%Y-%m-%d %H:%M:%S",
                 "%Y-%m-%dT%H:%M:%S",
                 "%Y-%m-%d %H:%M:%S.%f",
                 "%Y-%m-%dT%H:%M:%S.%f",
+                "%d/%m/%Y %I:%M:%S %p",
             ):
                 try:
                     quote_dt = datetime.strptime(ts_clean, fmt)

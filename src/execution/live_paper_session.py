@@ -16,7 +16,7 @@ import time
 import argparse
 from datetime import datetime, time as dtime
 from pathlib import Path
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Union
 import pandas as pd
 import numpy as np
 
@@ -33,6 +33,7 @@ from src.execution.dhan_contract_resolver import DhanContractResolver, is_quote_
 from src.execution.cost_model import IndianCostModel
 
 logger = setup_logging("execution.live_session")
+REPORTS_DIR = Path("reports")
 
 
 class MultiBotLiveSession:
@@ -49,10 +50,12 @@ class MultiBotLiveSession:
         session_file: str = "state/live_paper_session.json",
         state_file: Optional[str] = None,
         reset_for_today: bool = False,
+        reports_dir: Optional[Union[str, Path]] = None,
     ):
         Config.assert_no_live_trading()
         self.session_file = Path(state_file or session_file)
         self.session_file.parent.mkdir(parents=True, exist_ok=True)
+        self.reports_dir = Path(reports_dir) if reports_dir is not None else (self.session_file.parent if state_file else REPORTS_DIR)
         
         self.bot_names = [
             "Strategy 1: Apex VRP Engine",
@@ -200,7 +203,7 @@ class MultiBotLiveSession:
             self.log_event(f"SIGNAL EXECUTED: {strategy_name} | {signal_direction} | {record['contract']} @ Rs {fill_price}")
 
     def generate_audit_reports(self, date_str: str = "2026_09_17"):
-        rep_dir = Path("reports")
+        rep_dir = Path(getattr(self, "reports_dir", REPORTS_DIR))
         rep_dir.mkdir(parents=True, exist_ok=True)
 
         def normalize_exit_reason(reason: Optional[str]) -> str:
@@ -252,6 +255,10 @@ class MultiBotLiveSession:
         for t in all_trades:
             norm_r = normalize_exit_reason(t.get("exit_reason"))
             dur = calculate_holding_duration(t.get("entry_time"), t.get("exit_time"))
+            is_open_unavail = (t.get("trade_state") == "OPEN" and t.get("valuation_status") == "DATA_UNAVAILABLE")
+            gross_val = "DATA_UNAVAILABLE" if is_open_unavail else (t.get("gross_pnl") if t.get("gross_pnl") is not None else "DATA_UNAVAILABLE")
+            net_val = "DATA_UNAVAILABLE" if is_open_unavail else (t.get("net_pnl") if t.get("net_pnl") is not None else "DATA_UNAVAILABLE")
+            exit_fill_val = "--" if t.get("trade_state") == "OPEN" else t.get("exit_fill", t.get("current_premium", "--"))
             trade_rows.append({
                 "Trade ID": t.get("id", "--"),
                 "Strategy": t.get("strategy", "--"),
@@ -262,12 +269,12 @@ class MultiBotLiveSession:
                 "Exit Timestamp": t.get("exit_time", "--"),
                 "Exit Bid": t.get("exit_bid", "--"),
                 "Exit Ask": t.get("exit_ask", "--"),
-                "Exit Fill": t.get("exit_fill", t.get("current_premium", "--")),
+                "Exit Fill": exit_fill_val,
                 "Exit Reason": norm_r,
                 "Holding Duration": dur,
-                "Gross P&L": t.get("gross_pnl", 0.0),
+                "Gross P&L": gross_val,
                 "All Configured Costs": t.get("statutory_friction", t.get("costs", 0.0)),
-                "Net P&L": t.get("net_pnl", 0.0),
+                "Net P&L": net_val,
                 "Contract": t.get("contract", "--"),
                 "SecurityId": t.get("security_id", "--"),
                 "Side": t.get("side", "BUY"),
@@ -338,11 +345,16 @@ class MultiBotLiveSession:
             for t in all_trades:
                 norm_r = normalize_exit_reason(t.get("exit_reason"))
                 dur = calculate_holding_duration(t.get("entry_time"), t.get("exit_time"))
+                is_open_unavail = (t.get("trade_state") == "OPEN" and t.get("valuation_status") == "DATA_UNAVAILABLE")
+                gross_str = "DATA_UNAVAILABLE" if is_open_unavail else (f"Rs {t.get('gross_pnl', 0.0):+,.2f}" if t.get('gross_pnl') is not None else "DATA_UNAVAILABLE")
+                net_str = "DATA_UNAVAILABLE" if is_open_unavail else (f"Rs {t.get('net_pnl', 0.0):+,.2f}" if t.get('net_pnl') is not None else "DATA_UNAVAILABLE")
+                costs_str = f"Rs {t.get('statutory_friction', 0.0):,.2f}" if isinstance(t.get('statutory_friction'), (int, float)) else "--"
+                exit_f = "--" if t.get("trade_state") == "OPEN" else t.get("exit_fill", t.get("current_premium", "--"))
                 trade_md_rows.append(
                     f"| {t.get('id', '--')} | {t.get('strategy', '--')} | {t.get('entry_time', '--')} | "
                     f"{t.get('entry_bid', '--')} | {t.get('entry_ask', '--')} | {t.get('entry_fill', '--')} | {t.get('exit_time', '--')} | "
-                    f"{t.get('exit_bid', '--')} | {t.get('exit_ask', '--')} | {t.get('exit_fill', '--')} | {norm_r} | {dur} | "
-                    f"Rs {t.get('gross_pnl', 0.0):+,.2f} | Rs {t.get('statutory_friction', 0.0):,.2f} | Rs {t.get('net_pnl', 0.0):+,.2f} |"
+                    f"{t.get('exit_bid', '--')} | {t.get('exit_ask', '--')} | {exit_f} | {norm_r} | {dur} | "
+                    f"{gross_str} | {costs_str} | {net_str} |"
                 )
             trades_table = "\n".join(trade_md_rows)
         else:
@@ -552,10 +564,11 @@ LIVE_TRADING_ENABLED: FALSE
                     quote_bid=c_bid if c_bid else p_bid,
                 )
             else:
-                c_prem = float(c_bid)
-                p_prem = float(p_bid)
-                net_credit = round(c_prem + p_prem, 2)
+                c_fill = max(0.05, round(float(c_bid) - 0.50, 2))
+                p_fill = max(0.05, round(float(p_bid) - 0.50, 2))
+                net_credit = round(c_fill + p_fill, 2)
                 now_ts = datetime.now().strftime("%H:%M:%S")
+                init_costs1 = IndianCostModel.calculate_roundtrip_costs(net_credit, net_credit, c_res["lot_size"]).total_costs
                 s1["active_trade"] = {
                     "id": f"APEX-THETA-{int(time.time() % 10000)}",
                     "strategy": "Strategy 1: Apex VRP Engine",
@@ -572,13 +585,15 @@ LIVE_TRADING_ENABLED: FALSE
                     "entry_ask": None,
                     "entry_ltp": (c_res.get("ltp") or 0.0) + (p_res.get("ltp") or 0.0),
                     "entry_fill": net_credit,
-                    "slippage": 0.0,
+                    "slippage": 1.0,
                     "net_credit_collected": net_credit,
                     "current_val": net_credit,
+                    "current_bid": None,
+                    "current_ask": net_credit,
                     "lots": 1,
                     "qty": c_res["lot_size"],
                     "gross_pnl": 0.0,
-                    "statutory_friction": 80.0,
+                    "statutory_friction": init_costs1,
                     "net_pnl": 0.0,
                     "unrealized_pnl": 0.0,
                     "status": "OPEN",
@@ -615,60 +630,91 @@ LIVE_TRADING_ENABLED: FALSE
             ):
                 logger.warning("Bot 1: Executable Ask quotes unavailable for active short strangle. Pausing valuation.")
                 t1["valuation_status"] = "DATA_UNAVAILABLE"
+                t1["unrealized_pnl"] = 0.0
+                s1["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s1.get("closed_trades", [])), 2)
             else:
                 c_exit = float(c_ask)
                 p_exit = float(p_ask)
                 curr_val = round(c_exit + p_exit, 2)
                 t1["current_val"] = curr_val
+                t1["current_ask"] = curr_val
+                t1["current_bid"] = None
+                t1["quote_timestamp"] = c_q.get("market_timestamp") or c_q.get("timestamp")
                 t1["valuation_status"] = "LIVE_QUOTE"
                 t1["info_call_ltp"] = c_q.get("ltp")
                 t1["info_put_ltp"] = p_q.get("ltp")
                 pts_profit = t1["net_credit_collected"] - curr_val
-                pnl1 = round((pts_profit * t1["qty"]) - 80.0, 2)
+                gross1 = round(pts_profit * t1["qty"], 2)
+                costs1 = IndianCostModel.calculate_roundtrip_costs(t1["entry_fill"], curr_val, t1["qty"])
+                pnl1 = round(gross1 - costs1.total_costs, 2)
+                t1["statutory_friction"] = costs1.total_costs
                 t1["unrealized_pnl"] = pnl1
-                t1["gross_pnl"] = round(pts_profit * t1["qty"], 2)
+                t1["gross_pnl"] = gross1
                 t1["net_pnl"] = pnl1
-                s1["net_pnl"] = pnl1
+                s1["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s1.get("closed_trades", [])) + pnl1, 2)
 
                 if curr_val <= round(t1["net_credit_collected"] * 0.50, 2):
+                    exit_fill = round(curr_val + 1.0, 2)
+                    costs1_exit = IndianCostModel.calculate_roundtrip_costs(t1["entry_fill"], exit_fill, t1["qty"])
+                    real_gross = round((t1["entry_fill"] - exit_fill) * t1["qty"], 2)
+                    real_net = round(real_gross - costs1_exit.total_costs, 2)
                     t1["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t1["exit_bid"] = None
                     t1["exit_ask"] = curr_val
-                    t1["exit_fill"] = curr_val
+                    t1["exit_fill"] = exit_fill
                     t1["exit_reason"] = "THETA_TARGET_HIT (50% DECAY)"
                     t1["status"] = "CLOSED"
                     t1["trade_state"] = "CLOSED"
-                    t1["statutory_friction"] = 80.0
+                    t1["statutory_friction"] = costs1_exit.total_costs
+                    t1["gross_pnl"] = real_gross
+                    t1["net_pnl"] = real_net
+                    t1["unrealized_pnl"] = 0.0
                     s1["closed_trades"].append(t1)
                     s1["active_trade"] = None
                     s1["status"] = "PROFIT_LOCKED (STOPPED_FOR_DAY)"
-                    self.log_event(f"BOT 1 THETA HARVEST PROFIT: Net Rs {pnl1:+,.2f}")
+                    s1["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s1.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 1 THETA HARVEST PROFIT: Net Rs {real_net:+,.2f}")
                 elif curr_val >= round(t1["net_credit_collected"] * 1.50, 2):
+                    exit_fill = round(curr_val + 1.0, 2)
+                    costs1_exit = IndianCostModel.calculate_roundtrip_costs(t1["entry_fill"], exit_fill, t1["qty"])
+                    real_gross = round((t1["entry_fill"] - exit_fill) * t1["qty"], 2)
+                    real_net = round(real_gross - costs1_exit.total_costs, 2)
                     t1["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t1["exit_bid"] = None
                     t1["exit_ask"] = curr_val
-                    t1["exit_fill"] = curr_val
+                    t1["exit_fill"] = exit_fill
                     t1["exit_reason"] = "STRANGLE_STOP_HIT (+50% DEBIT)"
                     t1["status"] = "CLOSED"
                     t1["trade_state"] = "CLOSED"
-                    t1["statutory_friction"] = 80.0
+                    t1["statutory_friction"] = costs1_exit.total_costs
+                    t1["gross_pnl"] = real_gross
+                    t1["net_pnl"] = real_net
+                    t1["unrealized_pnl"] = 0.0
                     s1["closed_trades"].append(t1)
                     s1["active_trade"] = None
                     s1["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
-                    self.log_event(f"BOT 1 STRANGLE STOP: Net Rs {pnl1:+,.2f}")
+                    s1["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s1.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 1 STRANGLE STOP: Net Rs {real_net:+,.2f}")
                 elif now_time >= dtime(15, 35):
-                    costs1 = IndianCostModel.calculate_roundtrip_costs(t1["entry_fill"], curr_val, t1["qty"])
+                    exit_fill = round(curr_val + 1.0, 2)
+                    costs1_exit = IndianCostModel.calculate_roundtrip_costs(t1["entry_fill"], exit_fill, t1["qty"])
+                    real_gross = round((t1["entry_fill"] - exit_fill) * t1["qty"], 2)
+                    real_net = round(real_gross - costs1_exit.total_costs, 2)
                     t1["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t1["exit_bid"] = None
                     t1["exit_ask"] = curr_val
-                    t1["exit_fill"] = curr_val
+                    t1["exit_fill"] = exit_fill
                     t1["exit_reason"] = "EOD_FORCED_EXIT"
                     t1["status"] = "CLOSED"
                     t1["trade_state"] = "CLOSED"
-                    t1["statutory_friction"] = costs1.total_costs
+                    t1["statutory_friction"] = costs1_exit.total_costs
+                    t1["gross_pnl"] = real_gross
+                    t1["net_pnl"] = real_net
+                    t1["unrealized_pnl"] = 0.0
                     s1["closed_trades"].append(t1)
                     s1["active_trade"] = None
                     s1["status"] = "SQUARED_OFF"
+                    s1["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s1.get("closed_trades", [])), 2)
 
         # ─── BOT 5: VELOCITY-5 MOMENTUM SCALPER ───
         s5 = self.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
@@ -808,59 +854,89 @@ LIVE_TRADING_ENABLED: FALSE
             if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
                 logger.warning("Bot 5: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t5["valuation_status"] = "DATA_UNAVAILABLE"
+                t5["unrealized_pnl"] = 0.0
+                s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
                 t5["current_premium"] = curr_prem
+                t5["current_bid"] = bid
+                t5["current_ask"] = q.get("ask")
+                t5["quote_timestamp"] = q.get("market_timestamp") or q.get("timestamp")
                 t5["valuation_status"] = "LIVE_QUOTE"
                 t5["info_ltp"] = q.get("ltp")
                 gross5 = round((curr_prem - t5["entry_premium"]) * t5["qty"], 2)
-                pnl5 = round(gross5 - 45.0, 2)
+                costs5 = IndianCostModel.calculate_roundtrip_costs(t5["entry_premium"], curr_prem, t5["qty"])
+                pnl5 = round(gross5 - costs5.total_costs, 2)
+                t5["statutory_friction"] = costs5.total_costs
                 t5["gross_pnl"] = gross5
                 t5["unrealized_pnl"] = pnl5
                 t5["net_pnl"] = pnl5
-                s5["net_pnl"] = pnl5
+                s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])) + pnl5, 2)
 
                 if curr_prem >= t5["target_premium"]:
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs5_exit = IndianCostModel.calculate_roundtrip_costs(t5["entry_fill"], exit_fill, t5["qty"])
+                    real_gross = round((exit_fill - t5["entry_fill"]) * t5["qty"], 2)
+                    real_net = round(real_gross - costs5_exit.total_costs, 2)
                     t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t5["exit_bid"] = bid
                     t5["exit_ask"] = q.get("ask")
-                    t5["exit_fill"] = curr_prem
+                    t5["exit_fill"] = exit_fill
                     t5["exit_reason"] = "TARGET_HIT (+30%)"
                     t5["status"] = "CLOSED"
                     t5["trade_state"] = "CLOSED"
-                    t5["statutory_friction"] = 45.0
+                    t5["statutory_friction"] = costs5_exit.total_costs
+                    t5["gross_pnl"] = real_gross
+                    t5["net_pnl"] = real_net
+                    t5["unrealized_pnl"] = 0.0
                     s5["closed_trades"].append(t5)
                     s5["active_trade"] = None
                     s5["status"] = "PROFIT_LOCKED (STOPPED_FOR_DAY)"
-                    self.log_event(f"BOT 5 TARGET HIT: {t5['contract']} @ Rs {curr_prem:.1f} | Profit: +Rs {pnl5:,.2f}")
+                    s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 5 TARGET HIT: {t5['contract']} @ Rs {exit_fill:.2f} | Profit: +Rs {real_net:,.2f}")
 
                 elif curr_prem <= t5["stop_premium"]:
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs5_exit = IndianCostModel.calculate_roundtrip_costs(t5["entry_fill"], exit_fill, t5["qty"])
+                    real_gross = round((exit_fill - t5["entry_fill"]) * t5["qty"], 2)
+                    real_net = round(real_gross - costs5_exit.total_costs, 2)
                     t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t5["exit_bid"] = bid
                     t5["exit_ask"] = q.get("ask")
-                    t5["exit_fill"] = curr_prem
+                    t5["exit_fill"] = exit_fill
                     t5["exit_reason"] = "STOP_LOSS (-15%)"
                     t5["status"] = "CLOSED"
                     t5["trade_state"] = "CLOSED"
-                    t5["statutory_friction"] = 45.0
+                    t5["statutory_friction"] = costs5_exit.total_costs
+                    t5["gross_pnl"] = real_gross
+                    t5["net_pnl"] = real_net
+                    t5["unrealized_pnl"] = 0.0
                     s5["closed_trades"].append(t5)
                     s5["active_trade"] = None
                     s5["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
-                    self.log_event(f"BOT 5 STOP HIT: {t5['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl5:,.2f}")
+                    s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 5 STOP HIT: {t5['contract']} @ Rs {exit_fill:.2f} | PnL: Rs {real_net:,.2f}")
 
                 elif now_time >= dtime(15, 35):
-                    costs5 = IndianCostModel.calculate_roundtrip_costs(t5["entry_premium"], curr_prem, t5["qty"])
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs5_exit = IndianCostModel.calculate_roundtrip_costs(t5["entry_fill"], exit_fill, t5["qty"])
+                    real_gross = round((exit_fill - t5["entry_fill"]) * t5["qty"], 2)
+                    real_net = round(real_gross - costs5_exit.total_costs, 2)
                     t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t5["exit_bid"] = bid
                     t5["exit_ask"] = q.get("ask")
-                    t5["exit_fill"] = curr_prem
+                    t5["exit_fill"] = exit_fill
                     t5["exit_reason"] = "EOD_FORCED_EXIT"
                     t5["status"] = "CLOSED"
                     t5["trade_state"] = "CLOSED"
-                    t5["statutory_friction"] = costs5.total_costs
+                    t5["statutory_friction"] = costs5_exit.total_costs
+                    t5["gross_pnl"] = real_gross
+                    t5["net_pnl"] = real_net
+                    t5["unrealized_pnl"] = 0.0
                     s5["closed_trades"].append(t5)
                     s5["active_trade"] = None
                     s5["status"] = "SQUARED_OFF"
+                    s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])), 2)
                     self.log_event(f"BOT 5 EOD SQUARE-OFF: {t5['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl5:,.2f}")
 
         # ─── BOT 4: GOLDEN TREND RUNNER ───
@@ -888,6 +964,7 @@ LIVE_TRADING_ENABLED: FALSE
                 else:
                     prem = round(float(c4_ask) + 0.50, 2)
                     now_ts = datetime.now().strftime("%H:%M:%S")
+                    init_costs4 = IndianCostModel.calculate_roundtrip_costs(prem, prem, c4["lot_size"]).total_costs
                     s4["active_trade"] = {
                         "id": f"GOLDEN-{int(time.time() % 10000)}",
                         "strategy": "Strategy 4: Golden Trend Runner",
@@ -910,10 +987,13 @@ LIVE_TRADING_ENABLED: FALSE
                         "target_premium": round(prem * 1.50, 2),
                         "stop_premium": round(prem * 0.85, 2),
                         "current_premium": prem,
+                        "current_bid": c4.get("bid"),
+                        "current_ask": c4_ask,
                         "qty": c4["lot_size"],
                         "gross_pnl": 0.0,
-                        "statutory_friction": 45.0,
+                        "statutory_friction": init_costs4,
                         "net_pnl": 0.0,
+                        "unrealized_pnl": 0.0,
                         "status": "OPEN",
                         "trade_state": "OPEN",
                         "valuation_status": "LIVE_QUOTE",
@@ -939,59 +1019,89 @@ LIVE_TRADING_ENABLED: FALSE
             if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
                 logger.warning("Bot 4: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t4["valuation_status"] = "DATA_UNAVAILABLE"
+                t4["unrealized_pnl"] = 0.0
+                s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
                 t4["current_premium"] = curr_prem
+                t4["current_bid"] = bid
+                t4["current_ask"] = q.get("ask")
+                t4["quote_timestamp"] = q.get("market_timestamp") or q.get("timestamp")
                 t4["valuation_status"] = "LIVE_QUOTE"
                 t4["info_ltp"] = q.get("ltp")
                 gross4 = round((curr_prem - t4["entry_premium"]) * t4["qty"], 2)
-                pnl4 = round(gross4 - 45.0, 2)
+                costs4 = IndianCostModel.calculate_roundtrip_costs(t4["entry_premium"], curr_prem, t4["qty"])
+                pnl4 = round(gross4 - costs4.total_costs, 2)
+                t4["statutory_friction"] = costs4.total_costs
                 t4["gross_pnl"] = gross4
                 t4["unrealized_pnl"] = pnl4
                 t4["net_pnl"] = pnl4
-                s4["net_pnl"] = pnl4
+                s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2) + pnl4
 
                 if curr_prem >= t4["target_premium"]:
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs4_exit = IndianCostModel.calculate_roundtrip_costs(t4["entry_fill"], exit_fill, t4["qty"])
+                    real_gross = round((exit_fill - t4["entry_fill"]) * t4["qty"], 2)
+                    real_net = round(real_gross - costs4_exit.total_costs, 2)
                     t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t4["exit_bid"] = bid
                     t4["exit_ask"] = q.get("ask")
-                    t4["exit_fill"] = curr_prem
+                    t4["exit_fill"] = exit_fill
                     t4["exit_reason"] = "TARGET_1:3_HIT (+50%)"
                     t4["status"] = "CLOSED"
                     t4["trade_state"] = "CLOSED"
-                    t4["statutory_friction"] = 45.0
+                    t4["statutory_friction"] = costs4_exit.total_costs
+                    t4["gross_pnl"] = real_gross
+                    t4["net_pnl"] = real_net
+                    t4["unrealized_pnl"] = 0.0
                     s4["closed_trades"].append(t4)
                     s4["active_trade"] = None
                     s4["status"] = "PROFIT_LOCKED (STOPPED_FOR_DAY)"
-                    self.log_event(f"BOT 4 1:3 TARGET HIT: {t4['contract']} @ Rs {curr_prem:.1f} | Net: +Rs {pnl4:,.2f}")
+                    s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 4 1:3 TARGET HIT: {t4['contract']} @ Rs {exit_fill:.2f} | Net: +Rs {real_net:,.2f}")
 
                 elif curr_prem <= t4["stop_premium"]:
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs4_exit = IndianCostModel.calculate_roundtrip_costs(t4["entry_fill"], exit_fill, t4["qty"])
+                    real_gross = round((exit_fill - t4["entry_fill"]) * t4["qty"], 2)
+                    real_net = round(real_gross - costs4_exit.total_costs, 2)
                     t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t4["exit_bid"] = bid
                     t4["exit_ask"] = q.get("ask")
-                    t4["exit_fill"] = curr_prem
+                    t4["exit_fill"] = exit_fill
                     t4["exit_reason"] = "STOP_LOSS (-15%)"
                     t4["status"] = "CLOSED"
                     t4["trade_state"] = "CLOSED"
-                    t4["statutory_friction"] = 45.0
+                    t4["statutory_friction"] = costs4_exit.total_costs
+                    t4["gross_pnl"] = real_gross
+                    t4["net_pnl"] = real_net
+                    t4["unrealized_pnl"] = 0.0
                     s4["closed_trades"].append(t4)
                     s4["active_trade"] = None
                     s4["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
-                    self.log_event(f"BOT 4 STOP HIT: {t4['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl4:,.2f}")
+                    s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 4 STOP HIT: {t4['contract']} @ Rs {exit_fill:.2f} | PnL: Rs {real_net:,.2f}")
 
                 elif now_time >= dtime(15, 35):
-                    costs4 = IndianCostModel.calculate_roundtrip_costs(t4["entry_premium"], curr_prem, t4["qty"])
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs4_exit = IndianCostModel.calculate_roundtrip_costs(t4["entry_fill"], exit_fill, t4["qty"])
+                    real_gross = round((exit_fill - t4["entry_fill"]) * t4["qty"], 2)
+                    real_net = round(real_gross - costs4_exit.total_costs, 2)
                     t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t4["exit_bid"] = bid
                     t4["exit_ask"] = q.get("ask")
-                    t4["exit_fill"] = curr_prem
+                    t4["exit_fill"] = exit_fill
                     t4["exit_reason"] = "EOD_FORCED_EXIT"
                     t4["status"] = "CLOSED"
                     t4["trade_state"] = "CLOSED"
-                    t4["statutory_friction"] = costs4.total_costs
+                    t4["statutory_friction"] = costs4_exit.total_costs
+                    t4["gross_pnl"] = real_gross
+                    t4["net_pnl"] = real_net
+                    t4["unrealized_pnl"] = 0.0
                     s4["closed_trades"].append(t4)
                     s4["active_trade"] = None
                     s4["status"] = "SQUARED_OFF"
+                    s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2)
 
         # ─── BOT 3: CONFLUENCE GAMMA SCALPER ───
         s3 = self.bot_states["Strategy 3: Confluence Gamma Scalper"]
@@ -1018,6 +1128,7 @@ LIVE_TRADING_ENABLED: FALSE
                 else:
                     prem = round(float(c3_ask) + 0.50, 2)
                     now_ts = datetime.now().strftime("%H:%M:%S")
+                    init_costs3 = IndianCostModel.calculate_roundtrip_costs(prem, prem, c3["lot_size"]).total_costs
                     s3["active_trade"] = {
                         "id": f"GAMMA-{int(time.time() % 10000)}",
                         "strategy": "Strategy 3: Confluence Gamma Scalper",
@@ -1039,10 +1150,13 @@ LIVE_TRADING_ENABLED: FALSE
                         "target_premium": round(prem * 1.35, 2),
                         "stop_premium": round(prem * 0.88, 2),
                         "current_premium": prem,
+                        "current_bid": c3.get("bid"),
+                        "current_ask": c3_ask,
                         "qty": c3["lot_size"],
                         "gross_pnl": 0.0,
-                        "statutory_friction": 45.0,
+                        "statutory_friction": init_costs3,
                         "net_pnl": 0.0,
+                        "unrealized_pnl": 0.0,
                         "status": "OPEN",
                         "trade_state": "OPEN",
                         "valuation_status": "LIVE_QUOTE",
@@ -1070,57 +1184,87 @@ LIVE_TRADING_ENABLED: FALSE
             if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
                 logger.warning("Bot 3: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t3["valuation_status"] = "DATA_UNAVAILABLE"
+                t3["unrealized_pnl"] = 0.0
+                s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
                 t3["current_premium"] = curr_prem
+                t3["current_bid"] = bid
+                t3["current_ask"] = q.get("ask")
+                t3["quote_timestamp"] = q.get("market_timestamp") or q.get("timestamp")
                 t3["valuation_status"] = "LIVE_QUOTE"
                 t3["info_ltp"] = q.get("ltp")
                 gross3 = round((curr_prem - t3["entry_premium"]) * t3["qty"], 2)
-                pnl3 = round(gross3 - 45.0, 2)
+                costs3 = IndianCostModel.calculate_roundtrip_costs(t3["entry_premium"], curr_prem, t3["qty"])
+                pnl3 = round(gross3 - costs3.total_costs, 2)
+                t3["statutory_friction"] = costs3.total_costs
                 t3["gross_pnl"] = gross3
                 t3["unrealized_pnl"] = pnl3
                 t3["net_pnl"] = pnl3
-                s3["net_pnl"] = pnl3
+                s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2) + pnl3
 
                 if curr_prem >= t3["target_premium"]:
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs3_exit = IndianCostModel.calculate_roundtrip_costs(t3["entry_fill"], exit_fill, t3["qty"])
+                    real_gross = round((exit_fill - t3["entry_fill"]) * t3["qty"], 2)
+                    real_net = round(real_gross - costs3_exit.total_costs, 2)
                     t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t3["exit_bid"] = bid
                     t3["exit_ask"] = q.get("ask")
-                    t3["exit_fill"] = curr_prem
+                    t3["exit_fill"] = exit_fill
                     t3["exit_reason"] = "GAMMA_TARGET_HIT (+35%)"
                     t3["status"] = "CLOSED"
                     t3["trade_state"] = "CLOSED"
-                    t3["statutory_friction"] = 45.0
+                    t3["statutory_friction"] = costs3_exit.total_costs
+                    t3["gross_pnl"] = real_gross
+                    t3["net_pnl"] = real_net
+                    t3["unrealized_pnl"] = 0.0
                     s3["closed_trades"].append(t3)
                     s3["active_trade"] = None
                     s3["status"] = "PROFIT_LOCKED"
-                    self.log_event(f"BOT 3 GAMMA TARGET: Net Rs {pnl3:+,.2f}")
+                    s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 3 GAMMA TARGET: Net Rs {real_net:+,.2f}")
                 elif curr_prem <= t3["stop_premium"]:
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs3_exit = IndianCostModel.calculate_roundtrip_costs(t3["entry_fill"], exit_fill, t3["qty"])
+                    real_gross = round((exit_fill - t3["entry_fill"]) * t3["qty"], 2)
+                    real_net = round(real_gross - costs3_exit.total_costs, 2)
                     t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t3["exit_bid"] = bid
                     t3["exit_ask"] = q.get("ask")
-                    t3["exit_fill"] = curr_prem
+                    t3["exit_fill"] = exit_fill
                     t3["exit_reason"] = "GAMMA_STOP_HIT (-12%)"
                     t3["status"] = "CLOSED"
                     t3["trade_state"] = "CLOSED"
-                    t3["statutory_friction"] = 45.0
+                    t3["statutory_friction"] = costs3_exit.total_costs
+                    t3["gross_pnl"] = real_gross
+                    t3["net_pnl"] = real_net
+                    t3["unrealized_pnl"] = 0.0
                     s3["closed_trades"].append(t3)
                     s3["active_trade"] = None
                     s3["status"] = "STOPPED_OUT"
-                    self.log_event(f"BOT 3 GAMMA STOP: Net Rs {pnl3:+,.2f}")
+                    s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 3 GAMMA STOP: Net Rs {real_net:+,.2f}")
                 elif now_time >= dtime(15, 35):
-                    costs3 = IndianCostModel.calculate_roundtrip_costs(t3["entry_premium"], curr_prem, t3["qty"])
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs3_exit = IndianCostModel.calculate_roundtrip_costs(t3["entry_fill"], exit_fill, t3["qty"])
+                    real_gross = round((exit_fill - t3["entry_fill"]) * t3["qty"], 2)
+                    real_net = round(real_gross - costs3_exit.total_costs, 2)
                     t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t3["exit_bid"] = bid
                     t3["exit_ask"] = q.get("ask")
-                    t3["exit_fill"] = curr_prem
+                    t3["exit_fill"] = exit_fill
                     t3["exit_reason"] = "EOD_FORCED_EXIT"
                     t3["status"] = "CLOSED"
                     t3["trade_state"] = "CLOSED"
-                    t3["statutory_friction"] = costs3.total_costs
+                    t3["statutory_friction"] = costs3_exit.total_costs
+                    t3["gross_pnl"] = real_gross
+                    t3["net_pnl"] = real_net
+                    t3["unrealized_pnl"] = 0.0
                     s3["closed_trades"].append(t3)
                     s3["active_trade"] = None
                     s3["status"] = "SQUARED_OFF"
+                    s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2)
 
         # ─── BOT 2: ZEN CURVATURE OVERNIGHT ───
         s2 = self.bot_states["Strategy 2: Zen Curvature Overnight"]
@@ -1158,9 +1302,9 @@ LIVE_TRADING_ENABLED: FALSE
                     reason="DATA_UNAVAILABLE: Stale/Missing Executable Quotes",
                 )
             else:
-                s_p = float(short_bid)
-                l_p = float(long_ask)
-                net_credit = round(s_p - l_p, 2)
+                s_fill = max(0.05, round(float(short_bid) - 0.50, 2))
+                l_fill = round(float(long_ask) + 0.50, 2)
+                net_credit = round(s_fill - l_fill, 2)
                 if net_credit <= 0:
                     logger.warning(f"Bot 2: Overnight call spread net credit <= 0 ({net_credit}) -> NO TRADE.")
                     self.record_signal(
@@ -1176,6 +1320,7 @@ LIVE_TRADING_ENABLED: FALSE
                     )
                 else:
                     now_ts = datetime.now().strftime("%H:%M:%S")
+                    init_costs2 = IndianCostModel.calculate_roundtrip_costs(net_credit, net_credit, short_c["lot_size"]).total_costs
                     s2["active_trade"] = {
                         "id": f"ZEN-OVERNIGHT-{int(time.time() % 10000)}",
                         "strategy": "Strategy 2: Zen Curvature Overnight",
@@ -1188,14 +1333,15 @@ LIVE_TRADING_ENABLED: FALSE
                         "signal_time": now_ts,
                         "entry_time": now_ts,
                         "spot_entry": n_last,
-                        "entry_bid": s_p,
-                        "entry_ask": l_p,
+                        "entry_bid": s_fill,
+                        "entry_ask": l_fill,
                         "entry_fill": net_credit,
-                        "slippage": 0.0,
+                        "slippage": 1.0,
                         "net_credit": net_credit,
+                        "current_debit": net_credit,
                         "qty": short_c["lot_size"],
                         "gross_pnl": 0.0,
-                        "statutory_friction": 80.0,
+                        "statutory_friction": init_costs2,
                         "net_pnl": 0.0,
                         "status": "OPEN",
                         "trade_state": "OPEN",
@@ -1231,20 +1377,90 @@ LIVE_TRADING_ENABLED: FALSE
             ):
                 logger.warning("Bot 2: Executable quotes (Ask on short, Bid on long) unavailable for spread valuation. Pausing valuation.")
                 t2["valuation_status"] = "DATA_UNAVAILABLE"
+                t2["unrealized_pnl"] = 0.0
+                s2["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s2.get("closed_trades", [])), 2)
             else:
                 curr_short = float(s_ask)
                 curr_long = float(l_bid)
                 curr_debit = round(curr_short - curr_long, 2)
                 t2["current_debit"] = curr_debit
+                t2["current_short_ask"] = s_ask
+                t2["current_long_bid"] = l_bid
                 t2["valuation_status"] = "LIVE_QUOTE"
                 t2["info_short_ltp"] = s_q.get("ltp")
                 t2["info_long_ltp"] = l_q.get("ltp")
                 pts_pnl = t2["net_credit"] - curr_debit
-                pnl2 = round(pts_pnl * t2["qty"] - 80.0, 2)
-                t2["gross_pnl"] = round(pts_pnl * t2["qty"], 2)
+                gross2 = round(pts_pnl * t2["qty"], 2)
+                costs2 = IndianCostModel.calculate_roundtrip_costs(t2["net_credit"], curr_debit, t2["qty"])
+                pnl2 = round(gross2 - costs2.total_costs, 2)
+                t2["statutory_friction"] = costs2.total_costs
+                t2["gross_pnl"] = gross2
                 t2["unrealized_pnl"] = pnl2
                 t2["net_pnl"] = pnl2
-                s2["net_pnl"] = pnl2
+                s2["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s2.get("closed_trades", [])) + pnl2, 2)
+
+                if curr_debit <= round(t2["net_credit"] * 0.25, 2):
+                    exit_short = round(curr_short + 0.50, 2)
+                    exit_long = max(0.05, round(curr_long - 0.50, 2))
+                    exit_debit = round(exit_short - exit_long, 2)
+                    costs2_exit = IndianCostModel.calculate_roundtrip_costs(t2["net_credit"], exit_debit, t2["qty"])
+                    real_gross = round((t2["net_credit"] - exit_debit) * t2["qty"], 2)
+                    real_net = round(real_gross - costs2_exit.total_costs, 2)
+                    t2["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t2["exit_fill"] = exit_debit
+                    t2["exit_reason"] = "SPREAD_TARGET_HIT (75% THETA)"
+                    t2["status"] = "CLOSED"
+                    t2["trade_state"] = "CLOSED"
+                    t2["statutory_friction"] = costs2_exit.total_costs
+                    t2["gross_pnl"] = real_gross
+                    t2["net_pnl"] = real_net
+                    t2["unrealized_pnl"] = 0.0
+                    s2["closed_trades"].append(t2)
+                    s2["active_trade"] = None
+                    s2["status"] = "PROFIT_LOCKED (OVERNIGHT_DECAY)"
+                    s2["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s2.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 2 SPREAD TARGET: Net Rs {real_net:+,.2f}")
+                elif curr_debit >= round(t2["net_credit"] * 2.50, 2):
+                    exit_short = round(curr_short + 0.50, 2)
+                    exit_long = max(0.05, round(curr_long - 0.50, 2))
+                    exit_debit = round(exit_short - exit_long, 2)
+                    costs2_exit = IndianCostModel.calculate_roundtrip_costs(t2["net_credit"], exit_debit, t2["qty"])
+                    real_gross = round((t2["net_credit"] - exit_debit) * t2["qty"], 2)
+                    real_net = round(real_gross - costs2_exit.total_costs, 2)
+                    t2["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t2["exit_fill"] = exit_debit
+                    t2["exit_reason"] = "SPREAD_STOP_HIT (1.5X EXPANSION)"
+                    t2["status"] = "CLOSED"
+                    t2["trade_state"] = "CLOSED"
+                    t2["statutory_friction"] = costs2_exit.total_costs
+                    t2["gross_pnl"] = real_gross
+                    t2["net_pnl"] = real_net
+                    t2["unrealized_pnl"] = 0.0
+                    s2["closed_trades"].append(t2)
+                    s2["active_trade"] = None
+                    s2["status"] = "STOPPED_OUT (CAPITAL_PRESERVED)"
+                    s2["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s2.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 2 SPREAD STOP: Net Rs {real_net:+,.2f}")
+                elif now_time >= dtime(15, 35):
+                    exit_short = round(curr_short + 0.50, 2)
+                    exit_long = max(0.05, round(curr_long - 0.50, 2))
+                    exit_debit = round(exit_short - exit_long, 2)
+                    costs2_exit = IndianCostModel.calculate_roundtrip_costs(t2["net_credit"], exit_debit, t2["qty"])
+                    real_gross = round((t2["net_credit"] - exit_debit) * t2["qty"], 2)
+                    real_net = round(real_gross - costs2_exit.total_costs, 2)
+                    t2["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                    t2["exit_fill"] = exit_debit
+                    t2["exit_reason"] = "EOD_FORCED_EXIT"
+                    t2["status"] = "CLOSED"
+                    t2["trade_state"] = "CLOSED"
+                    t2["statutory_friction"] = costs2_exit.total_costs
+                    t2["gross_pnl"] = real_gross
+                    t2["net_pnl"] = real_net
+                    t2["unrealized_pnl"] = 0.0
+                    s2["closed_trades"].append(t2)
+                    s2["active_trade"] = None
+                    s2["status"] = "SQUARED_OFF"
+                    s2["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s2.get("closed_trades", [])), 2)
 
         # ─── BOT 6: MICRO MOMENTUM SNIPER BUYER (1 LOT OPTION) ───
         s6 = self.bot_states["Strategy 6: Micro Momentum Sniper"]
@@ -1274,6 +1490,7 @@ LIVE_TRADING_ENABLED: FALSE
                         target_p = round(prem * 1.45, 2)
                         stop_p = round(prem * 0.85, 2)
                         now_ts = datetime.now().strftime("%H:%M:%S")
+                        init_costs6_pe = IndianCostModel.calculate_roundtrip_costs(prem, prem, c6["lot_size"]).total_costs
                         s6["active_trade"] = {
                             "id": f"SNIPER-LIVE-{int(time.time() % 10000)}",
                             "strategy": "Strategy 6: Micro Momentum Sniper",
@@ -1295,10 +1512,13 @@ LIVE_TRADING_ENABLED: FALSE
                             "target_premium": target_p,
                             "stop_premium": stop_p,
                             "current_premium": prem,
+                            "current_bid": c6.get("bid"),
+                            "current_ask": c6_ask,
                             "qty": c6["lot_size"],
                             "gross_pnl": 0.0,
-                            "statutory_friction": 65.0,
+                            "statutory_friction": init_costs6_pe,
                             "net_pnl": 0.0,
+                            "unrealized_pnl": 0.0,
                             "status": "OPEN",
                             "trade_state": "OPEN",
                             "valuation_status": "LIVE_QUOTE",
@@ -1339,6 +1559,7 @@ LIVE_TRADING_ENABLED: FALSE
                         target_p = round(prem * 1.45, 2)
                         stop_p = round(prem * 0.85, 2)
                         now_ts = datetime.now().strftime("%H:%M:%S")
+                        init_costs6_ce = IndianCostModel.calculate_roundtrip_costs(prem, prem, c6["lot_size"]).total_costs
                         s6["active_trade"] = {
                             "id": f"SNIPER-LIVE-{int(time.time() % 10000)}",
                             "strategy": "Strategy 6: Micro Momentum Sniper",
@@ -1360,10 +1581,13 @@ LIVE_TRADING_ENABLED: FALSE
                             "target_premium": target_p,
                             "stop_premium": stop_p,
                             "current_premium": prem,
+                            "current_bid": c6.get("bid"),
+                            "current_ask": c6_ask,
                             "qty": c6["lot_size"],
                             "gross_pnl": 0.0,
-                            "statutory_friction": 65.0,
+                            "statutory_friction": init_costs6_ce,
                             "net_pnl": 0.0,
+                            "unrealized_pnl": 0.0,
                             "status": "OPEN",
                             "trade_state": "OPEN",
                             "valuation_status": "LIVE_QUOTE",
@@ -1389,57 +1613,87 @@ LIVE_TRADING_ENABLED: FALSE
             if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
                 logger.warning("Bot 6: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t6["valuation_status"] = "DATA_UNAVAILABLE"
+                t6["unrealized_pnl"] = 0.0
+                s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
                 t6["current_premium"] = curr_prem
+                t6["current_bid"] = bid
+                t6["current_ask"] = q.get("ask")
+                t6["quote_timestamp"] = q.get("market_timestamp") or q.get("timestamp")
                 t6["valuation_status"] = "LIVE_QUOTE"
                 t6["info_ltp"] = q.get("ltp")
                 gross6 = round((curr_prem - t6["entry_premium"]) * t6["qty"], 2)
-                pnl6 = round(gross6 - 65.0, 2)
+                costs6 = IndianCostModel.calculate_roundtrip_costs(t6["entry_premium"], curr_prem, t6["qty"])
+                pnl6 = round(gross6 - costs6.total_costs, 2)
+                t6["statutory_friction"] = costs6.total_costs
                 t6["gross_pnl"] = gross6
                 t6["unrealized_pnl"] = pnl6
                 t6["net_pnl"] = pnl6
-                s6["net_pnl"] = pnl6
+                s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2) + pnl6
 
                 if curr_prem >= t6["target_premium"]:
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs6_exit = IndianCostModel.calculate_roundtrip_costs(t6["entry_fill"], exit_fill, t6["qty"])
+                    real_gross = round((exit_fill - t6["entry_fill"]) * t6["qty"], 2)
+                    real_net = round(real_gross - costs6_exit.total_costs, 2)
                     t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t6["exit_bid"] = bid
                     t6["exit_ask"] = q.get("ask")
-                    t6["exit_fill"] = curr_prem
+                    t6["exit_fill"] = exit_fill
                     t6["exit_reason"] = "TARGET_1:3_HIT (+45%)"
                     t6["status"] = "CLOSED"
                     t6["trade_state"] = "CLOSED"
-                    t6["statutory_friction"] = 65.0
+                    t6["statutory_friction"] = costs6_exit.total_costs
+                    t6["gross_pnl"] = real_gross
+                    t6["net_pnl"] = real_net
+                    t6["unrealized_pnl"] = 0.0
                     s6["closed_trades"].append(t6)
                     s6["active_trade"] = None
                     s6["status"] = "PROFIT_LOCKED_WAITING_NEXT_DAY"
-                    self.log_event(f"BOT 6 TARGET REACHED: Realized Net Profit Rs {pnl6:+,.2f}")
+                    s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 6 TARGET REACHED: Realized Net Profit Rs {real_net:+,.2f}")
                 elif curr_prem <= t6["stop_premium"]:
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs6_exit = IndianCostModel.calculate_roundtrip_costs(t6["entry_fill"], exit_fill, t6["qty"])
+                    real_gross = round((exit_fill - t6["entry_fill"]) * t6["qty"], 2)
+                    real_net = round(real_gross - costs6_exit.total_costs, 2)
                     t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t6["exit_bid"] = bid
                     t6["exit_ask"] = q.get("ask")
-                    t6["exit_fill"] = curr_prem
+                    t6["exit_fill"] = exit_fill
                     t6["exit_reason"] = "STOP_LOSS_HIT (-15%)"
                     t6["status"] = "CLOSED"
                     t6["trade_state"] = "CLOSED"
-                    t6["statutory_friction"] = 65.0
+                    t6["statutory_friction"] = costs6_exit.total_costs
+                    t6["gross_pnl"] = real_gross
+                    t6["net_pnl"] = real_net
+                    t6["unrealized_pnl"] = 0.0
                     s6["closed_trades"].append(t6)
                     s6["active_trade"] = None
                     s6["status"] = "STOPPED_OUT_PRESERVING_CAPITAL"
-                    self.log_event(f"BOT 6 STOP LOSS HIT: Preserved Capital, Net Loss Rs {pnl6:+,.2f}")
+                    s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2)
+                    self.log_event(f"BOT 6 STOP LOSS HIT: Preserved Capital, Net Loss Rs {real_net:+,.2f}")
                 elif now_time >= dtime(15, 35):
-                    costs6 = IndianCostModel.calculate_roundtrip_costs(t6["entry_premium"], curr_prem, t6["qty"])
+                    exit_fill = max(0.05, round(bid - 0.50, 2))
+                    costs6_exit = IndianCostModel.calculate_roundtrip_costs(t6["entry_fill"], exit_fill, t6["qty"])
+                    real_gross = round((exit_fill - t6["entry_fill"]) * t6["qty"], 2)
+                    real_net = round(real_gross - costs6_exit.total_costs, 2)
                     t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t6["exit_bid"] = bid
                     t6["exit_ask"] = q.get("ask")
-                    t6["exit_fill"] = curr_prem
+                    t6["exit_fill"] = exit_fill
                     t6["exit_reason"] = "EOD_FORCED_EXIT"
                     t6["status"] = "CLOSED"
                     t6["trade_state"] = "CLOSED"
-                    t6["statutory_friction"] = costs6.total_costs
+                    t6["statutory_friction"] = costs6_exit.total_costs
+                    t6["gross_pnl"] = real_gross
+                    t6["net_pnl"] = real_net
+                    t6["unrealized_pnl"] = 0.0
                     s6["closed_trades"].append(t6)
                     s6["active_trade"] = None
                     s6["status"] = "SQUARED_OFF"
+                    s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2)
 
     def print_multi_bot_status(self, mkt: Optional[dict]):
         now_str = datetime.now().strftime("%H:%M:%S")
@@ -1451,10 +1705,23 @@ LIVE_TRADING_ENABLED: FALSE
             return
         n = mkt["nifty"]["last"]
         b = mkt["bank"]["last"]
-        total_pnl = sum(b["net_pnl"] for b in self.bot_states.values())
+        active_pnls = []
+        paused_count = 0
+        for b_state in self.bot_states.values():
+            if b_state.get("active_trade"):
+                act = b_state["active_trade"]
+                if act.get("valuation_status") == "DATA_UNAVAILABLE":
+                    paused_count += 1
+                elif act.get("unrealized_pnl") is not None:
+                    active_pnls.append(act["unrealized_pnl"])
+            for c in b_state.get("closed_trades", []):
+                if c.get("net_pnl") is not None:
+                    active_pnls.append(c["net_pnl"])
+        total_pnl = sum(active_pnls)
+        paused_str = f" | [Valuation Paused for {paused_count} active bot(s)]" if paused_count > 0 else ""
         print(
             f"[{now_str}] LIVE MULTI-BOT STATUS | NIFTY: {n:.2f} | BANK: {b:.2f} | "
-            f"Active Bots PnL: Rs {total_pnl:+,.2f}"
+            f"Active Bots PnL: Rs {total_pnl:+,.2f}{paused_str}"
         )
 
 

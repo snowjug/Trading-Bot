@@ -358,8 +358,14 @@ async function updateDashboard() {
     } else {
       let openHtml = '';
       openPositions.forEach(p => {
-        const uPnl = p.unrealized_pnl || p.net_pnl || 0;
-        const isUp = uPnl >= 0;
+        const isUnavailable = (p.valuation_status === 'DATA_UNAVAILABLE' || p.unrealized_pnl === null || p.unrealized_pnl === undefined);
+        const uPnl = isUnavailable ? null : (p.unrealized_pnl !== undefined ? p.unrealized_pnl : p.net_pnl);
+        const isUp = uPnl !== null && uPnl >= 0;
+        const pnlDisplay = isUnavailable ? '<span style="color:#f59e0b; font-weight:700;">DATA_UNAVAILABLE</span>' : `<span class="mono ${isUp ? 'green' : 'red'}" style="font-weight:700;">${isUp ? '+' : ''}₹${fmt(uPnl)}</span>`;
+        const badgeBg = isUnavailable ? 'rgba(245,158,11,0.15)' : 'rgba(0,210,106,0.15)';
+        const badgeColor = isUnavailable ? '#f59e0b' : 'var(--green)';
+        const curBid = (p.current_bid !== undefined && p.current_bid !== null) ? '₹' + fmt(p.current_bid) : (isUnavailable ? '--' : '₹' + fmt(p.current_premium || p.entry_bid));
+        const curAsk = (p.current_ask !== undefined && p.current_ask !== null) ? '₹' + fmt(p.current_ask) : (isUnavailable ? '--' : '₹' + fmt(p.current_val || p.entry_ask));
         openHtml += `
           <tr>
             <td style="font-weight:600;">${p.bot}</td>
@@ -368,12 +374,12 @@ async function updateDashboard() {
             <td style="font-weight:600;">${p.side || 'BUY'}</td>
             <td class="mono">${p.qty || p.lots || '--'}</td>
             <td class="mono">₹${fmt(p.entry_fill || p.entry_premium)}</td>
-            <td class="mono green">₹${fmt(p.entry_bid || p.current_premium)}</td>
-            <td class="mono red">₹${fmt(p.entry_ask || p.current_premium)}</td>
-            <td class="mono ${isUp ? 'green' : 'red'}" style="font-weight:700;">${isUp ? '+' : ''}₹${fmt(uPnl)}</td>
-            <td class="mono">₹${fmt(p.target_premium)}</td>
-            <td class="mono">₹${fmt(p.stop_premium)}</td>
-            <td><span style="font-size:0.75rem; background:rgba(0,210,106,0.15); color:var(--green); padding:0.2rem 0.5rem; border-radius:4px;">${p.valuation_status || 'LIVE_QUOTE'}</span></td>
+            <td class="mono green">${curBid}</td>
+            <td class="mono red">${curAsk}</td>
+            <td>${pnlDisplay}</td>
+            <td class="mono">${p.target_premium ? '₹' + fmt(p.target_premium) : '--'}</td>
+            <td class="mono">${p.stop_premium ? '₹' + fmt(p.stop_premium) : '--'}</td>
+            <td><span style="font-size:0.75rem; background:${badgeBg}; color:${badgeColor}; padding:0.2rem 0.5rem; border-radius:4px; font-weight:600;">${p.valuation_status || 'LIVE_QUOTE'}</span></td>
           </tr>
         `;
       });

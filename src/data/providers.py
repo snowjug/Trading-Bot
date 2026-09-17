@@ -259,12 +259,12 @@ class DhanDataProvider(DataProvider):
 
     def fetch_index(self, index_name: str, start_date: date, end_date: date) -> DataResult:
         """Fetch index historical daily candles."""
-        sec_map = {"NIFTY": "13", "NIFTY50": "13", "BANKNIFTY": "25"}
+        sec_map = {"NIFTY": "13", "NIFTY50": "13", "BANKNIFTY": "25", "INDIAVIX": "21"}
         sec_id = sec_map.get(index_name.upper().replace(" ", "").replace("_", ""), "13")
         df = self.client.fetch_historical_daily(
             security_id=sec_id,
-            exchange_segment="NSE_EQ",
-            instrument="EQUITY",
+            exchange_segment="IDX_I",
+            instrument="INDEX",
             from_date=str(start_date),
             to_date=str(end_date),
         )

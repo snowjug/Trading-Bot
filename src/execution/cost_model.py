@@ -49,7 +49,7 @@ class IndianCostModel:
 
     # Regulatory Rates for Equity Index Options (NSE)
     BROKERAGE_PER_ORDER = 20.0        # ₹20 flat per executed order
-    STT_RATE_SELL = 0.00125           # 0.125% on sell side premium turnover
+    STT_RATE_SELL = 0.00100           # 0.100% on sell side premium turnover (Budget 2024 Post-Oct 1)
     EXCHANGE_TURNOVER_RATE = 0.00050  # 0.050% on premium turnover
     SEBI_RATE = 0.000001              # ₹10 per crore
     STAMP_DUTY_RATE_BUY = 0.00003     # 0.003% on buy side premium turnover
