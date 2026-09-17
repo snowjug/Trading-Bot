@@ -132,6 +132,14 @@ class MultiBotLiveSession:
                 logger.warning(f"Could not load previous session: {e}")
 
     def save_session(self):
+        for b in self.bot_states.values():
+            act = b.get("active_trade")
+            if act and act.get("valuation_status") == "DATA_UNAVAILABLE":
+                act["unrealized_pnl"] = None
+                act["gross_pnl"] = None
+                act["net_pnl"] = None
+                b["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in b.get("closed_trades", [])), 2)
+
         data = {
             "last_updated": datetime.now().isoformat(),
             "total_capital_deployed": sum(b["allocated_capital"] for b in self.bot_states.values()),
@@ -630,7 +638,9 @@ LIVE_TRADING_ENABLED: FALSE
             ):
                 logger.warning("Bot 1: Executable Ask quotes unavailable for active short strangle. Pausing valuation.")
                 t1["valuation_status"] = "DATA_UNAVAILABLE"
-                t1["unrealized_pnl"] = 0.0
+                t1["unrealized_pnl"] = None
+                t1["gross_pnl"] = None
+                t1["net_pnl"] = None
                 s1["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s1.get("closed_trades", [])), 2)
             else:
                 c_exit = float(c_ask)
@@ -854,7 +864,9 @@ LIVE_TRADING_ENABLED: FALSE
             if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
                 logger.warning("Bot 5: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t5["valuation_status"] = "DATA_UNAVAILABLE"
-                t5["unrealized_pnl"] = 0.0
+                t5["unrealized_pnl"] = None
+                t5["gross_pnl"] = None
+                t5["net_pnl"] = None
                 s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
@@ -1019,7 +1031,9 @@ LIVE_TRADING_ENABLED: FALSE
             if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
                 logger.warning("Bot 4: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t4["valuation_status"] = "DATA_UNAVAILABLE"
-                t4["unrealized_pnl"] = 0.0
+                t4["unrealized_pnl"] = None
+                t4["gross_pnl"] = None
+                t4["net_pnl"] = None
                 s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
@@ -1184,7 +1198,9 @@ LIVE_TRADING_ENABLED: FALSE
             if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
                 logger.warning("Bot 3: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t3["valuation_status"] = "DATA_UNAVAILABLE"
-                t3["unrealized_pnl"] = 0.0
+                t3["unrealized_pnl"] = None
+                t3["gross_pnl"] = None
+                t3["net_pnl"] = None
                 s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
@@ -1377,7 +1393,9 @@ LIVE_TRADING_ENABLED: FALSE
             ):
                 logger.warning("Bot 2: Executable quotes (Ask on short, Bid on long) unavailable for spread valuation. Pausing valuation.")
                 t2["valuation_status"] = "DATA_UNAVAILABLE"
-                t2["unrealized_pnl"] = 0.0
+                t2["unrealized_pnl"] = None
+                t2["gross_pnl"] = None
+                t2["net_pnl"] = None
                 s2["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s2.get("closed_trades", [])), 2)
             else:
                 curr_short = float(s_ask)
@@ -1613,7 +1631,9 @@ LIVE_TRADING_ENABLED: FALSE
             if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
                 logger.warning("Bot 6: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t6["valuation_status"] = "DATA_UNAVAILABLE"
-                t6["unrealized_pnl"] = 0.0
+                t6["unrealized_pnl"] = None
+                t6["gross_pnl"] = None
+                t6["net_pnl"] = None
                 s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)

@@ -313,12 +313,22 @@ async function updateDashboard() {
     for (const [name, b] of Object.entries(botStates)) {
       const active = b.active_trade;
       const closed = b.closed_trades || [];
+      const isActUnavailable = (active && (active.valuation_status === 'DATA_UNAVAILABLE' || active.unrealized_pnl === null));
       const botNetPnl = b.net_pnl || 0;
       const isProfitable = botNetPnl >= 0;
 
       let statusBadgeClass = 'bot-status';
       if (b.status && b.status.includes('IN_POSITION')) statusBadgeClass += ' active';
       else if (b.status && b.status.includes('SQUARED_OFF')) statusBadgeClass += ' stopped';
+
+      let pnlSnippet = '';
+      if (isActUnavailable && closed.length === 0) {
+        pnlSnippet = '<span style="color:#f59e0b; font-weight:700; font-size:0.85rem;">DATA_UNAVAILABLE</span>';
+      } else if (isActUnavailable && closed.length > 0) {
+        pnlSnippet = `<span class="${isProfitable ? 'green' : 'red'}" style="font-weight:700;">${isProfitable ? '+' : ''}₹${fmt(botNetPnl)}</span> <span style="font-size:0.7rem; color:#f59e0b;">(Settled)</span>`;
+      } else {
+        pnlSnippet = `<span class="${isProfitable ? 'green' : 'red'}" style="font-weight:700;">${isProfitable ? '+' : ''}₹${fmt(botNetPnl)}</span>`;
+      }
 
       botsHtml += `
         <div class="bot-card">
@@ -332,9 +342,7 @@ async function updateDashboard() {
           </div>
           <div class="bot-pnl-row">
             <span style="color:var(--text-muted); font-size:0.8rem;">Session P&L</span>
-            <span class="${isProfitable ? 'green' : 'red'}" style="font-weight:700;">
-              ${isProfitable ? '+' : ''}₹${fmt(botNetPnl)}
-            </span>
+            ${pnlSnippet}
           </div>
         </div>
       `;
@@ -359,13 +367,11 @@ async function updateDashboard() {
       let openHtml = '';
       openPositions.forEach(p => {
         const isUnavailable = (p.valuation_status === 'DATA_UNAVAILABLE' || p.unrealized_pnl === null || p.unrealized_pnl === undefined);
-        const uPnl = isUnavailable ? null : (p.unrealized_pnl !== undefined ? p.unrealized_pnl : p.net_pnl);
-        const isUp = uPnl !== null && uPnl >= 0;
-        const pnlDisplay = isUnavailable ? '<span style="color:#f59e0b; font-weight:700;">DATA_UNAVAILABLE</span>' : `<span class="mono ${isUp ? 'green' : 'red'}" style="font-weight:700;">${isUp ? '+' : ''}₹${fmt(uPnl)}</span>`;
+        const pnlDisplay = isUnavailable ? '<span style="color:#f59e0b; font-weight:700;">DATA_UNAVAILABLE</span>' : `<span class="mono ${p.unrealized_pnl >= 0 ? 'green' : 'red'}" style="font-weight:700;">${p.unrealized_pnl >= 0 ? '+' : ''}₹${fmt(p.unrealized_pnl)}</span>`;
         const badgeBg = isUnavailable ? 'rgba(245,158,11,0.15)' : 'rgba(0,210,106,0.15)';
         const badgeColor = isUnavailable ? '#f59e0b' : 'var(--green)';
-        const curBid = (p.current_bid !== undefined && p.current_bid !== null) ? '₹' + fmt(p.current_bid) : (isUnavailable ? '--' : '₹' + fmt(p.current_premium || p.entry_bid));
-        const curAsk = (p.current_ask !== undefined && p.current_ask !== null) ? '₹' + fmt(p.current_ask) : (isUnavailable ? '--' : '₹' + fmt(p.current_val || p.entry_ask));
+        const curBid = (p.current_bid !== undefined && p.current_bid !== null) ? '₹' + fmt(p.current_bid) : '--';
+        const curAsk = (p.current_ask !== undefined && p.current_ask !== null) ? '₹' + fmt(p.current_ask) : '--';
         openHtml += `
           <tr>
             <td style="font-weight:600;">${p.bot}</td>
@@ -437,7 +443,20 @@ async def api_status():
         try:
             with open(session_file, "r") as f:
                 data = json.load(f)
-                return data
+
+            # Authoritative State/API Payload Invariant:
+            # If valuation_status == DATA_UNAVAILABLE: unrealized_pnl, gross_pnl, net_pnl MUST be None (null)
+            for b in data.get("bot_states", {}).values():
+                act = b.get("active_trade")
+                if act and act.get("valuation_status") == "DATA_UNAVAILABLE":
+                    act["unrealized_pnl"] = None
+                    act["gross_pnl"] = None
+                    act["net_pnl"] = None
+                closed_pnl = sum(c.get("net_pnl", 0.0) for c in b.get("closed_trades", []))
+                live_unrealized = act.get("unrealized_pnl") if (act and act.get("valuation_status") != "DATA_UNAVAILABLE") else None
+                b["net_pnl"] = round(closed_pnl + (live_unrealized or 0.0), 2)
+
+            return data
         except Exception as e:
             logger.warning(f"Error reading session file: {e}")
 

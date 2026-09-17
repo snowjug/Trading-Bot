@@ -317,7 +317,7 @@ def test_quote_unavailable_during_open_position_pauses_valuation(tmp_path):
     assert t5 is not None, "Trade must not be closed on missing data"
     assert t5["valuation_status"] == "DATA_UNAVAILABLE"
     assert t5["current_premium"] == 120.0, "Premium must remain unchanged, not fabricated"
-    assert t5["unrealized_pnl"] == 0.0, "PnL must not be synthetically calculated"
+    assert t5["unrealized_pnl"] is None, "PnL must not be synthetically calculated"
     assert s5["net_pnl"] == 0.0
 
 
@@ -602,7 +602,7 @@ def test_long_valuation_with_missing_bid_data_unavailable(tmp_path):
     assert t5 is not None, "Position must not be prematurely closed"
     assert t5["valuation_status"] == "DATA_UNAVAILABLE"
     assert t5["current_premium"] == 120.0, "Premium must not update to LTP"
-    assert t5["unrealized_pnl"] == 0.0, "P&L must not be calculated from LTP"
+    assert t5["unrealized_pnl"] is None, "P&L must not be calculated from LTP"
     assert s5["net_pnl"] == 0.0
 
 
@@ -659,7 +659,7 @@ def test_short_valuation_with_missing_ask_data_unavailable(tmp_path):
     assert t1 is not None
     assert t1["valuation_status"] == "DATA_UNAVAILABLE"
     assert t1["current_val"] == 150.0, "Valuation must not fabricate cost to close"
-    assert t1["unrealized_pnl"] == 0.0
+    assert t1["unrealized_pnl"] is None
 
 
 # ─── 21. INVALID / ZERO / NEGATIVE BID OR ASK -> REJECTED ───
@@ -839,7 +839,9 @@ def test_data_unavailable_clears_unrealized_pnl_and_reports_cleanly(tmp_path):
 
     t5 = s5["active_trade"]
     assert t5["valuation_status"] == "DATA_UNAVAILABLE"
-    assert t5["unrealized_pnl"] == 0.0
+    assert t5["unrealized_pnl"] is None
+    assert t5["gross_pnl"] is None
+    assert t5["net_pnl"] is None
     assert t5["current_premium"] == 105.0
 
     # Test report generation writes DATA_UNAVAILABLE, not a numeric P&L
@@ -931,6 +933,65 @@ def test_dhan_index_resolution_uses_idx_i():
     assert '"IDX_I": [13, 21, 25]' in dcr_src or "'IDX_I': [13, 21, 25]" in dcr_src
     assert 'exchange_segment="IDX_I"' in dp_src
     assert 'instrument="INDEX"' in dp_src
+
+
+# ─── 29. DATA_UNAVAILABLE AUTHORITATIVE PAYLOAD CANNOT EXPOSE NUMERICAL P&L ───
+def test_data_unavailable_authoritative_payload_cannot_expose_numerical_unrealized_pnl(tmp_path):
+    """
+    Acceptance Test:
+    When valuation_status == DATA_UNAVAILABLE:
+    1. active_trade.unrealized_pnl MUST be null/None
+    2. active_trade.gross_pnl MUST be null/None
+    3. active_trade.net_pnl MUST be null/None
+    4. Bot session P&L MUST NOT include stale unrealized P&L
+    5. /api/status endpoint MUST return null for unrealized_pnl
+    """
+    import json
+    from starlette.testclient import TestClient
+    from src.monitoring.dashboard import app
+
+    state_path = tmp_path / "live_paper_session.json"
+    session = MultiBotLiveSession(state_file=str(state_path))
+    s1 = session.bot_states["Strategy 1: Apex VRP Engine"]
+    s1["active_trade"] = {
+        "id": "APEX-STALE-CHECK",
+        "contract": "NIFTY STRANGLE",
+        "call_security_id": "57023",
+        "put_security_id": "56948",
+        "side": "SELL",
+        "entry_fill": 70.0,
+        "qty": 65,
+        "current_val": 67.95,
+        "valuation_status": "DATA_UNAVAILABLE",
+        "gross_pnl": 133.25,
+        "net_pnl": 53.25,
+        "unrealized_pnl": 53.25,
+    }
+    s1["net_pnl"] = 53.25
+
+    # 1. Calling save_session sanitizes authoritative state before disk persistence
+    session.save_session()
+
+    saved_data = json.loads(state_path.read_text(encoding="utf-8"))
+    t1_saved = saved_data["bot_states"]["Strategy 1: Apex VRP Engine"]["active_trade"]
+    assert t1_saved["valuation_status"] == "DATA_UNAVAILABLE"
+    assert t1_saved["unrealized_pnl"] is None, "Authoritative state unrealized_pnl must be null"
+    assert t1_saved["gross_pnl"] is None, "Authoritative state gross_pnl must be null"
+    assert t1_saved["net_pnl"] is None, "Authoritative state net_pnl must be null"
+    assert saved_data["bot_states"]["Strategy 1: Apex VRP Engine"]["net_pnl"] == 0.0, "Bot net_pnl must not include stale open P&L"
+
+    # 2. Test /api/status payload via TestClient with patched session file
+    with patch("src.monitoring.dashboard.Path", return_value=state_path):
+        client = TestClient(app)
+        resp = client.get("/api/status")
+        assert resp.status_code == 200
+        payload = resp.json()
+        api_t1 = payload["bot_states"]["Strategy 1: Apex VRP Engine"]["active_trade"]
+        assert api_t1["unrealized_pnl"] is None, "/api/status must deliver null unrealized_pnl"
+        assert api_t1["gross_pnl"] is None, "/api/status must deliver null gross_pnl"
+        assert api_t1["net_pnl"] is None, "/api/status must deliver null net_pnl"
+        assert payload["bot_states"]["Strategy 1: Apex VRP Engine"]["net_pnl"] == 0.0
+
 
 
 
