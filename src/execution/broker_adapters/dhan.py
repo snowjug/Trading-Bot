@@ -31,12 +31,29 @@ class DhanBrokerAdapter(BrokerAdapter):
         self.client_id = client_id or Config.DHAN_CLIENT_ID
         self.access_token = access_token or Config.DHAN_ACCESS_TOKEN
         self.session = requests.Session()
+        self._session = self.session
         self.session.headers.update({
             "client-id": self.client_id,
             "access-token": self.access_token,
             "Content-Type": "application/json",
             "Accept": "application/json",
         })
+        self._install_safety_barrier()
+
+    def _install_safety_barrier(self):
+        """
+        Hard Software Fail-Safe: Intercepts session.post to prevent any live order
+        submission to https://api.dhan.co when Config.LIVE_TRADING_ENABLED is False.
+        """
+        original_post = self.session.post
+        def safe_post(url, *args, **kwargs):
+            if "api.dhan.co" in url and "/orders" in url and not Config.LIVE_TRADING_ENABLED:
+                raise RuntimeError(
+                    f"CRITICAL SAFETY LOCK TRIGGERED: Attempted POST to Dhan Production order endpoint {url} "
+                    f"while Config.LIVE_TRADING_ENABLED={Config.LIVE_TRADING_ENABLED}! HARD FAIL-SAFE INTERCEPTOR."
+                )
+            return original_post(url, *args, **kwargs)
+        self.session.post = safe_post
 
     def connect(self) -> bool:
         """Validates API token by querying the user fund limit."""

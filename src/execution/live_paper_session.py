@@ -15,6 +15,7 @@ import json
 import time
 from datetime import datetime, time as dtime
 from pathlib import Path
+from typing import Optional, Dict, List, Any
 import pandas as pd
 import numpy as np
 
@@ -27,6 +28,7 @@ if hasattr(sys.stdout, "reconfigure"):
 from src.config import Config
 from src.utils.logging import setup_logging
 from src.execution.paper_broker import PaperBroker
+from src.execution.dhan_contract_resolver import DhanContractResolver
 
 logger = setup_logging("execution.live_session")
 
@@ -40,10 +42,11 @@ class MultiBotLiveSession:
         self,
         capital_per_bot: float = 100000.0,
         session_file: str = "state/live_paper_session.json",
+        state_file: Optional[str] = None,
     ):
         Config.assert_no_live_trading()
         self.capital_per_bot = capital_per_bot
-        self.session_file = Path(session_file)
+        self.session_file = Path(state_file or session_file)
         self.session_file.parent.mkdir(parents=True, exist_ok=True)
         
         self.bot_names = [
@@ -101,123 +104,126 @@ class MultiBotLiveSession:
         self.save_session()
 
     def _initialize_default_active_positions(self):
-        """Ensure all 5 bots have their active positions / deployment initialized."""
-        # 1. Strategy 1: Apex VRP Engine (Active Weekly Iron Condor into Thursday Expiry)
-        s1 = self.bot_states["Strategy 1: Apex VRP Engine"]
-        if s1["active_trade"] is None and not s1["closed_trades"]:
-            s1["active_trade"] = {
-                "id": "APEX-CONDOR-W38",
-                "contract": "NIFTY 1.8-SD Iron Condor (Short 23600 CE / 22800 PE + Long 23800 CE / 22600 PE)",
-                "entry_time": "09:30:00",
-                "spot_entry": 23200.0,
-                "net_credit_collected": 35.0,  # 35 pts net credit
-                "lots": 2,
-                "current_val": 22.0,  # decayed down from 35 to 22 (profitable theta decay!)
-                "unrealized_pnl": (35.0 - 22.0) * 50 * 2 - 280.0,  # +Rs 1,020 net profit
-                "status": "HARVESTING_THETA",
-            }
-            s1["status"] = "IN_POSITION (HARVESTING_THETA)"
-
-        # 2. Strategy 5: Velocity-5 Momentum Scalper (Active Intraday CE)
-        s5 = self.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
-        if s5["active_trade"] is None and not s5["closed_trades"]:
-            s5["active_trade"] = {
-                "id": "VELOCITY-LIVE-101",
-                "contract": "NIFTY 23200 CE",
-                "entry_time": "13:30:20",
-                "spot_entry": 23222.55,
-                "entry_premium": 110.0,
-                "target_premium": 143.0,
-                "stop_premium": 93.5,
-                "current_premium": 110.5,
-                "qty": 25,
-                "status": "OPEN",
-            }
-            s5["status"] = "IN_POSITION (SCALPING)"
-
-        # 3. Strategy 4: Golden Trend Runner
-        s4 = self.bot_states["Strategy 4: Golden Trend Runner"]
-        if s4["active_trade"] is None and not s4["closed_trades"]:
-            s4["status"] = "WATCHING_20_EMA_PULLBACK"
-
-        # 4. Strategy 3: Confluence Gamma Scalper
-        s3 = self.bot_states["Strategy 3: Confluence Gamma Scalper"]
-        if s3["active_trade"] is None and not s3["closed_trades"]:
-            s3["status"] = "MONITORING_BOLLINGER_SQUEEZE"
-
-        # 5. Strategy 2: Zen Curvature Overnight
-        s2 = self.bot_states["Strategy 2: Zen Curvature Overnight"]
-        if s2["active_trade"] is None and not s2["closed_trades"]:
-            s2["status"] = "ARMED_FOR_03:20_PM_ENTRY"
-
-        # 6. Strategy 6: Micro Momentum Sniper
-        if "Strategy 6: Micro Momentum Sniper" not in self.bot_states:
-            self.bot_states["Strategy 6: Micro Momentum Sniper"] = {
-                "allocated_capital": 10000.0,
-                "current_capital": 10000.0,
-                "status": "ARMED_FOR_CONFLUENCE_BREAKOUT",
-                "active_trade": None,
-                "closed_trades": [],
-                "net_pnl": 0.0,
-            }
-        else:
-            s6 = self.bot_states["Strategy 6: Micro Momentum Sniper"]
-            if s6["active_trade"] is None and not s6["closed_trades"]:
-                s6["status"] = "ARMED_FOR_CONFLUENCE_BREAKOUT"
+        """Initialize all 6 bots in clean active monitoring mode (zero hard-coded trades)."""
+        clean_statuses = {
+            "Strategy 1: Apex VRP Engine": "MONITORING_THETA (VRP_CONDORS)",
+            "Strategy 2: Zen Curvature Overnight": "ARMED_FOR_03:20_PM_SKEW_ENTRY",
+            "Strategy 3: Confluence Gamma Scalper": "MONITORING_BOLLINGER_SQUEEZE",
+            "Strategy 4: Golden Trend Runner": "WATCHING_20_EMA_PULLBACK",
+            "Strategy 5: Velocity-5 Momentum Scalper": "MONITORING_ORB_MOMENTUM",
+            "Strategy 6: Micro Momentum Sniper": "ARMED_FOR_CONFLUENCE_BREAKOUT",
+        }
+        for name in self.bot_names:
+            if name not in self.bot_states:
+                self.bot_states[name] = {
+                    "allocated_capital": self.capital_per_bot,
+                    "current_capital": self.capital_per_bot,
+                    "status": clean_statuses.get(name, "ACTIVE_MONITORING"),
+                    "active_trade": None,
+                    "closed_trades": [],
+                    "net_pnl": 0.0,
+                }
+            else:
+                s = self.bot_states[name]
+                if s.get("active_trade") is None and not s.get("closed_trades"):
+                    s["status"] = clean_statuses.get(name, "ACTIVE_MONITORING")
 
         self.save_session()
 
     def fetch_live_market_state(self) -> dict:
-        try:
-            import yfinance as yf
-            nifty_t = yf.Ticker("^NSEI").history(period="1d", interval="5m")
-            bank_t = yf.Ticker("^NSEBANK").history(period="1d", interval="5m")
-            vix_t = yf.Ticker("^INDIAVIX").history(period="1d", interval="5m")
+        """Fetch live market spot and VIX dynamically via DhanContractResolver."""
+        mkt = DhanContractResolver.get_live_market_state()
+        return {
+            "timestamp": mkt["timestamp"],
+            "nifty": {"last": mkt["nifty_spot"], "open": mkt["nifty_spot"]},
+            "bank": {"last": mkt["bank_spot"], "open": mkt["bank_spot"]},
+            "vix": mkt["vix"],
+        }
 
-            n_last = float(nifty_t.iloc[-1]["Close"]) if not nifty_t.empty else 23220.0
-            n_open = float(nifty_t.iloc[0]["Open"]) if not nifty_t.empty else n_last
-            b_last = float(bank_t.iloc[-1]["Close"]) if not bank_t.empty else 56215.0
-            b_open = float(bank_t.iloc[0]["Open"]) if not bank_t.empty else b_last
-            v_last = float(vix_t.iloc[-1]["Close"]) if not vix_t.empty else 13.15
-
-            return {
-                "timestamp": datetime.now(),
-                "nifty": {"last": n_last, "open": n_open},
-                "bank": {"last": b_last, "open": b_open},
-                "vix": v_last,
-            }
-        except Exception as e:
-            return {
-                "timestamp": datetime.now(),
-                "nifty": {"last": 23220.0, "open": 23200.0},
-                "bank": {"last": 56215.0, "open": 56000.0},
-                "vix": 13.15,
-            }
-
-    def evaluate_all_bots(self, mkt: dict):
+    def evaluate_all_bots(self, mkt: dict, current_time: Optional[dtime] = None):
         n_last = mkt["nifty"]["last"]
         b_last = mkt["bank"]["last"]
-        now_time = datetime.now().time()
+        now_time = current_time or datetime.now().time()
 
         # ─── BOT 1: APEX VRP ENGINE (THETA HARVEST) ───
         s1 = self.bot_states["Strategy 1: Apex VRP Engine"]
-        if s1["active_trade"]:
+        if s1["active_trade"] is None and not s1["closed_trades"] and now_time >= dtime(9, 20) and now_time <= dtime(11, 30):
+            # Dynamic Strangle entry when VRP is positive
+            call_k = round((n_last + 300) / 50.0) * 50.0
+            put_k = round((n_last - 300) / 50.0) * 50.0
+            c_res = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), "CE", strike=call_k)
+            p_res = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), "PE", strike=put_k)
+            net_credit = round(c_res["premium"] + p_res["premium"], 2)
+            s1["active_trade"] = {
+                "id": f"APEX-THETA-{int(time.time() % 10000)}",
+                "contract": f"NIFTY Strangle {int(put_k)} PE / {int(call_k)} CE",
+                "entry_time": datetime.now().strftime("%H:%M:%S"),
+                "spot_entry": n_last,
+                "net_credit_collected": net_credit,
+                "current_val": net_credit,
+                "lots": 1,
+                "qty": 25,
+                "unrealized_pnl": 0.0,
+            }
+            s1["status"] = "IN_POSITION (THETA_DECAY)"
+            self.log_event(f"BOT 1 ENTERED THETA HARVEST: {s1['active_trade']['contract']} (Credit: Rs {net_credit:.1f})")
+        elif s1["active_trade"]:
             t1 = s1["active_trade"]
-            # Decay model: As time passes towards tomorrow's expiry, net credit decays
-            t1["current_val"] = max(12.0, t1["current_val"] - 0.05)
+            t1["current_val"] = max(2.0, t1["current_val"] - 0.05)
             pts_profit = t1["net_credit_collected"] - t1["current_val"]
-            pnl1 = (pts_profit * 50 * t1["lots"]) - (t1["lots"] * 140.0)
-            t1["unrealized_pnl"] = pnl1
-            s1["net_pnl"] = pnl1
+            pnl1 = (pts_profit * t1["qty"]) - 80.0  # realistic statutory slippage & taxes
+            t1["unrealized_pnl"] = round(pnl1, 2)
+            s1["net_pnl"] = round(pnl1, 2)
 
         # ─── BOT 5: VELOCITY-5 MOMENTUM SCALPER ───
         s5 = self.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
-        if s5["active_trade"]:
+        if s5["active_trade"] is None and not s5["closed_trades"] and now_time >= dtime(9, 20) and now_time < dtime(14, 30):
+            # ORB Trigger: Spot deviates from open by >= 15 pts
+            n_open = mkt["nifty"].get("open", n_last)
+            if n_last > n_open + 15.0:
+                c5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), "CE")
+                prem = c5["premium"]
+                s5["active_trade"] = {
+                    "id": f"VELOCITY-{int(time.time() % 10000)}",
+                    "contract": c5["trading_symbol"],
+                    "security_id": c5["security_id"],
+                    "entry_time": datetime.now().strftime("%H:%M:%S"),
+                    "spot_entry": n_last,
+                    "entry_premium": prem,
+                    "target_premium": round(prem * 1.30, 2),
+                    "stop_premium": round(prem * 0.85, 2),
+                    "current_premium": prem,
+                    "qty": c5["lot_size"],
+                    "status": "OPEN_CE_ORB",
+                }
+                s5["status"] = "IN_POSITION (ORB_CE_BREAKOUT)"
+                self.log_event(f"BOT 5 EXECUTED CE ORB: {c5['trading_symbol']} @ Rs {prem:.1f}")
+            elif n_last < n_open - 15.0:
+                p5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), "PE")
+                prem = p5["premium"]
+                s5["active_trade"] = {
+                    "id": f"VELOCITY-{int(time.time() % 10000)}",
+                    "contract": p5["trading_symbol"],
+                    "security_id": p5["security_id"],
+                    "entry_time": datetime.now().strftime("%H:%M:%S"),
+                    "spot_entry": n_last,
+                    "entry_premium": prem,
+                    "target_premium": round(prem * 1.30, 2),
+                    "stop_premium": round(prem * 0.85, 2),
+                    "current_premium": prem,
+                    "qty": p5["lot_size"],
+                    "status": "OPEN_PE_ORB",
+                }
+                s5["status"] = "IN_POSITION (ORB_PE_BREAKDOWN)"
+                self.log_event(f"BOT 5 EXECUTED PE ORB: {p5['trading_symbol']} @ Rs {prem:.1f}")
+
+        elif s5["active_trade"]:
             t5 = s5["active_trade"]
-            spot_diff = n_last - t5["spot_entry"]
-            curr_prem = max(1.0, t5["entry_premium"] + (spot_diff * 0.55))
+            is_ce = "CE" in t5["contract"]
+            spot_diff = (n_last - t5["spot_entry"]) if is_ce else (t5["spot_entry"] - n_last)
+            curr_prem = max(0.50, round(t5["entry_premium"] + (spot_diff * 0.50), 2))
             t5["current_premium"] = curr_prem
-            pnl5 = (curr_prem - t5["entry_premium"]) * t5["qty"] - 45.0
+            pnl5 = round((curr_prem - t5["entry_premium"]) * t5["qty"] - 45.0, 2)
             t5["unrealized_pnl"] = pnl5
             s5["net_pnl"] = pnl5
 
@@ -251,33 +257,37 @@ class MultiBotLiveSession:
         # ─── BOT 4: GOLDEN TREND RUNNER ───
         s4 = self.bot_states["Strategy 4: Golden Trend Runner"]
         if s4["active_trade"] is None and not s4["closed_trades"] and now_time < dtime(15, 10):
-            # Check 20 EMA pullback expansion:
-            # Triggered if Nifty bounced cleanly off 23,200 open
-            if n_last > 23215.0 and mkt["bank"]["last"] > mkt["bank"]["open"]:
+            n_open = mkt["nifty"].get("open", n_last)
+            b_open = mkt["bank"].get("open", b_last)
+            # Check 20 EMA pullback expansion: triggered if Nifty is above open and BankNifty is positive
+            if n_last > n_open + 10.0 and b_last >= b_open:
+                c4 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), "CE")
+                prem = c4["premium"]
                 s4["active_trade"] = {
-                    "id": "GOLDEN-LIVE-201",
-                    "contract": "NIFTY 23200 CE (1:3 Runner)",
+                    "id": f"GOLDEN-{int(time.time() % 10000)}",
+                    "contract": f"{c4['trading_symbol']} (1:3 Runner)",
+                    "security_id": c4["security_id"],
                     "entry_time": datetime.now().strftime("%H:%M:%S"),
                     "spot_entry": n_last,
                     "entry_spot": n_last,
-                    "entry_premium": 112.0,
-                    "target_premium": 112.0 * 1.50,  # +50% 1:3 runner target
-                    "stop_premium": 112.0 * 0.85,    # -15% stop
-                    "current_premium": 112.0,
-                    "qty": 25,
+                    "entry_premium": prem,
+                    "target_premium": round(prem * 1.50, 2),  # +50% 1:3 runner target
+                    "stop_premium": round(prem * 0.85, 2),    # -15% stop
+                    "current_premium": prem,
+                    "qty": c4["lot_size"],
                     "status": "OPEN_RUNNER",
                 }
                 s4["status"] = "IN_POSITION (RIDING_1:3_TREND)"
                 self.log_event(
-                    f"BOT 4 EXECUTED GOLDEN PULLBACK: {s4['active_trade']['contract']} @ Rs 112.0 (Target: Rs 168.0)"
+                    f"BOT 4 EXECUTED GOLDEN PULLBACK: {s4['active_trade']['contract']} @ Rs {prem:.1f} (Target: Rs {s4['active_trade']['target_premium']:.1f})"
                 )
         elif s4["active_trade"]:
             t4 = s4["active_trade"]
             entry_p = t4.get("spot_entry") or t4.get("entry_spot") or n_last
             spot_diff = n_last - entry_p
-            curr_prem = max(1.0, t4["entry_premium"] + (spot_diff * 0.55))
+            curr_prem = max(0.50, round(t4["entry_premium"] + (spot_diff * 0.55), 2))
             t4["current_premium"] = curr_prem
-            pnl4 = (curr_prem - t4["entry_premium"]) * t4["qty"] - 45.0
+            pnl4 = round((curr_prem - t4["entry_premium"]) * t4["qty"] - 45.0, 2)
             t4["unrealized_pnl"] = pnl4
             s4["net_pnl"] = pnl4
 
@@ -309,56 +319,111 @@ class MultiBotLiveSession:
 
         # ─── BOT 3: CONFLUENCE GAMMA SCALPER ───
         s3 = self.bot_states["Strategy 3: Confluence Gamma Scalper"]
-        # Monitors Bollinger Band Squeeze expansion (fires when volatility bursts)
         if s3["active_trade"] is None and not s3["closed_trades"] and now_time < dtime(15, 10):
-            s3["status"] = "MONITORING_SQUEEZE_EXPANSION"
+            n_open = mkt["nifty"].get("open", n_last)
+            # Monitors Bollinger Band Squeeze expansion (fires when volatility bursts > 35 pts)
+            if abs(n_last - n_open) >= 35.0:
+                opt_t = "CE" if n_last > n_open else "PE"
+                c3 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), opt_t)
+                prem = c3["premium"]
+                s3["active_trade"] = {
+                    "id": f"GAMMA-{int(time.time() % 10000)}",
+                    "contract": f"{c3['trading_symbol']} (Gamma Scalp)",
+                    "security_id": c3["security_id"],
+                    "entry_time": datetime.now().strftime("%H:%M:%S"),
+                    "spot_entry": n_last,
+                    "entry_premium": prem,
+                    "target_premium": round(prem * 1.35, 2),
+                    "stop_premium": round(prem * 0.88, 2),
+                    "current_premium": prem,
+                    "qty": c3["lot_size"],
+                    "status": f"OPEN_GAMMA_{opt_t}",
+                }
+                s3["status"] = f"IN_POSITION (GAMMA_{opt_t})"
+                self.log_event(f"BOT 3 TRIGGERED GAMMA EXPANSION: {c3['trading_symbol']} @ Rs {prem:.1f}")
+            else:
+                s3["status"] = "MONITORING_SQUEEZE_EXPANSION"
+        elif s3["active_trade"]:
+            t3 = s3["active_trade"]
+            is_ce = "CE" in t3["contract"]
+            spot_diff = (n_last - t3["spot_entry"]) if is_ce else (t3["spot_entry"] - n_last)
+            curr_prem = max(0.50, round(t3["entry_premium"] + (spot_diff * 0.55), 2))
+            t3["current_premium"] = curr_prem
+            pnl3 = round((curr_prem - t3["entry_premium"]) * t3["qty"] - 45.0, 2)
+            t3["unrealized_pnl"] = pnl3
+            s3["net_pnl"] = pnl3
+
+            if curr_prem >= t3["target_premium"]:
+                t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                t3["exit_reason"] = "GAMMA_TARGET_HIT (+35%)"
+                s3["closed_trades"].append(t3)
+                s3["active_trade"] = None
+                s3["status"] = "PROFIT_LOCKED"
+                self.log_event(f"BOT 3 GAMMA TARGET: Net Rs {pnl3:+,.2f}")
+            elif curr_prem <= t3["stop_premium"]:
+                t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
+                t3["exit_reason"] = "GAMMA_STOP_HIT (-12%)"
+                s3["closed_trades"].append(t3)
+                s3["active_trade"] = None
+                s3["status"] = "STOPPED_OUT"
+                self.log_event(f"BOT 3 GAMMA STOP: Net Rs {pnl3:+,.2f}")
 
         # ─── BOT 2: ZEN CURVATURE OVERNIGHT ───
         s2 = self.bot_states["Strategy 2: Zen Curvature Overnight"]
         if now_time >= dtime(15, 20) and now_time <= dtime(15, 25) and s2["active_trade"] is None:
             short_k = round((n_last + 250) / 50.0) * 50.0
             long_k = short_k + 150
+            short_c = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), "CE", strike=short_k)
+            long_c = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), "CE", strike=long_k)
+            net_credit = max(5.0, round(short_c["premium"] - long_c["premium"], 2))
             s2["active_trade"] = {
-                "id": "ZEN-OVERNIGHT-W38",
-                "contract": f"NIFTY Bear Call Spread {int(short_k)}/{int(long_k)}",
+                "id": f"ZEN-OVERNIGHT-{int(time.time() % 10000)}",
+                "contract": f"NIFTY Bear Call Spread {int(short_k)}/{int(long_k)} CE",
+                "short_security_id": short_c["security_id"],
+                "long_security_id": long_c["security_id"],
                 "entry_time": datetime.now().strftime("%H:%M:%S"),
                 "spot_entry": n_last,
-                "net_credit": 45.0,
+                "net_credit": net_credit,
                 "qty": 50,  # 2 lots
                 "status": "OPEN_OVERNIGHT",
                 "unrealized_pnl": 0.0,
             }
             s2["status"] = "IN_POSITION (OVERNIGHT_HOLD)"
             self.log_event(
-                f"BOT 2 DEPLOYED OVERNIGHT SPREAD: {s2['active_trade']['contract']} (Net Credit: Rs 45.0 pts)"
+                f"BOT 2 DEPLOYED OVERNIGHT SPREAD: {s2['active_trade']['contract']} (Net Credit: Rs {net_credit:.1f} pts)"
             )
 
         # ─── BOT 6: MICRO MOMENTUM SNIPER BUYER (1 LOT OPTION) ───
         s6 = self.bot_states["Strategy 6: Micro Momentum Sniper"]
         if s6["active_trade"] is None and not s6["closed_trades"]:
+            n_open = mkt["nifty"].get("open", n_last)
             # Sniper Trigger: If NIFTY breaks down below open with momentum
-            if n_last < mkt["nifty"]["open"] - 30.0 and mkt.get("vix", 15.0) <= 18.5:
-                put_strike = round((n_last - 20) / 50.0) * 50.0
+            if n_last < n_open - 30.0 and mkt.get("vix", 14.5) <= 18.5:
+                c6 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix", 14.5), "PE", strike_offset_steps=0)
+                prem = c6["premium"]
+                target_p = round(prem * 1.45, 2)  # 1:3 RR
+                stop_p = round(prem * 0.85, 2)    # 15% stop
                 s6["active_trade"] = {
                     "id": f"SNIPER-LIVE-{int(time.time() % 10000)}",
-                    "contract": f"NIFTY {int(put_strike)} PE (1:3 Sniper)",
+                    "contract": f"{c6['trading_symbol']} (1:3 Sniper)",
+                    "security_id": c6["security_id"],
                     "entry_time": datetime.now().strftime("%H:%M:%S"),
                     "spot_entry": n_last,
-                    "entry_premium": 110.0,
-                    "target_premium": 160.0, # 1:3 RR
-                    "stop_premium": 94.0,    # 16 pt stop
-                    "current_premium": 110.0,
-                    "qty": 25,
+                    "entry_premium": prem,
+                    "target_premium": target_p,
+                    "stop_premium": stop_p,
+                    "current_premium": prem,
+                    "qty": c6["lot_size"],
                     "status": "OPEN_SNIPER",
                 }
                 s6["status"] = "IN_POSITION (SNIPER_PE)"
-                self.log_event(f"BOT 6 EXECUTED SNIPER PE: {s6['active_trade']['contract']} @ Rs 110.0")
+                self.log_event(f"BOT 6 EXECUTED SNIPER PE: {s6['active_trade']['contract']} @ Rs {prem:.1f}")
         elif s6["active_trade"]:
             t6 = s6["active_trade"]
-            spot_diff = t6["spot_entry"] - n_last # PE gains as spot falls
-            curr_prem = max(1.0, t6["entry_premium"] + (spot_diff * 0.55))
+            spot_diff = t6["spot_entry"] - n_last  # PE gains as spot falls
+            curr_prem = max(0.50, round(t6["entry_premium"] + (spot_diff * 0.55), 2))
             t6["current_premium"] = curr_prem
-            pnl6 = (curr_prem - t6["entry_premium"]) * t6["qty"] - 65.0
+            pnl6 = round((curr_prem - t6["entry_premium"]) * t6["qty"] - 65.0, 2)
             t6["unrealized_pnl"] = pnl6
             s6["net_pnl"] = pnl6
 
