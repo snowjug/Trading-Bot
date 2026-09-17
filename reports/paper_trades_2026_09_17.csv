@@ -1,1 +1,1 @@
-Trade ID,Strategy,Signal Time,Entry Time,Contract,SecurityId,Side,Qty,Entry Bid,Entry Ask,Entry Fill,Exit Time,Exit Bid,Exit Ask,Exit Fill,Exit Reason,Gross P&L,Costs,Net P&L,Status
+Trade ID,Strategy,Entry Timestamp,Entry Bid,Entry Ask,Entry Fill,Exit Timestamp,Exit Bid,Exit Ask,Exit Fill,Exit Reason,Holding Duration,Gross P&L,All Configured Costs,Net P&L,Contract,SecurityId,Side,Qty,Status

@@ -2,7 +2,7 @@
 
 Date: 2026-09-17
 Start time IST: 09:06:21
-End time IST: 09:24:25
+End time IST: 09:33:47
 Git HEAD: e1a9fe14284e3b979e307f10d36517a7c245c679
 Mode: PAPER
 LIVE_TRADING_ENABLED: FALSE
@@ -22,18 +22,18 @@ LIVE_TRADING_ENABLED: FALSE
 
 | Strategy | Signals | Executed | Rejected | Open | Closed |
 |:---|:---:|:---:|:---:|:---:|:---:|
-| Strategy 1: Apex VRP Engine | 3 | 0 | 3 | 0 | 0 |
+| Strategy 1: Apex VRP Engine | 2 | 0 | 2 | 0 | 0 |
 | Strategy 2: Zen Curvature Overnight | 0 | 0 | 0 | 0 | 0 |
-| Strategy 3: Confluence Gamma Scalper | 3 | 0 | 3 | 0 | 0 |
-| Strategy 4: Golden Trend Runner | 3 | 0 | 3 | 0 | 0 |
-| Strategy 5: Velocity-5 Momentum Scalper | 3 | 0 | 3 | 0 | 0 |
-| Strategy 6: Micro Momentum Sniper | 3 | 0 | 3 | 0 | 0 |
+| Strategy 3: Confluence Gamma Scalper | 2 | 0 | 2 | 0 | 0 |
+| Strategy 4: Golden Trend Runner | 2 | 0 | 2 | 0 | 0 |
+| Strategy 5: Velocity-5 Momentum Scalper | 2 | 0 | 2 | 0 | 0 |
+| Strategy 6: Micro Momentum Sniper | 2 | 0 | 2 | 0 | 0 |
 
 ## TRADE SUMMARY
 
-- Total signals: 15
+- Total signals: 10
 - Total paper trades: 0
-- Total rejected signals: 15
+- Total rejected signals: 10
 - Total open positions: 0
 - Total closed positions: 0
 
@@ -54,31 +54,26 @@ LIVE_TRADING_ENABLED: FALSE
 > **Do not interpret this short session as evidence that a strategy is profitable.**
 > This test verifies execution realism, contract resolution, fail-closed handling, and absence of synthetic pricing.
 
-## TRADE-BY-TRADE TABLE
+## TRADE-BY-TRADE TABLE (COMPLETED & OPEN TRADES)
 
-| Trade ID | Strategy | Signal Time | Entry Time | Contract | SecurityId | Side | Qty | Entry Bid | Entry Ask | Entry Fill | Exit Time | Exit Bid | Exit Ask | Exit Fill | Exit Reason | Gross P&L | Costs | Net P&L |
-|:---|:---|:---:|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---|:---:|:---:|:---:|
-| -- | None | -- | -- | No trades executed in session | -- | -- | 0 | -- | -- | -- | -- | -- | -- | -- | -- | Rs 0.00 | Rs 0.00 | Rs 0.00 |
+| Trade ID | Strategy | Entry Timestamp | Entry Bid | Entry Ask | Entry Fill | Exit Timestamp | Exit Bid | Exit Ask | Exit Fill | Exit Reason | Holding Duration | Gross P&L | All Configured Costs | Net P&L |
+|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| -- | None | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | Rs 0.00 | Rs 0.00 | Rs 0.00 |
 
 ## REJECTED SIGNALS
 
 | Time | Strategy | Signal | Contract | Reason | Status |
 |:---:|:---|:---:|:---|:---|:---:|
-| 09:20:26 | Strategy 1: Apex VRP Engine | SELL (STRANGLE) | NIFTY 22 SEP 23550 CALL / NIFTY 22 SEP 22950 PUT | DATA_UNAVAILABLE: Stale/Missing Bid Quote | NO_EXECUTION |
-| 09:20:26 | Strategy 5: Velocity-5 Momentum Scalper | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:20:26 | Strategy 4: Golden Trend Runner | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:20:26 | Strategy 3: Confluence Gamma Scalper | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:20:26 | Strategy 6: Micro Momentum Sniper | BUY (CE) | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:22:53 | Strategy 1: Apex VRP Engine | SELL (STRANGLE) | NIFTY 22 SEP 23550 CALL / NIFTY 22 SEP 22950 PUT | DATA_UNAVAILABLE: Stale/Missing Bid Quote | NO_EXECUTION |
-| 09:22:53 | Strategy 5: Velocity-5 Momentum Scalper | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:22:53 | Strategy 4: Golden Trend Runner | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:22:53 | Strategy 3: Confluence Gamma Scalper | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:22:53 | Strategy 6: Micro Momentum Sniper | BUY (CE) | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:23:54 | Strategy 1: Apex VRP Engine | SELL (STRANGLE) | NIFTY 22 SEP 23550 CALL / NIFTY 22 SEP 22950 PUT | DATA_UNAVAILABLE: Stale/Missing Bid Quote | NO_EXECUTION |
-| 09:23:54 | Strategy 5: Velocity-5 Momentum Scalper | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:23:54 | Strategy 4: Golden Trend Runner | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:23:54 | Strategy 3: Confluence Gamma Scalper | BUY | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
-| 09:23:54 | Strategy 6: Micro Momentum Sniper | BUY (CE) | NIFTY 22 SEP 23250 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
+| 09:33:25 | Strategy 1: Apex VRP Engine | SELL (STRANGLE) | NIFTY 22 SEP 23600 CALL / NIFTY 22 SEP 23000 PUT | DATA_UNAVAILABLE: Stale/Missing Bid Quote | NO_EXECUTION |
+| 09:33:25 | Strategy 5: Velocity-5 Momentum Scalper | BUY | NIFTY 22 SEP 23300 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
+| 09:33:25 | Strategy 4: Golden Trend Runner | BUY | NIFTY 22 SEP 23300 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
+| 09:33:25 | Strategy 3: Confluence Gamma Scalper | BUY | NIFTY 22 SEP 23300 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
+| 09:33:25 | Strategy 6: Micro Momentum Sniper | BUY (CE) | NIFTY 22 SEP 23300 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
+| 09:33:47 | Strategy 1: Apex VRP Engine | SELL (STRANGLE) | NIFTY 22 SEP 23600 CALL / NIFTY 22 SEP 23000 PUT | DATA_UNAVAILABLE: Stale/Missing Bid Quote | NO_EXECUTION |
+| 09:33:47 | Strategy 5: Velocity-5 Momentum Scalper | BUY | NIFTY 22 SEP 23300 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
+| 09:33:47 | Strategy 4: Golden Trend Runner | BUY | NIFTY 22 SEP 23300 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
+| 09:33:47 | Strategy 3: Confluence Gamma Scalper | BUY | NIFTY 22 SEP 23300 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
+| 09:33:47 | Strategy 6: Micro Momentum Sniper | BUY (CE) | NIFTY 22 SEP 23300 CALL | DATA_UNAVAILABLE: Stale/Missing Ask Quote | NO_EXECUTION |
 
 ## EXECUTION AUDIT CONFIRMATION
 - `LTP_PLUS` / `LTP_MINUS`: 0 occurrences (Eradicated)

@@ -64,14 +64,14 @@ class MultiBotLiveSession:
 
         # Determine capital allocations
         tot_cap = float(total_capital) if total_capital is not None else float(Config.PAPER_INITIAL_CAPITAL)
-        micro_cap = float(micro_capital) if micro_capital is not None else float(getattr(Config, "MICRO_STRATEGY_CAPITAL", 15000.0))
+        micro_cap = float(micro_capital) if micro_capital is not None else float(getattr(Config, "MICRO_STRATEGY_CAPITAL", 20000.0))
 
         if allocations is not None:
             self.allocations = allocations
         elif capital_per_bot is not None:
             self.allocations = {name: float(capital_per_bot) for name in self.bot_names}
         else:
-            # Default: 1 Lakh Total Paper Capital with 15k dedicated to Micro Strategy
+            # Default: 1 Lakh Total Paper Capital with 20k dedicated to Micro Strategy
             rem_per_bot = round((tot_cap - micro_cap) / 5.0, 2)
             self.allocations = {
                 "Strategy 1: Apex VRP Engine": rem_per_bot,
@@ -82,12 +82,12 @@ class MultiBotLiveSession:
                 "Strategy 6: Micro Momentum Sniper": micro_cap,
             }
 
-        self.capital_per_bot = self.allocations.get("Strategy 4: Golden Trend Runner", 17000.0)
+        self.capital_per_bot = self.allocations.get("Strategy 4: Golden Trend Runner", 16000.0)
 
         self.bot_states = {
             name: {
-                "allocated_capital": self.allocations.get(name, 17000.0),
-                "current_capital": self.allocations.get(name, 17000.0),
+                "allocated_capital": self.allocations.get(name, 16000.0),
+                "current_capital": self.allocations.get(name, 16000.0),
                 "status": "ACTIVE_MONITORING",
                 "active_trade": None,
                 "closed_trades": [],
@@ -202,6 +202,36 @@ class MultiBotLiveSession:
         rep_dir = Path("reports")
         rep_dir.mkdir(parents=True, exist_ok=True)
 
+        def normalize_exit_reason(reason: Optional[str]) -> str:
+            if not reason or reason == "--":
+                return "--"
+            r = str(reason).upper()
+            if "TARGET" in r or "PROFIT" in r:
+                return "PROFIT_TARGET"
+            elif "STOP" in r or "LOSS" in r:
+                return "STOP_LOSS"
+            elif "EOD" in r or "SQUAREOFF" in r or "MIS" in r:
+                return "EOD_FORCED_EXIT"
+            elif "STRATEGY" in r or "SIGNAL" in r or "REVERSAL" in r:
+                return "STRATEGY_EXIT"
+            else:
+                return "OTHER_EXISTING_EXIT_REASON"
+
+        def calculate_holding_duration(entry_time_str: Optional[str], exit_time_str: Optional[str]) -> str:
+            if not entry_time_str or not exit_time_str or entry_time_str == "--" or exit_time_str == "--":
+                return "--"
+            try:
+                t_entry = datetime.strptime(str(entry_time_str).strip(), "%H:%M:%S")
+                t_exit = datetime.strptime(str(exit_time_str).strip(), "%H:%M:%S")
+                diff_secs = int((t_exit - t_entry).total_seconds())
+                if diff_secs < 0:
+                    diff_secs += 86400
+                mins = diff_secs // 60
+                secs = diff_secs % 60
+                return f"{mins}m {secs}s"
+            except Exception:
+                return "--"
+
         all_trades = []
         for name, b in self.bot_states.items():
             if b.get("active_trade"):
@@ -215,39 +245,41 @@ class MultiBotLiveSession:
                 t["trade_state"] = "CLOSED"
                 all_trades.append(t)
 
-        # 1. Export paper_trades CSV
+        # 1. Export paper_trades CSV with all requested fields
         csv_trades_path = rep_dir / f"paper_trades_{date_str}.csv"
         trade_rows = []
         for t in all_trades:
+            norm_r = normalize_exit_reason(t.get("exit_reason"))
+            dur = calculate_holding_duration(t.get("entry_time"), t.get("exit_time"))
             trade_rows.append({
                 "Trade ID": t.get("id", "--"),
                 "Strategy": t.get("strategy", "--"),
-                "Signal Time": t.get("signal_time", t.get("entry_time", "--")),
-                "Entry Time": t.get("entry_time", "--"),
+                "Entry Timestamp": t.get("entry_time", "--"),
+                "Entry Bid": t.get("entry_bid", "--"),
+                "Entry Ask": t.get("entry_ask", "--"),
+                "Entry Fill": t.get("entry_fill", t.get("entry_premium", "--")),
+                "Exit Timestamp": t.get("exit_time", "--"),
+                "Exit Bid": t.get("exit_bid", "--"),
+                "Exit Ask": t.get("exit_ask", "--"),
+                "Exit Fill": t.get("exit_fill", t.get("current_premium", "--")),
+                "Exit Reason": norm_r,
+                "Holding Duration": dur,
+                "Gross P&L": t.get("gross_pnl", 0.0),
+                "All Configured Costs": t.get("statutory_friction", t.get("costs", 0.0)),
+                "Net P&L": t.get("net_pnl", 0.0),
                 "Contract": t.get("contract", "--"),
                 "SecurityId": t.get("security_id", "--"),
                 "Side": t.get("side", "BUY"),
                 "Qty": t.get("qty", 0),
-                "Entry Bid": t.get("entry_bid", "--"),
-                "Entry Ask": t.get("entry_ask", "--"),
-                "Entry Fill": t.get("entry_fill", t.get("entry_premium", "--")),
-                "Exit Time": t.get("exit_time", "--"),
-                "Exit Bid": t.get("exit_bid", "--"),
-                "Exit Ask": t.get("exit_ask", "--"),
-                "Exit Fill": t.get("exit_fill", t.get("current_premium", "--")),
-                "Exit Reason": t.get("exit_reason", "--"),
-                "Gross P&L": t.get("gross_pnl", 0.0),
-                "Costs": t.get("statutory_friction", t.get("costs", 0.0)),
-                "Net P&L": t.get("net_pnl", 0.0),
                 "Status": t.get("trade_state", "OPEN"),
             })
         if trade_rows:
             pd.DataFrame(trade_rows).to_csv(csv_trades_path, index=False)
         else:
             pd.DataFrame(columns=[
-                "Trade ID", "Strategy", "Signal Time", "Entry Time", "Contract", "SecurityId", "Side", "Qty",
-                "Entry Bid", "Entry Ask", "Entry Fill", "Exit Time", "Exit Bid", "Exit Ask", "Exit Fill",
-                "Exit Reason", "Gross P&L", "Costs", "Net P&L", "Status"
+                "Trade ID", "Strategy", "Entry Timestamp", "Entry Bid", "Entry Ask", "Entry Fill",
+                "Exit Timestamp", "Exit Bid", "Exit Ask", "Exit Fill", "Exit Reason", "Holding Duration",
+                "Gross P&L", "All Configured Costs", "Net P&L", "Contract", "SecurityId", "Side", "Qty", "Status"
             ]).to_csv(csv_trades_path, index=False)
 
         # 2. Export rejected_signals CSV
@@ -303,16 +335,17 @@ class MultiBotLiveSession:
         if all_trades:
             trade_md_rows = []
             for t in all_trades:
+                norm_r = normalize_exit_reason(t.get("exit_reason"))
+                dur = calculate_holding_duration(t.get("entry_time"), t.get("exit_time"))
                 trade_md_rows.append(
-                    f"| {t.get('id', '--')} | {t.get('strategy', '--')} | {t.get('signal_time', '--')} | {t.get('entry_time', '--')} | "
-                    f"{t.get('contract', '--')} | {t.get('security_id', '--')} | {t.get('side', 'BUY')} | {t.get('qty', 0)} | "
+                    f"| {t.get('id', '--')} | {t.get('strategy', '--')} | {t.get('entry_time', '--')} | "
                     f"{t.get('entry_bid', '--')} | {t.get('entry_ask', '--')} | {t.get('entry_fill', '--')} | {t.get('exit_time', '--')} | "
-                    f"{t.get('exit_bid', '--')} | {t.get('exit_ask', '--')} | {t.get('exit_fill', '--')} | {t.get('exit_reason', '--')} | "
+                    f"{t.get('exit_bid', '--')} | {t.get('exit_ask', '--')} | {t.get('exit_fill', '--')} | {norm_r} | {dur} | "
                     f"Rs {t.get('gross_pnl', 0.0):+,.2f} | Rs {t.get('statutory_friction', 0.0):,.2f} | Rs {t.get('net_pnl', 0.0):+,.2f} |"
                 )
             trades_table = "\n".join(trade_md_rows)
         else:
-            trades_table = "| -- | None | -- | -- | No trades executed in session | -- | -- | 0 | -- | -- | -- | -- | -- | -- | -- | -- | Rs 0.00 | Rs 0.00 | Rs 0.00 |"
+            trades_table = "| -- | None | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | Rs 0.00 | Rs 0.00 | Rs 0.00 |"
 
         if self.rejected_signals:
             rej_md_rows = []
@@ -377,10 +410,10 @@ LIVE_TRADING_ENABLED: FALSE
 > **Do not interpret this short session as evidence that a strategy is profitable.**
 > This test verifies execution realism, contract resolution, fail-closed handling, and absence of synthetic pricing.
 
-## TRADE-BY-TRADE TABLE
+## TRADE-BY-TRADE TABLE (COMPLETED & OPEN TRADES)
 
-| Trade ID | Strategy | Signal Time | Entry Time | Contract | SecurityId | Side | Qty | Entry Bid | Entry Ask | Entry Fill | Exit Time | Exit Bid | Exit Ask | Exit Fill | Exit Reason | Gross P&L | Costs | Net P&L |
-|:---|:---|:---:|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---|:---:|:---:|:---:|
+| Trade ID | Strategy | Entry Timestamp | Entry Bid | Entry Ask | Entry Fill | Exit Timestamp | Exit Bid | Exit Ask | Exit Fill | Exit Reason | Holding Duration | Gross P&L | All Configured Costs | Net P&L |
+|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 {trades_table}
 
 ## REJECTED SIGNALS
