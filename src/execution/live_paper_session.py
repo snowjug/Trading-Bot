@@ -152,6 +152,11 @@ class MultiBotLiveSession:
                     self.requires_reconciliation = True
                     self.reconciliation_reason = "UNDATED_SESSION_STATE"
 
+                if not isinstance(data, dict):
+                    raise ValueError(f"session state root is {type(data).__name__}, expected object")
+                if "bot_states" in data and not isinstance(data["bot_states"], dict):
+                    raise ValueError("bot_states is not an object")
+
                 if "bot_states" in data:
                     loaded = data["bot_states"]
                     for name in self.bot_names:
@@ -166,7 +171,22 @@ class MultiBotLiveSession:
                 self.signals = data.get("signals", [])
                 self.rejected_signals = data.get("rejected_signals", [])
             except Exception as e:
-                logger.warning(f"Could not load previous session: {e}")
+                # HIGH #11: corrupt or partial state must never silently become an
+                # empty book. An empty book reads as "no positions", which would
+                # let the session trade on top of exposure it cannot see. The
+                # evidence is preserved and new entries are halted.
+                self.requires_reconciliation = True
+                self.reconciliation_reason = (
+                    f"CORRUPT_SESSION_STATE: {self.session_file} could not be parsed ({e}). "
+                    "New entries are halted; the file has been preserved for inspection."
+                )
+                logger.critical(self.reconciliation_reason)
+                try:
+                    quarantine = self.session_file.parent / f"corrupt_{self.session_file.name}"
+                    quarantine.write_bytes(self.session_file.read_bytes())
+                    logger.critical(f"Corrupt state preserved at {quarantine}")
+                except Exception as copy_err:
+                    logger.error(f"Could not preserve corrupt state: {copy_err}")
 
     def _handle_new_day_rollover(self, data: dict, stored_date: str, today_str: str):
         """
@@ -673,22 +693,45 @@ LIVE_TRADING_ENABLED: FALSE
                 entry_fill = at.get("entry_fill", 0.0)
                 side = at.get("side", "BUY")
 
+                # HIGH #9: an EOD exit must use an authentic, FRESH executable
+                # price on the correct side of the book. The previous fallback
+                # to current_val / entry_fill manufactured a fill and booked a
+                # fabricated P&L into the realised ledger.
+                quote_fresh = is_quote_fresh(at.get("quote_timestamp"))
                 exit_fill = None
-                if side == "SELL":
-                    curr_ask = at.get("current_ask")
-                    if curr_ask is not None and curr_ask > 0:
-                        exit_fill = round(curr_ask + 1.0, 2)
-                else:
-                    curr_bid = at.get("current_bid")
-                    if curr_bid is not None and curr_bid > 0:
-                        exit_fill = max(0.05, round(curr_bid - 0.50, 2))
+                if quote_fresh:
+                    if side == "SELL":
+                        curr_ask = at.get("current_ask")
+                        if curr_ask is not None and curr_ask > 0:
+                            exit_fill = round(curr_ask + 1.0, 2)
+                    else:
+                        curr_bid = at.get("current_bid")
+                        if curr_bid is not None and curr_bid > 0:
+                            exit_fill = max(0.05, round(curr_bid - 0.50, 2))
 
                 if exit_fill is None or exit_fill <= 0:
-                    exit_fill = at.get("current_val") or at.get("current_premium") or entry_fill or 0.05
-                    exit_fill = round(float(exit_fill), 2)
-                    exit_reason = "EOD_FORCED_EXIT (DATA_UNAVAILABLE_MARK)"
-                else:
-                    exit_reason = "EOD_FORCED_EXIT"
+                    # No executable quote: refuse to invent one. The position is
+                    # left OPEN and flagged unresolved so it cannot pollute the
+                    # realised ledger, and trading halts for operator attention.
+                    at["valuation_status"] = "DATA_UNAVAILABLE"
+                    at["status"] = "UNRESOLVED_EOD"
+                    at["trade_state"] = "UNRESOLVED_EOD"
+                    at["exit_reason"] = "EOD_UNRESOLVED_NO_EXECUTABLE_QUOTE"
+                    at["unrealized_pnl"] = None
+                    at["gross_pnl"] = None
+                    at["net_pnl"] = None
+                    b_state["status"] = "EOD_UNRESOLVED"
+                    self.requires_reconciliation = True
+                    self.reconciliation_reason = (
+                        f"EOD_UNRESOLVED: {name} could not be squared off — no fresh "
+                        f"executable quote for {at.get('contract')}. Position remains OPEN "
+                        "and must be resolved manually."
+                    )
+                    logger.critical(self.reconciliation_reason)
+                    self.log_event(f"EOD UNRESOLVED: {name} | {at.get('contract')} | NO EXECUTABLE QUOTE")
+                    continue
+
+                exit_reason = "EOD_FORCED_EXIT"
 
                 costs = IndianCostModel.calculate_roundtrip_costs(entry_fill, exit_fill, qty)
                 if side == "SELL":
@@ -802,6 +845,157 @@ LIVE_TRADING_ENABLED: FALSE
         finally:
             self._lock_handle = None
 
+    # ─────────────────── MULTI-LEG POSITION MODEL (H7) ───────────────────
+
+    @staticmethod
+    def extract_trade_legs(trade: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Decomposes a position into its individual legs.
+
+        A short strangle or a vertical spread is NOT one synthetic contract: each
+        leg has its own security id, side, quantity and executable price, and
+        risk must see them separately. Single-leg positions return one leg.
+
+        Returns [] when no leg carries an authentic security id, which callers
+        must treat as fail-closed rather than as "no risk".
+        """
+        qty = abs(float(trade.get("qty", 0) or 0))
+        legs: List[Dict[str, Any]] = []
+
+        leg_specs = [
+            ("call_security_id", "SELL" if trade.get("side") == "SELL" else "BUY",
+             "entry_call_fill", "current_call_bid"),
+            ("put_security_id", "SELL" if trade.get("side") == "SELL" else "BUY",
+             "entry_put_fill", "current_put_bid"),
+            ("short_security_id", "SELL", "entry_short_fill", "current_short_ask"),
+            ("long_security_id", "BUY", "entry_long_fill", "current_long_bid"),
+        ]
+        for id_key, side, fill_key, cur_key in leg_specs:
+            sid = trade.get(id_key)
+            if not sid:
+                continue
+            legs.append({
+                "security_id": str(sid),
+                "side": side,
+                "qty": qty,
+                "entry_price": float(trade.get(fill_key) or trade.get("entry_fill") or 0.0),
+                "current_price": trade.get(cur_key),
+                "leg_role": id_key.replace("_security_id", ""),
+            })
+
+        if legs:
+            return legs
+
+        sid = str(trade.get("security_id", "")).strip()
+        if sid and "/" not in sid:
+            legs.append({
+                "security_id": sid,
+                "side": str(trade.get("side", "BUY")),
+                "qty": qty,
+                "entry_price": float(trade.get("entry_fill") or trade.get("entry_premium") or 0.0),
+                "current_price": trade.get("current_bid"),
+                "leg_role": "single",
+            })
+        return legs
+
+    def leg_exposure_summary(self) -> Dict[str, Any]:
+        """
+        Leg-level exposure across the whole book.
+
+        Gross exposure sums the absolute notional of every leg; net exposure
+        offsets long against short. A hedged structure therefore reports a
+        smaller net than gross, which a synthetic single-contract view cannot
+        express.
+
+        `max_loss` is reported ONLY where it is structurally determinable (a
+        defined-risk vertical). For undefined-risk structures it is reported as
+        None — never estimated — and `margin_basis` records that real broker
+        margin is unavailable so a configured conservative cap governs instead.
+        """
+        gross = 0.0
+        net = 0.0
+        per_leg: List[Dict[str, Any]] = []
+
+        for bot_name, state in self.bot_states.items():
+            trade = state.get("active_trade")
+            if not trade or trade.get("status") == "CLOSED":
+                continue
+            for leg in self.extract_trade_legs(trade):
+                notional = abs(leg["qty"] * float(leg["entry_price"] or 0.0))
+                signed = notional if leg["side"] == "BUY" else -notional
+                gross += notional
+                net += signed
+                per_leg.append({**leg, "bot": bot_name, "notional": round(notional, 2)})
+
+        return {
+            "legs": per_leg,
+            "gross_exposure": round(gross, 2),
+            "net_exposure": round(net, 2),
+            "leg_count": len(per_leg),
+            # Real SPAN/exposure margin is not available from a read-only paper
+            # session, so it is declared unavailable rather than invented.
+            "margin_basis": "BROKER_MARGIN_UNAVAILABLE_CONSERVATIVE_NOTIONAL_CAP",
+            "span_margin": None,
+        }
+
+    # ──────────────── AUTHORITATIVE ENTRY GATE (single choke point) ────────────────
+
+    def _risk_gated_entry(self, state: Dict[str, Any], trade: Dict[str, Any]):
+        """
+        The ONE way a position may be created.
+
+        Every bot assigns `state["active_trade"] = self._risk_gated_entry(state, trade)`,
+        so no directional branch can create a position without the RiskEngine
+        verdict. Returns the trade when approved, or None when rejected — and
+        None is exactly the "no position" state, so a rejection cannot leave a
+        half-open position behind.
+
+        A previous per-branch `elif` chain let Bot 6's CE branch through
+        ungated; centralising the check makes that class of bug impossible
+        rather than merely fixed once.
+        """
+        bot_name = str(trade.get("strategy", "")).strip()
+        if not bot_name or bot_name not in self.bot_states:
+            logger.critical(
+                f"ENTRY REJECTED: trade has no resolvable strategy owner ({bot_name!r}). "
+                "Failing closed rather than creating an unattributable position."
+            )
+            return None
+
+        legs = self.extract_trade_legs(trade)
+        if not legs:
+            logger.critical(
+                f"ENTRY REJECTED for {bot_name}: no identifiable legs with security IDs. "
+                "Failing closed rather than creating an unverifiable position."
+            )
+            return None
+
+        # Risk is assessed on every leg of the structure, not on a synthetic
+        # combined contract. Any leg that fails rejects the whole entry.
+        for leg in legs:
+            approved, reason = self.evaluate_entry_risk(
+                bot_name, leg["security_id"], leg["qty"], leg["entry_price"],
+            )
+            if not approved:
+                logger.warning(
+                    f"{bot_name}: entry blocked by risk engine on leg "
+                    f"{leg['security_id']} -> {reason}"
+                )
+                self.record_signal(
+                    strategy_name=bot_name,
+                    underlying=str(trade.get("underlying", "NIFTY")),
+                    signal_direction=str(trade.get("side", "BUY")),
+                    contract=trade.get("contract"),
+                    security_id=trade.get("security_id"),
+                    risk_decision="REJECTED",
+                    execution_decision="NO_EXECUTION",
+                    final_status="NO_EXECUTION",
+                    reason=reason,
+                )
+                return None
+
+        return trade
+
     # ───────────────────── BROKER RECONCILIATION (B9) ─────────────────────
 
     def reconcile_with_broker(
@@ -814,16 +1008,20 @@ LIVE_TRADING_ENABLED: FALSE
         trading on any unexplained disagreement. Read-only: no order is sent.
         """
         from src.execution.position_reconciler import (
-            fetch_broker_positions_readonly,
+            fetch_broker_snapshot,
             reconcile_positions,
+            reconcile_snapshot,
         )
 
         if broker_positions is None and broker_available is None:
-            broker_positions, broker_available = fetch_broker_positions_readonly()
-        if broker_available is None:
-            broker_available = broker_positions is not None
-
-        result = reconcile_positions(self.bot_states, broker_positions, broker_available)
+            # Canonical path: a self-describing snapshot that distinguishes
+            # AVAILABLE_FLAT / AVAILABLE_POSITIONS / UNAVAILABLE / MALFORMED.
+            # An error can never arrive here disguised as an empty book.
+            result = reconcile_snapshot(self.bot_states, fetch_broker_snapshot())
+        else:
+            if broker_available is None:
+                broker_available = broker_positions is not None
+            result = reconcile_positions(self.bot_states, broker_positions, broker_available)
         self.last_reconciliation = result
         if result.halt_required:
             self.requires_reconciliation = True
@@ -945,6 +1143,7 @@ LIVE_TRADING_ENABLED: FALSE
         realized = 0.0
         unrealized = 0.0
         open_positions = 0
+        unpriced = 0
         contract_exposure: Dict[str, Dict[str, Any]] = {}
 
         for name, b in self.bot_states.items():
@@ -955,6 +1154,12 @@ LIVE_TRADING_ENABLED: FALSE
             open_positions += 1
             if at.get("valuation_status") != "DATA_UNAVAILABLE" and at.get("unrealized_pnl") is not None:
                 unrealized += float(at["unrealized_pnl"])
+            else:
+                # A position we cannot value is NOT a flat position. Counting it
+                # as zero would let a collapsing position look harmless to the
+                # drawdown and loss limits, so it is tracked explicitly and the
+                # risk gate refuses new entries while any position is unpriced.
+                unpriced += 1
 
             sec_id = str(at.get("security_id", "UNKNOWN"))
             qty = float(at.get("qty", 0) or 0)
@@ -973,6 +1178,7 @@ LIVE_TRADING_ENABLED: FALSE
             "unrealized_pnl": round(unrealized, 2),
             "equity": round(equity, 2),
             "open_positions": open_positions,
+            "unpriced_positions": unpriced,
             "contract_exposure": contract_exposure,
             "total_open_notional": round(sum(v["notional"] for v in contract_exposure.values()), 2),
         }
@@ -1051,6 +1257,16 @@ LIVE_TRADING_ENABLED: FALSE
             return False, f"TRADING_HALTED: {self.reconciliation_reason}"
 
         snap = self.sync_risk_state()
+
+        # HIGH #8: drawdown / daily / weekly limits are computed from realised
+        # plus unrealised P&L. If any open position has no valid quote its loss
+        # is unknown, so those limits cannot be evaluated safely and the gate
+        # fails closed rather than trading on an incomplete risk picture.
+        if snap["unpriced_positions"] > 0:
+            return False, (
+                f"RISK_INDETERMINATE: {snap['unpriced_positions']} open position(s) "
+                "have no valid quote, so drawdown and loss limits cannot be computed"
+            )
 
         decision = self.risk_engine.evaluate_trade(
             symbol=str(security_id or "UNKNOWN"),
@@ -1232,7 +1448,7 @@ LIVE_TRADING_ENABLED: FALSE
                 net_credit = round(c_fill + p_fill, 2)
                 now_ts = datetime.now().strftime("%H:%M:%S")
                 init_costs1 = IndianCostModel.calculate_roundtrip_costs(net_credit, net_credit, c_res["lot_size"]).total_costs
-                s1["active_trade"] = {
+                s1["active_trade"] = self._risk_gated_entry(s1, {
                     "id": f"APEX-THETA-{int(time.time() % 10000)}",
                     "strategy": "Strategy 1: Apex VRP Engine",
                     "underlying": "NIFTY",
@@ -1262,20 +1478,21 @@ LIVE_TRADING_ENABLED: FALSE
                     "status": "OPEN",
                     "trade_state": "OPEN",
                     "valuation_status": "LIVE_QUOTE",
-                }
-                s1["status"] = "IN_POSITION (THETA_DECAY)"
-                self.record_signal(
-                    strategy_name="Strategy 1: Apex VRP Engine",
-                    underlying="NIFTY",
-                    signal_direction="SELL (STRANGLE)",
-                    contract=comb_contract,
-                    security_id=comb_sec_id,
-                    risk_decision=self._last_risk_decision(),
-                    execution_decision="EXECUTED",
-                    final_status="EXECUTED",
-                    fill_price=net_credit,
-                    quote_bid=net_credit,
-                )
+                })
+                if s1["active_trade"] is not None:
+                    s1["status"] = "IN_POSITION (THETA_DECAY)"
+                    self.record_signal(
+                        strategy_name="Strategy 1: Apex VRP Engine",
+                        underlying="NIFTY",
+                        signal_direction="SELL (STRANGLE)",
+                        contract=comb_contract,
+                        security_id=comb_sec_id,
+                        risk_decision=self._last_risk_decision(),
+                        execution_decision="EXECUTED",
+                        final_status="EXECUTED",
+                        fill_price=net_credit,
+                        quote_bid=net_credit,
+                    )
         elif s1["active_trade"]:
             t1 = s1["active_trade"]
             c_sec = t1.get("call_security_id")
@@ -1434,7 +1651,7 @@ LIVE_TRADING_ENABLED: FALSE
                 else:
                     prem = round(float(c5_ask) + 0.50, 2)  # Ask + slippage
                     now_ts = datetime.now().strftime("%H:%M:%S")
-                    s5["active_trade"] = {
+                    s5["active_trade"] = self._risk_gated_entry(s5, {
                         "id": f"VELOCITY-{int(time.time() % 10000)}",
                         "strategy": "Strategy 5: Velocity-5 Momentum Scalper",
                         "underlying": "NIFTY",
@@ -1464,21 +1681,22 @@ LIVE_TRADING_ENABLED: FALSE
                         "status": "OPEN",
                         "trade_state": "OPEN",
                         "valuation_status": "LIVE_QUOTE",
-                    }
-                    s5["status"] = "IN_POSITION (ORB_CE_BREAKOUT)"
-                    self.record_signal(
-                        strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
-                        underlying="NIFTY",
-                        signal_direction="BUY",
-                        contract=c5["custom_symbol"],
-                        security_id=c5["security_id"],
-                        risk_decision=self._last_risk_decision(),
-                        execution_decision="EXECUTED",
-                        final_status="EXECUTED",
-                        fill_price=prem,
-                        quote_ask=c5_ask,
-                        quote_ltp=c5.get("ltp"),
-                    )
+                    })
+                    if s5["active_trade"] is not None:
+                        s5["status"] = "IN_POSITION (ORB_CE_BREAKOUT)"
+                        self.record_signal(
+                            strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
+                            underlying="NIFTY",
+                            signal_direction="BUY",
+                            contract=c5["custom_symbol"],
+                            security_id=c5["security_id"],
+                            risk_decision=self._last_risk_decision(),
+                            execution_decision="EXECUTED",
+                            final_status="EXECUTED",
+                            fill_price=prem,
+                            quote_ask=c5_ask,
+                            quote_ltp=c5.get("ltp"),
+                        )
             elif self._strategy_allows_entry("Strategy 5: Velocity-5 Momentum Scalper", required_direction=-1):
                 p5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "PE")
                 p5_ask = p5.get("ask") if p5 else None
@@ -1522,7 +1740,7 @@ LIVE_TRADING_ENABLED: FALSE
                 else:
                     prem = round(float(p5_ask) + 0.50, 2)  # Ask + slippage
                     now_ts = datetime.now().strftime("%H:%M:%S")
-                    s5["active_trade"] = {
+                    s5["active_trade"] = self._risk_gated_entry(s5, {
                         "id": f"VELOCITY-{int(time.time() % 10000)}",
                         "strategy": "Strategy 5: Velocity-5 Momentum Scalper",
                         "underlying": "NIFTY",
@@ -1552,21 +1770,22 @@ LIVE_TRADING_ENABLED: FALSE
                         "status": "OPEN",
                         "trade_state": "OPEN",
                         "valuation_status": "LIVE_QUOTE",
-                    }
-                    s5["status"] = "IN_POSITION (ORB_PE_BREAKDOWN)"
-                    self.record_signal(
-                        strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
-                        underlying="NIFTY",
-                        signal_direction="BUY",
-                        contract=p5["custom_symbol"],
-                        security_id=p5["security_id"],
-                        risk_decision=self._last_risk_decision(),
-                        execution_decision="EXECUTED",
-                        final_status="EXECUTED",
-                        fill_price=prem,
-                        quote_ask=p5_ask,
-                        quote_ltp=p5.get("ltp"),
-                    )
+                    })
+                    if s5["active_trade"] is not None:
+                        s5["status"] = "IN_POSITION (ORB_PE_BREAKDOWN)"
+                        self.record_signal(
+                            strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
+                            underlying="NIFTY",
+                            signal_direction="BUY",
+                            contract=p5["custom_symbol"],
+                            security_id=p5["security_id"],
+                            risk_decision=self._last_risk_decision(),
+                            execution_decision="EXECUTED",
+                            final_status="EXECUTED",
+                            fill_price=prem,
+                            quote_ask=p5_ask,
+                            quote_ltp=p5.get("ltp"),
+                        )
 
         elif s5["active_trade"]:
             t5 = s5["active_trade"]
@@ -1716,7 +1935,7 @@ LIVE_TRADING_ENABLED: FALSE
                     prem = round(float(c4_ask) + 0.50, 2)
                     now_ts = datetime.now().strftime("%H:%M:%S")
                     init_costs4 = IndianCostModel.calculate_roundtrip_costs(prem, prem, c4["lot_size"]).total_costs
-                    s4["active_trade"] = {
+                    s4["active_trade"] = self._risk_gated_entry(s4, {
                         "id": f"GOLDEN-{int(time.time() % 10000)}",
                         "strategy": "Strategy 4: Golden Trend Runner",
                         "underlying": "NIFTY",
@@ -1748,21 +1967,22 @@ LIVE_TRADING_ENABLED: FALSE
                         "status": "OPEN",
                         "trade_state": "OPEN",
                         "valuation_status": "LIVE_QUOTE",
-                    }
-                    s4["status"] = "IN_POSITION (RIDING_1:3_TREND)"
-                    self.record_signal(
-                        strategy_name="Strategy 4: Golden Trend Runner",
-                        underlying="NIFTY",
-                        signal_direction="BUY",
-                        contract=c4["custom_symbol"],
-                        security_id=c4["security_id"],
-                        risk_decision=self._last_risk_decision(),
-                        execution_decision="EXECUTED",
-                        final_status="EXECUTED",
-                        fill_price=prem,
-                        quote_ask=c4_ask,
-                        quote_ltp=c4.get("ltp"),
-                    )
+                    })
+                    if s4["active_trade"] is not None:
+                        s4["status"] = "IN_POSITION (RIDING_1:3_TREND)"
+                        self.record_signal(
+                            strategy_name="Strategy 4: Golden Trend Runner",
+                            underlying="NIFTY",
+                            signal_direction="BUY",
+                            contract=c4["custom_symbol"],
+                            security_id=c4["security_id"],
+                            risk_decision=self._last_risk_decision(),
+                            execution_decision="EXECUTED",
+                            final_status="EXECUTED",
+                            fill_price=prem,
+                            quote_ask=c4_ask,
+                            quote_ltp=c4.get("ltp"),
+                        )
         elif s4["active_trade"]:
             t4 = s4["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t4["security_id"]) if t4.get("security_id") else None
@@ -1909,7 +2129,7 @@ LIVE_TRADING_ENABLED: FALSE
                     prem = round(float(c3_ask) + 0.50, 2)
                     now_ts = datetime.now().strftime("%H:%M:%S")
                     init_costs3 = IndianCostModel.calculate_roundtrip_costs(prem, prem, c3["lot_size"]).total_costs
-                    s3["active_trade"] = {
+                    s3["active_trade"] = self._risk_gated_entry(s3, {
                         "id": f"GAMMA-{int(time.time() % 10000)}",
                         "strategy": "Strategy 3: Confluence Gamma Scalper",
                         "underlying": "NIFTY",
@@ -1940,21 +2160,22 @@ LIVE_TRADING_ENABLED: FALSE
                         "status": "OPEN",
                         "trade_state": "OPEN",
                         "valuation_status": "LIVE_QUOTE",
-                    }
-                    s3["status"] = f"IN_POSITION (GAMMA_{opt_t})"
-                    self.record_signal(
-                        strategy_name="Strategy 3: Confluence Gamma Scalper",
-                        underlying="NIFTY",
-                        signal_direction="BUY",
-                        contract=c3["custom_symbol"],
-                        security_id=c3["security_id"],
-                        risk_decision=self._last_risk_decision(),
-                        execution_decision="EXECUTED",
-                        final_status="EXECUTED",
-                        fill_price=prem,
-                        quote_ask=c3_ask,
-                        quote_ltp=c3.get("ltp"),
-                    )
+                    })
+                    if s3["active_trade"] is not None:
+                        s3["status"] = f"IN_POSITION (GAMMA_{opt_t})"
+                        self.record_signal(
+                            strategy_name="Strategy 3: Confluence Gamma Scalper",
+                            underlying="NIFTY",
+                            signal_direction="BUY",
+                            contract=c3["custom_symbol"],
+                            security_id=c3["security_id"],
+                            risk_decision=self._last_risk_decision(),
+                            execution_decision="EXECUTED",
+                            final_status="EXECUTED",
+                            fill_price=prem,
+                            quote_ask=c3_ask,
+                            quote_ltp=c3.get("ltp"),
+                        )
             else:
                 s3["status"] = "MONITORING_SQUEEZE_EXPANSION"
         elif s3["active_trade"]:
@@ -2130,7 +2351,7 @@ LIVE_TRADING_ENABLED: FALSE
                 else:
                     now_ts = datetime.now().strftime("%H:%M:%S")
                     init_costs2 = IndianCostModel.calculate_roundtrip_costs(net_credit, net_credit, short_c["lot_size"]).total_costs
-                    s2["active_trade"] = {
+                    s2["active_trade"] = self._risk_gated_entry(s2, {
                         "id": f"ZEN-OVERNIGHT-{int(time.time() % 10000)}",
                         "strategy": "Strategy 2: Zen Curvature Overnight",
                         "underlying": "NIFTY",
@@ -2158,19 +2379,20 @@ LIVE_TRADING_ENABLED: FALSE
                         "trade_state": "OPEN",
                         "unrealized_pnl": 0.0,
                         "valuation_status": "LIVE_QUOTE",
-                    }
-                    s2["status"] = "IN_POSITION (OVERNIGHT_HOLD)"
-                    self.record_signal(
-                        strategy_name="Strategy 2: Zen Curvature Overnight",
-                        underlying="NIFTY",
-                        signal_direction="SELL (SPREAD)",
-                        contract=spread_contract,
-                        security_id=spread_sec_id,
-                        risk_decision=self._last_risk_decision(),
-                        execution_decision="EXECUTED",
-                        final_status="EXECUTED",
-                        fill_price=net_credit,
-                    )
+                    })
+                    if s2["active_trade"] is not None:
+                        s2["status"] = "IN_POSITION (OVERNIGHT_HOLD)"
+                        self.record_signal(
+                            strategy_name="Strategy 2: Zen Curvature Overnight",
+                            underlying="NIFTY",
+                            signal_direction="SELL (SPREAD)",
+                            contract=spread_contract,
+                            security_id=spread_sec_id,
+                            risk_decision=self._last_risk_decision(),
+                            execution_decision="EXECUTED",
+                            final_status="EXECUTED",
+                            fill_price=net_credit,
+                        )
         elif s2["active_trade"]:
             t2 = s2["active_trade"]
             s_sec = t2.get("short_security_id")
@@ -2330,34 +2552,13 @@ LIVE_TRADING_ENABLED: FALSE
                             reason=_risk_reason,
                             quote_ask=c6_ask,
                         )
-                    elif not self.evaluate_entry_risk(
-                        "Strategy 6: Micro Momentum Sniper", c6.get("security_id"), c6.get("lot_size", 0),
-                        round(float(c6_ask) + 0.50, 2),
-                    )[0]:
-                        _risk_ok, _risk_reason = self.evaluate_entry_risk(
-                            "Strategy 6: Micro Momentum Sniper", c6.get("security_id"), c6.get("lot_size", 0),
-                            round(float(c6_ask) + 0.50, 2),
-                        )
-                        logger.warning(f"Strategy 6: Micro Momentum Sniper: entry blocked by risk engine -> {_risk_reason}")
-                        self.record_signal(
-                            strategy_name="Strategy 6: Micro Momentum Sniper",
-                            underlying="NIFTY",
-                            signal_direction="BUY (CE)",
-                            contract=c6.get("custom_symbol"),
-                            security_id=c6.get("security_id"),
-                            risk_decision="REJECTED",
-                            execution_decision="NO_EXECUTION",
-                            final_status="NO_EXECUTION",
-                            reason=_risk_reason,
-                            quote_ask=c6_ask,
-                        )
                     else:
                         prem = round(float(c6_ask) + 0.50, 2)
                         target_p = round(prem * 1.45, 2)
                         stop_p = round(prem * 0.85, 2)
                         now_ts = datetime.now().strftime("%H:%M:%S")
                         init_costs6_pe = IndianCostModel.calculate_roundtrip_costs(prem, prem, c6["lot_size"]).total_costs
-                        s6["active_trade"] = {
+                        s6["active_trade"] = self._risk_gated_entry(s6, {
                             "id": f"SNIPER-LIVE-{int(time.time() % 10000)}",
                             "strategy": "Strategy 6: Micro Momentum Sniper",
                             "underlying": "NIFTY",
@@ -2388,21 +2589,22 @@ LIVE_TRADING_ENABLED: FALSE
                             "status": "OPEN",
                             "trade_state": "OPEN",
                             "valuation_status": "LIVE_QUOTE",
-                        }
-                        s6["status"] = "IN_POSITION (SNIPER_PE)"
-                        self.record_signal(
-                            strategy_name="Strategy 6: Micro Momentum Sniper",
-                            underlying="NIFTY",
-                            signal_direction="BUY (PE)",
-                            contract=c6["custom_symbol"],
-                            security_id=c6["security_id"],
-                            risk_decision=self._last_risk_decision(),
-                            execution_decision="EXECUTED",
-                            final_status="EXECUTED",
-                            fill_price=prem,
-                            quote_ask=c6_ask,
-                            quote_ltp=c6.get("ltp"),
-                        )
+                        })
+                        if s6["active_trade"] is not None:
+                            s6["status"] = "IN_POSITION (SNIPER_PE)"
+                            self.record_signal(
+                                strategy_name="Strategy 6: Micro Momentum Sniper",
+                                underlying="NIFTY",
+                                signal_direction="BUY (PE)",
+                                contract=c6["custom_symbol"],
+                                security_id=c6["security_id"],
+                                risk_decision=self._last_risk_decision(),
+                                execution_decision="EXECUTED",
+                                final_status="EXECUTED",
+                                fill_price=prem,
+                                quote_ask=c6_ask,
+                                quote_ltp=c6.get("ltp"),
+                            )
                 elif self._strategy_allows_entry("Strategy 6: Micro Momentum Sniper", required_direction=1):
                     c6 = DhanContractResolver.resolve_option_contract(n_last, vix_val, "CE", strike_offset_steps=0)
                     c6_ask = c6.get("ask") if c6 else None
@@ -2428,7 +2630,7 @@ LIVE_TRADING_ENABLED: FALSE
                         stop_p = round(prem * 0.85, 2)
                         now_ts = datetime.now().strftime("%H:%M:%S")
                         init_costs6_ce = IndianCostModel.calculate_roundtrip_costs(prem, prem, c6["lot_size"]).total_costs
-                        s6["active_trade"] = {
+                        s6["active_trade"] = self._risk_gated_entry(s6, {
                             "id": f"SNIPER-LIVE-{int(time.time() % 10000)}",
                             "strategy": "Strategy 6: Micro Momentum Sniper",
                             "underlying": "NIFTY",
@@ -2459,21 +2661,22 @@ LIVE_TRADING_ENABLED: FALSE
                             "status": "OPEN",
                             "trade_state": "OPEN",
                             "valuation_status": "LIVE_QUOTE",
-                        }
-                        s6["status"] = "IN_POSITION (SNIPER_CE)"
-                        self.record_signal(
-                            strategy_name="Strategy 6: Micro Momentum Sniper",
-                            underlying="NIFTY",
-                            signal_direction="BUY (CE)",
-                            contract=c6["custom_symbol"],
-                            security_id=c6["security_id"],
-                            risk_decision=self._last_risk_decision(),
-                            execution_decision="EXECUTED",
-                            final_status="EXECUTED",
-                            fill_price=prem,
-                            quote_ask=c6_ask,
-                            quote_ltp=c6.get("ltp"),
-                        )
+                        })
+                        if s6["active_trade"] is not None:
+                            s6["status"] = "IN_POSITION (SNIPER_CE)"
+                            self.record_signal(
+                                strategy_name="Strategy 6: Micro Momentum Sniper",
+                                underlying="NIFTY",
+                                signal_direction="BUY (CE)",
+                                contract=c6["custom_symbol"],
+                                security_id=c6["security_id"],
+                                risk_decision=self._last_risk_decision(),
+                                execution_decision="EXECUTED",
+                                final_status="EXECUTED",
+                                fill_price=prem,
+                                quote_ask=c6_ask,
+                                quote_ltp=c6.get("ltp"),
+                            )
         elif s6["active_trade"]:
             t6 = s6["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t6["security_id"]) if t6.get("security_id") else None

@@ -34,7 +34,8 @@ import os
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+from enum import Enum
+from typing import Any, Optional
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
@@ -117,6 +118,69 @@ class BrokerNativeProtectiveStop(ProtectiveStopBackend):
 
     def cancel(self, stop_id: str) -> bool:
         raise NotImplementedError("Broker-native protective orders are not implemented.")
+
+
+class ProtectionState(str, Enum):
+    """
+    The honest protection status of an open position.
+
+    Nothing in this system may report a position as protected unless a stop is
+    actually evaluable right now. A crashed process or a dead feed yields
+    UNPROTECTED_* — never SOFTWARE_STOP_ARMED.
+    """
+
+    SOFTWARE_STOP_ARMED = "SOFTWARE_STOP_ARMED"
+    UNPROTECTED_STALE_DATA = "UNPROTECTED_STALE_DATA"
+    UNPROTECTED_NO_QUOTE = "UNPROTECTED_NO_QUOTE"
+    BROKER_NATIVE_STOP_UNAVAILABLE = "BROKER_NATIVE_STOP_UNAVAILABLE"
+
+
+def assess_protection(
+    stop_price: Optional[float],
+    quote_timestamp: Any = None,
+    executable_price: Optional[float] = None,
+) -> dict:
+    """
+    Reports what protection a position actually has at this instant.
+
+    `broker_native` is ALWAYS False: no exchange-resident stop exists. The
+    software stop counts as armed only when a stop level is set AND a fresh
+    executable price is available to compare it against; otherwise the position
+    is explicitly UNPROTECTED.
+    """
+    from src.execution.dhan_contract_resolver import is_quote_fresh
+
+    result = {
+        "broker_native": False,
+        "broker_native_state": ProtectionState.BROKER_NATIVE_STOP_UNAVAILABLE.value,
+        "protected": False,
+        "state": ProtectionState.UNPROTECTED_NO_QUOTE.value,
+        "detail": "",
+    }
+
+    if stop_price is None or float(stop_price) <= 0:
+        result["detail"] = "no stop level configured"
+        return result
+
+    if executable_price is None or float(executable_price) <= 0:
+        result["detail"] = "no executable price to evaluate the stop against"
+        return result
+
+    if not is_quote_fresh(quote_timestamp):
+        result["state"] = ProtectionState.UNPROTECTED_STALE_DATA.value
+        result["detail"] = (
+            "quote is stale, so the stop cannot be evaluated; the position is "
+            "NOT protected even though a stop level exists"
+        )
+        return result
+
+    result["protected"] = True
+    result["state"] = ProtectionState.SOFTWARE_STOP_ARMED.value
+    result["detail"] = (
+        "software stop evaluable in-process only; no protection while the "
+        "process is down or the feed is dead"
+    )
+    return result
 
 
 def protective_stops_enabled() -> bool:

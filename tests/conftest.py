@@ -28,3 +28,11 @@ def _no_network_reconciliation(monkeypatch):
     monkeypatch.setattr(
         position_reconciler, "fetch_broker_positions_readonly", lambda: (None, False)
     )
+    monkeypatch.setattr(
+        position_reconciler,
+        "fetch_broker_snapshot",
+        lambda: position_reconciler.BrokerSnapshot(
+            status=position_reconciler.BrokerStateStatus.UNAVAILABLE,
+            error="network disabled in tests",
+        ),
+    )

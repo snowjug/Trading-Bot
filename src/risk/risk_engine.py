@@ -91,6 +91,8 @@ class RiskEngine:
             try:
                 with open(self.kill_switch_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                    if not isinstance(data, dict) or "is_kill_switch_active" not in data:
+                        raise ValueError("kill switch state is malformed or missing its flag")
                     if data.get("is_kill_switch_active", False):
                         self.state.is_kill_switch_active = True
                         self.state.kill_switch_reason = data.get("reason", "Persisted kill switch from previous session")
@@ -99,7 +101,15 @@ class RiskEngine:
                             "Trading halted until explicitly reset."
                         )
             except Exception as e:
-                logger.warning(f"Failed to read kill switch state file: {e}")
+                # HIGH #11: an unreadable kill-switch file is an UNKNOWN halt
+                # state, not an "inactive" one. Treating corruption as inactive
+                # would silently re-enable trading after a halt.
+                self.state.is_kill_switch_active = True
+                self.state.kill_switch_reason = (
+                    f"CORRUPT_KILL_SWITCH_STATE: {self.kill_switch_file} unreadable ({e}). "
+                    "Failing closed — trading halted until explicitly reset."
+                )
+                logger.critical(self.state.kill_switch_reason)
 
     def _save_kill_switch_state(self, is_active: bool, reason: str):
         """Atomically persist kill switch state to disk."""

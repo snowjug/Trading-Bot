@@ -15,6 +15,7 @@ cross-multiples, no carried-forward values.
 
 import os
 import sys
+import time
 from datetime import datetime, date
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -43,8 +44,14 @@ INDEX_HISTORY_FILES: Dict[str, str] = {
 
 _REQUIRED_BAR_COLUMNS = ("datetime", "open", "high", "low", "close", "volume")
 
-# Cache of today's session bar, keyed by (symbol, trading date)
+# Cache of today's session bar, keyed by (symbol, trading date).
+# The forming bar is a LIVE object: its high/low/close/volume evolve all day, so
+# the cache is deliberately short-lived. Caching it for the whole session (the
+# previous behaviour) froze OHLCV at the first fetch and made every downstream
+# indicator stale. Settled historical bars are immutable and are NOT cached here.
 _session_bar_cache: Dict[str, Any] = {}
+_session_bar_fetched_at: Dict[str, float] = {}
+FORMING_BAR_TTL_SECONDS: float = 20.0
 
 
 def _dhan_intraday_session_bar(symbol: str, trading_day: date) -> Optional[Dict[str, float]]:
@@ -134,7 +141,9 @@ def get_today_session_bar(
     day = trading_day or datetime.now().date()
     cache_key = f"{symbol.upper()}_{day.isoformat()}"
     if use_cache and cache_key in _session_bar_cache:
-        return _session_bar_cache[cache_key]
+        age = time.time() - _session_bar_fetched_at.get(cache_key, 0.0)
+        if age < FORMING_BAR_TTL_SECONDS:
+            return _session_bar_cache[cache_key]
 
     bar = _dhan_intraday_session_bar(symbol, day) or _yfinance_session_bar(symbol, day)
     if bar is None:
@@ -146,8 +155,10 @@ def get_today_session_bar(
 
     bar["symbol"] = symbol.upper()
     bar["trading_day"] = day.isoformat()
+    bar["fetched_at"] = datetime.now().isoformat()
     if use_cache:
         _session_bar_cache[cache_key] = bar
+        _session_bar_fetched_at[cache_key] = time.time()
     return bar
 
 
@@ -217,6 +228,37 @@ def _attach_vix_column(
     return frame
 
 
+def _attach_rsi_column(frame: pd.DataFrame, period: int = 14) -> Optional[pd.DataFrame]:
+    """
+    Computes RSI(14) from authentic close prices and attaches it as `rsi_14`.
+
+    Strategies 1 and 2 read `df["rsi_14"]` and silently fall back to a constant
+    50.0 when the column is absent — a fabricated "perfectly neutral momentum"
+    reading that sits inside their entry condition. The column is therefore
+    computed from real closes, or the frame fails closed.
+
+    Causality: RSI at bar i uses only closes up to and including bar i. The
+    leading `period` bars have no defined RSI and are dropped rather than
+    back-filled, because back-filling would import future information.
+    """
+    if "close" not in frame.columns or len(frame) <= period + 1:
+        logger.warning("Insufficient closes to compute RSI. Fail-closed.")
+        return None
+
+    frame = frame.copy()
+    delta = frame["close"].diff()
+    gain = delta.clip(lower=0).rolling(period).mean()
+    loss = (-delta.clip(upper=0)).rolling(period).mean()
+    rs = gain / (loss + 1e-9)
+    frame[f"rsi_{period}"] = 100 - (100 / (1 + rs))
+
+    frame = frame[frame[f"rsi_{period}"].notna()].reset_index(drop=True)
+    if frame.empty:
+        logger.warning("RSI could not be computed on any bar. Fail-closed.")
+        return None
+    return frame
+
+
 def build_strategy_frame(
     symbol: str,
     session_bar: Optional[Dict[str, float]] = None,
@@ -224,6 +266,7 @@ def build_strategy_frame(
     min_bars: int = 1,
     today_vix: Optional[float] = None,
     require_vix: bool = False,
+    require_rsi: bool = False,
 ) -> Optional[pd.DataFrame]:
     """
     Builds the OHLCV frame consumed by the validated strategy classes:
@@ -262,6 +305,10 @@ def build_strategy_frame(
         frame = _attach_vix_column(frame, day, today_vix)
         if frame is None:
             return None
+    if require_rsi:
+        frame = _attach_rsi_column(frame)
+        if frame is None:
+            return None
 
     # Length is checked after the VIX join, because the causality-safe join can
     # trim leading bars that have no prior VIX print.
@@ -279,3 +326,4 @@ def build_strategy_frame(
 def clear_session_bar_cache() -> None:
     """Clears the cached session bars (used on new-day rollover and in tests)."""
     _session_bar_cache.clear()
+    _session_bar_fetched_at.clear()

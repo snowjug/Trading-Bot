@@ -44,7 +44,7 @@ def _open_trade(sec_id="56983", qty=65, price=136.5):
         "qty": qty, "entry_fill": price, "entry_premium": price, "current_bid": price,
         "current_ask": price + 0.5, "target_premium": price * 1.3, "stop_premium": price * 0.85,
         "status": "OPEN", "trade_state": "OPEN", "valuation_status": "LIVE_QUOTE",
-        "unrealized_pnl": 0.0,
+        "unrealized_pnl": 0.0, "quote_timestamp": datetime.now().isoformat(),
     }
 
 
@@ -208,19 +208,42 @@ def test_b7_before_eod_boundary_is_a_noop(tmp_path):
     assert session.bot_states[BOT5]["active_trade"] is not None
 
 
-def test_b7_overdue_eod_without_quote_marks_data_unavailable(tmp_path):
-    """No executable quote -> explicit DATA_UNAVAILABLE mark, not a fabricated price."""
+def test_b7_overdue_eod_without_quote_leaves_position_unresolved(tmp_path):
+    """
+    No executable quote -> the position must NOT be closed at a fabricated price.
+
+    It stays OPEN, is flagged unresolved with null P&L, and halts new entries.
+    """
     session = _make_session(tmp_path)
     trade = _open_trade()
     trade["current_bid"] = None
     trade["current_ask"] = None
     trade["current_premium"] = None
+    trade["quote_timestamp"] = None
     trade["valuation_status"] = "DATA_UNAVAILABLE"
     session.bot_states[BOT5]["active_trade"] = trade
 
     session.handle_overdue_eod(current_time=dtime(15, 50))
-    closed = session.bot_states[BOT5]["closed_trades"][0]
-    assert "DATA_UNAVAILABLE_MARK" in closed["exit_reason"]
+
+    assert session.bot_states[BOT5]["closed_trades"] == [],         "a position with no executable quote must never enter the realised ledger"
+    still_open = session.bot_states[BOT5]["active_trade"]
+    assert still_open is not None
+    assert still_open["status"] == "UNRESOLVED_EOD"
+    assert still_open["exit_reason"] == "EOD_UNRESOLVED_NO_EXECUTABLE_QUOTE"
+    assert still_open["net_pnl"] is None and still_open["gross_pnl"] is None
+    assert session.requires_reconciliation is True
+
+
+def test_b7_stale_quote_cannot_produce_an_eod_fill(tmp_path):
+    """A stale quote is not executable, so it must not be used to close."""
+    session = _make_session(tmp_path)
+    trade = _open_trade()
+    trade["quote_timestamp"] = (datetime.now() - timedelta(seconds=3600)).isoformat()
+    session.bot_states[BOT5]["active_trade"] = trade
+
+    session.handle_overdue_eod(current_time=dtime(15, 50))
+    assert session.bot_states[BOT5]["closed_trades"] == []
+    assert session.bot_states[BOT5]["active_trade"]["status"] == "UNRESOLVED_EOD"
 
 
 # ─── B9: BROKER RECONCILIATION ───

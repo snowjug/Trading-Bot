@@ -132,6 +132,58 @@ class DhanBrokerAdapter(BrokerAdapter):
 
         return positions
 
+    def fetch_positions_snapshot(self):
+        """
+        Read-only canonical broker position snapshot (GET /positions only).
+
+        Unlike get_positions(), this NEVER degrades a failure into an empty
+        position list: an exception, a non-200 response and an unparseable body
+        are each reported as their own state so reconciliation can fail closed.
+        It also preserves securityId, which PaperPosition discards and which is
+        the only reliable reconciliation key.
+        """
+        from src.execution.position_reconciler import (
+            BrokerSnapshot,
+            BrokerStateStatus,
+            parse_broker_payload,
+        )
+
+        try:
+            resp = self.session.get(f"{self.BASE_URL}/positions", timeout=5)
+        except Exception as e:
+            logger.error(f"Dhan positions request failed: {e}")
+            return BrokerSnapshot(
+                status=BrokerStateStatus.UNAVAILABLE,
+                error=f"request failed: {e}",
+            )
+
+        if resp.status_code != 200:
+            logger.error(f"Dhan positions returned HTTP {resp.status_code}")
+            return BrokerSnapshot(
+                status=BrokerStateStatus.UNAVAILABLE,
+                error=f"HTTP {resp.status_code}: {str(resp.text)[:200]}",
+            )
+
+        try:
+            payload = resp.json()
+        except Exception as e:
+            return BrokerSnapshot(
+                status=BrokerStateStatus.MALFORMED,
+                error=f"response body is not valid JSON: {e}",
+            )
+
+        # Dhan may wrap the list in an envelope; unwrap only a known shape.
+        if isinstance(payload, dict):
+            if "data" in payload and isinstance(payload["data"], list):
+                payload = payload["data"]
+            else:
+                return BrokerSnapshot(
+                    status=BrokerStateStatus.MALFORMED,
+                    error=f"unrecognised positions envelope keys: {sorted(payload)[:6]}",
+                )
+
+        return parse_broker_payload(payload)
+
     def get_orders(self) -> List[Order]:
         """Fetch order book from Dhan."""
         orders = []

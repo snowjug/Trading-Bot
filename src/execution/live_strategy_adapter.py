@@ -61,34 +61,56 @@ STRATEGY_BINDINGS: Dict[str, Dict[str, Any]] = {
         "class": "NiftyWeeklyIronCondorStrategy",
         "underlying": "NIFTY",
         "require_vix": True,
+        "require_rsi": True,
+        "parity": "UNRESOLVED",
+        "parity_note": (
+            "Research generate_signals emits only a rangebound regime flag; the "
+            "validated Iron Condor wings (wing_sd=2.4) are declared but never "
+            "simulated, and the backtest uses a fabricated flat credit per lot. "
+            "Live execution cannot be made faithful without inventing unvalidated "
+            "strategy behaviour, so entries fail closed."
+        ),
     },
     "Strategy 2: Zen Curvature Overnight": {
         "module": "src.strategies.curvature_credit_spread",
         "class": "CurvatureCreditSpreadStrategy",
         "underlying": "NIFTY",
         "require_vix": True,
+        "require_rsi": True,
+        "parity": "UNRESOLVED",
+        "parity_note": (
+            "Research generate_signals emits only `vix < max_vix`; the RSI-branched "
+            "Bull Put / Bear Call / Condor selection and the overnight holding "
+            "semantics exist only in prose and in a backtest-only simulator. The "
+            "runtime's same-day vertical is materially different, so entries fail "
+            "closed pending a strategy-owner decision."
+        ),
     },
     "Strategy 3: Confluence Gamma Scalper": {
         "module": "src.strategies.confluence_scalper",
         "class": "ConfluenceGammaScalperStrategy",
+        "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": False,
     },
     "Strategy 4: Golden Trend Runner": {
         "module": "src.strategies.golden_trend_buyer",
         "class": "GoldenTrendOptionBuyerStrategy",
+        "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": False,
     },
     "Strategy 5: Velocity-5 Momentum Scalper": {
         "module": "src.strategies.active_momentum_scalper",
         "class": "ActiveMomentumOptionScalperStrategy",
+        "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": False,
     },
     "Strategy 6: Micro Momentum Sniper": {
         "module": "src.strategies.micro_momentum_buyer",
         "class": "MicroMomentumBuyerStrategy",
+        "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": True,
     },
@@ -130,12 +152,13 @@ class LiveStrategyAdapter:
         self,
         underlying: str,
         require_vix: bool,
+        require_rsi: bool,
         min_bars: int,
         session_bar: Optional[Dict[str, float]],
         today_vix: Optional[float],
         trading_day: Optional[date],
     ) -> Optional[pd.DataFrame]:
-        key = f"{underlying}_{require_vix}_{min_bars}"
+        key = f"{underlying}_{require_vix}_{require_rsi}_{min_bars}"
         if key in self._frame_cache:
             return self._frame_cache[key]
         frame = build_strategy_frame(
@@ -145,6 +168,7 @@ class LiveStrategyAdapter:
             min_bars=min_bars,
             today_vix=today_vix,
             require_vix=require_vix,
+            require_rsi=require_rsi,
         )
         if frame is not None:
             self._frame_cache[key] = frame
@@ -168,6 +192,16 @@ class LiveStrategyAdapter:
             return LiveSignal(bot_name, "UNBOUND", 0, 0.0, "NIFTY",
                               reason="NO_STRATEGY_BINDING")
 
+        # Parity gate: a bot whose live construction is materially different from
+        # the validated research strategy must not trade. Making it "work" would
+        # require inventing strategy behaviour that was never validated, so it
+        # fails closed until the strategy owner resolves the divergence.
+        if binding.get("parity") == "UNRESOLVED":
+            return LiveSignal(
+                bot_name, binding["class"], 0, 0.0, binding["underlying"],
+                reason=f"STRATEGY_PARITY_UNRESOLVED: {binding.get('parity_note', '')}",
+            )
+
         strategy = self.get_strategy(bot_name)
         if strategy is None:
             return LiveSignal(bot_name, binding["class"], 0, 0.0, binding["underlying"],
@@ -175,7 +209,8 @@ class LiveStrategyAdapter:
 
         min_bars = int(getattr(strategy, "min_data_points", 50))
         frame = self._frame_for(
-            binding["underlying"], binding["require_vix"], min_bars,
+            binding["underlying"], binding.get("require_vix", False),
+            binding.get("require_rsi", False), min_bars,
             session_bar, today_vix, trading_day,
         )
         if frame is None or frame.empty:

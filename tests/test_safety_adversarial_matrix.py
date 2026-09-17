@@ -331,25 +331,29 @@ def test_m17_position_reconciliation_zero_broker_drift():
 
 
 # ─── 18. 15:35 EOD BOUNDARY ───
-def test_m18_1535_eod_boundary_forces_squareoff_even_on_data_dropout(temp_env):
-    """Scenario 18: At 15:35:00, all open positions are force closed even if market data is down."""
+def test_m18_1535_eod_boundary_acts_on_every_open_position(temp_env):
+    """
+    Scenario 18: the 15:35 boundary must ALWAYS act on an open position.
+
+    With a fresh executable quote it squares off. With market data down it must
+    NOT invent a fill — it flags the position unresolved and halts. Either way
+    the boundary is never silently skipped.
+    """
+    from datetime import datetime as _dt
+
+    # --- Case A: fresh executable quote -> genuine square-off ---
     risk = RiskEngine(kill_switch_file=temp_env["kill_switch_file"])
     session = MultiBotLiveSession(
         state_file=str(temp_env["session_file"]),
         reports_dir=temp_env["reports_dir"],
         risk_engine=risk,
     )
-    # Seed active trade
     session.bot_states["Strategy 3: Confluence Gamma Scalper"]["active_trade"] = {
-        "id": "GAMMA-001",
-        "contract": "NIFTY 25000 CE",
-        "entry_fill": 50.0,
-        "current_val": 52.0,
-        "qty": 25,
-        "side": "BUY",
-        "status": "OPEN",
+        "id": "GAMMA-001", "contract": "NIFTY 25000 CE", "entry_fill": 50.0,
+        "current_val": 52.0, "current_bid": 52.0, "current_ask": 52.5,
+        "quote_timestamp": _dt.now().isoformat(),
+        "qty": 25, "side": "BUY", "status": "OPEN",
     }
-    # Call at 15:35:00 with None market data
     session.evaluate_all_bots(None, current_time=dtime(15, 35, 0))
 
     b3 = session.bot_states["Strategy 3: Confluence Gamma Scalper"]
@@ -357,6 +361,28 @@ def test_m18_1535_eod_boundary_forces_squareoff_even_on_data_dropout(temp_env):
     assert b3["status"] == "SQUARED_OFF"
     assert len(b3["closed_trades"]) == 1
     assert "EOD_FORCED_EXIT" in b3["closed_trades"][0]["exit_reason"]
+
+    # --- Case B: data dropout -> unresolved, never a fabricated fill ---
+    risk2 = RiskEngine(kill_switch_file=temp_env["kill_switch_file"])
+    session2 = MultiBotLiveSession(
+        state_file=str(temp_env["session_file"]) + ".b",
+        reports_dir=temp_env["reports_dir"],
+        risk_engine=risk2,
+    )
+    session2.bot_states["Strategy 3: Confluence Gamma Scalper"]["active_trade"] = {
+        "id": "GAMMA-002", "contract": "NIFTY 25000 CE", "entry_fill": 50.0,
+        "current_val": 52.0, "current_bid": None, "current_ask": None,
+        "quote_timestamp": None,
+        "qty": 25, "side": "BUY", "status": "OPEN",
+    }
+    session2.evaluate_all_bots(None, current_time=dtime(15, 35, 0))
+
+    b3b = session2.bot_states["Strategy 3: Confluence Gamma Scalper"]
+    assert b3b["closed_trades"] == [], "no fabricated EOD fill may enter the ledger"
+    assert b3b["active_trade"] is not None
+    assert b3b["active_trade"]["status"] == "UNRESOLVED_EOD"
+    assert b3b["active_trade"]["net_pnl"] is None
+    assert session2.requires_reconciliation is True
 
 
 # ─── 19. ATTEMPTED DHAN PRODUCTION ORDER WHILE LIVE=FALSE ───
