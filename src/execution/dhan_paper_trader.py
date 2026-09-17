@@ -447,19 +447,34 @@ def run_sandbox_cli():
         vix=vix,
         option_type="PE",
     )
-    entry_prem = float(contract["premium"])
-    # 1:3 RR: stop 16 pts, target 48 pts (or 0.45 ATR equivalent)
-    stop_prem = round(max(0.50, entry_prem - 16.0), 2)
-    target_prem = round(entry_prem + 48.0, 2)
+    if not contract:
+        print("  ✗ Contract Resolution Failed: Scrip master could not find matching active contract.")
+        return
 
     print(f"  ✓ Dynamic Contract: {contract['trading_symbol']}")
     print(f"  ✓ Security ID:      {contract['security_id']}")
     print(f"  ✓ Expiry Date:      {contract['expiry_date']} (DTE: {contract['dte_days']} day(s))")
-    print(f"  ✓ Dynamic Premium:  ₹{entry_prem:.2f} (Delta: {contract['delta']:.2f})")
+    print(f"  ✓ Analytical Delta: {contract['analytical_delta']:.2f} (Theoretical BS: ₹{contract['analytical_theoretical_premium']:.2f})")
+
+    # 4. Check executable market quote
+    print("\n[4] Checking Real Executable Market Quote...")
+    if not contract.get("is_executable") or not contract.get("ltp"):
+        print("  [FAIL-CLOSED SAFETY] Real option market quote unavailable from Dhan API feed.")
+        print("  ✓ Strict Policy: Zero trade execution on theoretical Black-Scholes price.")
+        print("  ✓ Status: NO TRADE PLACED (Safe read-only state maintained).")
+        print("\n" + "=" * 78)
+        print("  DYNAMIC PAPER TRADING VERIFICATION COMPLETE (0 REAL ORDERS SUBMITTED)")
+        print("=" * 78)
+        return
+
+    entry_prem = float(contract.get("ask") or contract["ltp"])
+    stop_prem = round(max(0.50, entry_prem - 16.0), 2)
+    target_prem = round(entry_prem + 48.0, 2)
+    print(f"  ✓ Executable Quote: LTP ₹{contract['ltp']:.2f} | Bid: {contract['bid']} | Ask: {contract['ask']}")
     print(f"  ✓ Dynamic Stop/Tgt: ₹{stop_prem:.2f} / ₹{target_prem:.2f} (1:3 Asymmetric RR)")
 
-    # 4. Execute Dynamic Paper Trade
-    print("\n[4] Executing Dynamic Paper Order (Zero Real Production Orders)...")
+    # 5. Execute Dynamic Paper Trade
+    print("\n[5] Executing Dynamic Paper Order (Zero Real Production Orders)...")
     res = sandbox.place_paper_order(
         strategy_name="Strategy 6: Micro Momentum Sniper",
         symbol=contract["trading_symbol"],
@@ -467,16 +482,23 @@ def run_sandbox_cli():
         quantity=contract["lot_size"],
         market_spot=spot,
         option_premium=entry_prem,
+        quote=contract.get("market_quote"),
+        bid=contract.get("bid"),
+        ask=contract.get("ask"),
+        quote_timestamp=contract.get("quote_timestamp"),
         stop_premium=stop_prem,
         target_premium=target_prem,
         security_id=contract["security_id"],
     )
 
-    print(f"  ✓ Order ID:        {res['order_id']}")
-    print(f"  ✓ Fill Premium:    ₹{res['entry_premium']:.2f} (includes 0.50 pt conservative slippage)")
-    print(f"  ✓ Entry Costs:     ₹{res['entry_costs_inr']:.2f} (Statutory Taxes + Brokerage)")
-    print(f"  ✓ Safety Check:    Config.LIVE_TRADING_ENABLED = False (Zero Real Capital Risk)")
-    print(f"  ✓ Ledger File:     {sandbox.state_file}")
+    if res.get("is_filled"):
+        print(f"  ✓ Order ID:        {res['order_id']}")
+        print(f"  ✓ Fill Premium:    ₹{res['fill_premium']:.2f} ({res['execution_mode']})")
+        print(f"  ✓ Entry Costs:     ₹{res['entry_costs_inr']:.2f} (Statutory Taxes + Brokerage)")
+        print(f"  ✓ Safety Check:    Config.LIVE_TRADING_ENABLED = False (Zero Real Capital Risk)")
+        print(f"  ✓ Ledger File:     {sandbox.state_file}")
+    else:
+        print(f"  ✓ Order Result:    {res['status']} — {res.get('reason')}")
 
     print("\n" + "=" * 78)
     print("  DYNAMIC PAPER TRADING VERIFICATION COMPLETE (0 REAL ORDERS SUBMITTED)")

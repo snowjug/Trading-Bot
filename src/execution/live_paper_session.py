@@ -448,9 +448,9 @@ class MultiBotLiveSession:
         # ─── BOT 6: MICRO MOMENTUM SNIPER BUYER (1 LOT OPTION) ───
         s6 = self.bot_states["Strategy 6: Micro Momentum Sniper"]
         if s6["active_trade"] is None and not s6["closed_trades"]:
-            n_open = mkt["nifty"].get("open", n_last)
-            if n_last < n_open - 30.0 and mkt.get("vix", 14.5) <= 18.5:
-                c6 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "PE", strike_offset_steps=0)
+            vix_val = mkt.get("vix")
+            if vix_val is not None and n_last < n_open - 30.0 and vix_val <= 18.5:
+                c6 = DhanContractResolver.resolve_option_contract(n_last, vix_val, "PE", strike_offset_steps=0)
                 if not c6 or not c6.get("is_executable") or not c6.get("ltp"):
                     logger.warning("Bot 6: Real option quote unavailable for sniper breakdown -> NO TRADE.")
                 else:
