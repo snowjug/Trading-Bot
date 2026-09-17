@@ -231,18 +231,37 @@ def test_h3_settled_detection_fails_closed_without_timestamp():
     assert lmb.is_session_bar_settled(None) is False
 
 
-@pytest.mark.parametrize("bot", [BOT3, BOT4, BOT5])
+@pytest.mark.parametrize("bot", [BOT3, BOT4])
 def test_h3_settled_bar_strategies_refuse_a_forming_bar(bot):
     """
-    Bots 3/4/5 read row['ema_*'], row['rsi_14'], row['close'] and row['volume'],
+    Bots 3/4 read row['ema_*'], row['rsi_14'], row['close'] and row['volume'],
     all of which require today's settled close. They must not be evaluated
     against a partial bar.
+
+    NOTE: Bot 5 was in this group until its same-bar leakage was removed. Its
+    live path now uses a CAUSAL provider whose filters are all prior-bar, so a
+    forming bar is legitimate for it — see
+    test_h3_bot5_moved_to_forming_bar_only_because_leakage_was_removed.
     """
     adapter = LiveStrategyAdapter()
     sig = adapter.evaluate(bot, session_bar=FORMING, today_vix=13.2,
                            trading_day=date(2026, 9, 17))
     assert sig.direction == 0
     assert sig.reason.startswith("FORMING_BAR_UNSUPPORTED")
+
+
+def test_h3_bot5_moved_to_forming_bar_only_because_leakage_was_removed():
+    """
+    Bot 5's reclassification must be earned, not asserted.
+
+    It may only run on a forming bar because its live signal now comes from the
+    causal provider (prior-bar EMA/RSI/ATR + a live high/low breakout). If the
+    provider were removed, the settled-bar requirement would have to return.
+    """
+    b = STRATEGY_BINDINGS[BOT5]
+    assert b["requires_settled_bar"] is False
+    assert b.get("signal_provider", "").endswith("generate_signals_point_in_time"),         "forming-bar evaluation is only justified while the causal provider is in use"
+    assert "prev[" in b["bar_timing_evidence"], "evidence must cite prior-bar inputs"
 
 
 def test_h3_forming_bar_strategy_is_preserved():

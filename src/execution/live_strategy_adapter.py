@@ -111,8 +111,13 @@ STRATEGY_BINDINGS: Dict[str, Dict[str, Any]] = {
     "Strategy 5: Velocity-5 Momentum Scalper": {
         "module": "src.strategies.active_momentum_scalper",
         "class": "ActiveMomentumOptionScalperStrategy",
-        "requires_settled_bar": True,
-        "bar_timing_evidence": "Uses row['ema_20'] and row['rsi_14'], both of which depend on today's close, alongside the intraday breakout test.",
+        # The class's own generate_signals reads row["ema_20"] and row["rsi_14"],
+        # both of which embed today's close (same-bar leakage measured at 17/393
+        # bars). The live path therefore uses the CAUSAL provider so that live
+        # feature timing matches the corrected research exactly.
+        "signal_provider": "src.research.bot5_point_in_time:generate_signals_point_in_time",
+        "requires_settled_bar": False,
+        "bar_timing_evidence": "CAUSAL provider: filters read prev['ema_9'], prev['ema_20'] and prev['rsi_14'] (settled) plus today's OPEN; the only current-bar input is the high/low breakout, a live crossing event. Forming-bar evaluation is therefore legitimate, matching Bot 6's pattern.",
         "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": False,
@@ -256,7 +261,16 @@ class LiveStrategyAdapter:
                               reason="DATA_UNAVAILABLE: authentic bar/VIX state unavailable")
 
         try:
-            sig_df = strategy.generate_signals(frame)
+            provider = binding.get("signal_provider")
+            if provider:
+                # A binding may override the class's own generate_signals with a
+                # CAUSAL implementation. This is the only supported way to change
+                # signal timing; strategy parameters are never overridden.
+                mod_path, fn_name = provider.split(":")
+                mod = __import__(mod_path, fromlist=[fn_name])
+                sig_df = getattr(mod, fn_name)(strategy, frame)
+            else:
+                sig_df = strategy.generate_signals(frame)
         except Exception as e:
             logger.error(f"{bot_name}: strategy.generate_signals raised {e}")
             return LiveSignal(bot_name, binding["class"], 0, 0.0, binding["underlying"],
