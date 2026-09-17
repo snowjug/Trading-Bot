@@ -1,0 +1,16 @@
+{
+  "snapshot_date": "2026-09-17",
+  "snapshot_timestamp": "2026-09-17T10:09:30.460995",
+  "row_count": 12304,
+  "sha256": "776c2f146475c09992f669663fd67c0685f437b13aa4d5901e4aa733562a7b02",
+  "file_size_bytes": 264833,
+  "unique_underlyings": [
+    "BANKNIFTY",
+    "FINNIFTY",
+    "MIDCPNIFTY",
+    "NIFTY",
+    "NIFTYFPI",
+    "NIFTYNXT50"
+  ],
+  "source": "https://images.dhan.co/api-data/api-scrip-master.csv"
+}

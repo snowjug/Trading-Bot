@@ -30,6 +30,7 @@ from src.config import Config
 from src.utils.logging import setup_logging
 from src.execution.paper_broker import PaperBroker
 from src.execution.dhan_contract_resolver import DhanContractResolver, is_quote_fresh
+from src.execution.cost_model import IndianCostModel
 
 logger = setup_logging("execution.live_session")
 
@@ -655,15 +656,16 @@ LIVE_TRADING_ENABLED: FALSE
                     s1["active_trade"] = None
                     s1["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
                     self.log_event(f"BOT 1 STRANGLE STOP: Net Rs {pnl1:+,.2f}")
-                elif now_time >= dtime(15, 15):
+                elif now_time >= dtime(15, 35):
+                    costs1 = IndianCostModel.calculate_roundtrip_costs(t1["entry_fill"], curr_val, t1["qty"])
                     t1["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t1["exit_bid"] = None
                     t1["exit_ask"] = curr_val
                     t1["exit_fill"] = curr_val
-                    t1["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t1["exit_reason"] = "EOD_FORCED_EXIT"
                     t1["status"] = "CLOSED"
                     t1["trade_state"] = "CLOSED"
-                    t1["statutory_friction"] = 80.0
+                    t1["statutory_friction"] = costs1.total_costs
                     s1["closed_trades"].append(t1)
                     s1["active_trade"] = None
                     s1["status"] = "SQUARED_OFF"
@@ -846,15 +848,16 @@ LIVE_TRADING_ENABLED: FALSE
                     s5["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
                     self.log_event(f"BOT 5 STOP HIT: {t5['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl5:,.2f}")
 
-                elif now_time >= dtime(15, 15):
+                elif now_time >= dtime(15, 35):
+                    costs5 = IndianCostModel.calculate_roundtrip_costs(t5["entry_premium"], curr_prem, t5["qty"])
                     t5["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t5["exit_bid"] = bid
                     t5["exit_ask"] = q.get("ask")
                     t5["exit_fill"] = curr_prem
-                    t5["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t5["exit_reason"] = "EOD_FORCED_EXIT"
                     t5["status"] = "CLOSED"
                     t5["trade_state"] = "CLOSED"
-                    t5["statutory_friction"] = 45.0
+                    t5["statutory_friction"] = costs5.total_costs
                     s5["closed_trades"].append(t5)
                     s5["active_trade"] = None
                     s5["status"] = "SQUARED_OFF"
@@ -976,15 +979,16 @@ LIVE_TRADING_ENABLED: FALSE
                     s4["status"] = "STOP_HIT (STOPPED_FOR_DAY)"
                     self.log_event(f"BOT 4 STOP HIT: {t4['contract']} @ Rs {curr_prem:.1f} | PnL: Rs {pnl4:,.2f}")
 
-                elif now_time >= dtime(15, 15):
+                elif now_time >= dtime(15, 35):
+                    costs4 = IndianCostModel.calculate_roundtrip_costs(t4["entry_premium"], curr_prem, t4["qty"])
                     t4["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t4["exit_bid"] = bid
                     t4["exit_ask"] = q.get("ask")
                     t4["exit_fill"] = curr_prem
-                    t4["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t4["exit_reason"] = "EOD_FORCED_EXIT"
                     t4["status"] = "CLOSED"
                     t4["trade_state"] = "CLOSED"
-                    t4["statutory_friction"] = 45.0
+                    t4["statutory_friction"] = costs4.total_costs
                     s4["closed_trades"].append(t4)
                     s4["active_trade"] = None
                     s4["status"] = "SQUARED_OFF"
@@ -1104,15 +1108,16 @@ LIVE_TRADING_ENABLED: FALSE
                     s3["active_trade"] = None
                     s3["status"] = "STOPPED_OUT"
                     self.log_event(f"BOT 3 GAMMA STOP: Net Rs {pnl3:+,.2f}")
-                elif now_time >= dtime(15, 15):
+                elif now_time >= dtime(15, 35):
+                    costs3 = IndianCostModel.calculate_roundtrip_costs(t3["entry_premium"], curr_prem, t3["qty"])
                     t3["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t3["exit_bid"] = bid
                     t3["exit_ask"] = q.get("ask")
                     t3["exit_fill"] = curr_prem
-                    t3["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t3["exit_reason"] = "EOD_FORCED_EXIT"
                     t3["status"] = "CLOSED"
                     t3["trade_state"] = "CLOSED"
-                    t3["statutory_friction"] = 45.0
+                    t3["statutory_friction"] = costs3.total_costs
                     s3["closed_trades"].append(t3)
                     s3["active_trade"] = None
                     s3["status"] = "SQUARED_OFF"
@@ -1422,15 +1427,16 @@ LIVE_TRADING_ENABLED: FALSE
                     s6["active_trade"] = None
                     s6["status"] = "STOPPED_OUT_PRESERVING_CAPITAL"
                     self.log_event(f"BOT 6 STOP LOSS HIT: Preserved Capital, Net Loss Rs {pnl6:+,.2f}")
-                elif now_time >= dtime(15, 15):
+                elif now_time >= dtime(15, 35):
+                    costs6 = IndianCostModel.calculate_roundtrip_costs(t6["entry_premium"], curr_prem, t6["qty"])
                     t6["exit_time"] = datetime.now().strftime("%H:%M:%S")
                     t6["exit_bid"] = bid
                     t6["exit_ask"] = q.get("ask")
                     t6["exit_fill"] = curr_prem
-                    t6["exit_reason"] = "EOD_MIS_SQUAREOFF"
+                    t6["exit_reason"] = "EOD_FORCED_EXIT"
                     t6["status"] = "CLOSED"
                     t6["trade_state"] = "CLOSED"
-                    t6["statutory_friction"] = 65.0
+                    t6["statutory_friction"] = costs6.total_costs
                     s6["closed_trades"].append(t6)
                     s6["active_trade"] = None
                     s6["status"] = "SQUARED_OFF"

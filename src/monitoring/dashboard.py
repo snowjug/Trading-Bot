@@ -178,7 +178,7 @@ def get_dashboard_html() -> str:
     <div class="stat-card">
       <div class="stat-title">Total Portfolio Equity</div>
       <div class="stat-value mono" id="equity-val">₹5,00,000</div>
-      <div class="stat-sub">Allocated Across 5 Strategies</div>
+      <div class="stat-sub" id="strat-count-sub">Allocated Across Active Strategies</div>
     </div>
     <div class="stat-card">
       <div class="stat-title">Net Realized P&L</div>
@@ -208,9 +208,35 @@ def get_dashboard_html() -> str:
   </div>
 
   <!-- Active Bots Grid -->
-  <div class="section-title">🤖 Production Algorithmic Strategies (5 Bots)</div>
+  <div class="section-title" id="bots-section-title">🤖 Production Algorithmic Strategies</div>
   <div class="bots-grid" id="bots-container">
     <!-- Populated dynamically via Javascript -->
+  </div>
+
+  <!-- Open Positions Table -->
+  <div class="section-title">⚡ Active Open Positions (Real-time Mark-to-Market)</div>
+  <div class="table-card" style="margin-bottom: 2rem;">
+    <table>
+      <thead>
+        <tr>
+          <th>Strategy</th>
+          <th>Contract</th>
+          <th>Security ID</th>
+          <th>Side</th>
+          <th>Qty</th>
+          <th>Entry Fill</th>
+          <th>Current Bid</th>
+          <th>Current Ask</th>
+          <th>Unrealized P&L</th>
+          <th>Target</th>
+          <th>Stop</th>
+          <th>Valuation</th>
+        </tr>
+      </thead>
+      <tbody id="open-positions-tbody">
+        <tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active open positions. Standing by for signals.</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- Closed Trades Table -->
@@ -238,12 +264,13 @@ def get_dashboard_html() -> str:
 
 <div class="footer">
   <div>Safety Gate: <span style="color:var(--green); font-weight:600;">LIVE_TRADING_ENABLED=False</span> (Protected Synthetic Broker)</div>
-  <div>Last Sync: <span id="sync-time" class="mono">--</span></div>
+  <div>Broker Connectivity: <span class="mono" id="dhan-status">DhanHQ Official Data API Active</span></div>
 </div>
 
 <script>
-function fmt(n) {
-  return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmt(num) {
+  if (num === undefined || num === null || isNaN(num)) return "0.00";
+  return Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 async function updateDashboard() {
@@ -251,34 +278,43 @@ async function updateDashboard() {
     const res = await fetch('/api/status');
     const data = await res.json();
 
-    document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN');
-    document.getElementById('sync-time').textContent = data.last_updated || new Date().toISOString();
+    document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-GB');
 
-    const settlement = data.final_settlement || {};
-    const totalNet = settlement.total_net_realized_pnl || 0;
-    const totalGross = settlement.total_realized_gross || 0;
-    const totalFriction = settlement.total_statutory_friction || 0;
+    // Portfolio Equity & Totals
     const totalCap = data.total_capital_deployed || 500000;
+    const settlement = data.final_settlement || {};
+    const netPnl = settlement.total_net_realized_pnl || 0;
+    const grossPnl = settlement.total_realized_gross || 0;
+    const friction = settlement.total_statutory_friction || 0;
 
+    document.getElementById('equity-val').innerText = '₹' + fmt(totalCap + netPnl);
+    
     const netEl = document.getElementById('net-pnl-val');
-    netEl.textContent = (totalNet >= 0 ? '+₹' : '-₹') + fmt(Math.abs(totalNet));
-    netEl.className = 'stat-value mono ' + (totalNet >= 0 ? 'green' : 'red');
+    netEl.innerText = (netPnl >= 0 ? '+' : '') + '₹' + fmt(netPnl);
+    netEl.className = 'stat-value mono ' + (netPnl >= 0 ? 'green' : 'red');
 
-    document.getElementById('gross-pnl-val').textContent = '+₹' + fmt(totalGross);
-    document.getElementById('charges-val').textContent = '-₹' + fmt(totalFriction);
-    document.getElementById('equity-val').textContent = '₹' + fmt(totalCap + totalNet);
+    document.getElementById('gross-pnl-val').innerText = '₹' + fmt(grossPnl);
+    document.getElementById('charges-val').innerText = '-₹' + fmt(friction);
+
+    // Dynamic Strategy Count
+    const botStates = data.bot_states || {};
+    const botCount = Object.keys(botStates).length || 6;
+    const stratSub = document.getElementById('strat-count-sub');
+    if (stratSub) stratSub.innerText = `Allocated Across ${botCount} Strategies`;
+    const botsSecTitle = document.getElementById('bots-section-title');
+    if (botsSecTitle) botsSecTitle.innerText = `🤖 Production Algorithmic Strategies (${botCount} Bots)`;
 
     // Render Bots
     const botsContainer = document.getElementById('bots-container');
     let botsHtml = '';
     const allTrades = [];
+    const openPositions = [];
 
-    const botStates = data.bot_states || {};
     for (const [name, b] of Object.entries(botStates)) {
       const active = b.active_trade;
       const closed = b.closed_trades || [];
-      const netPnl = b.net_pnl || 0;
-      const isProfitable = netPnl >= 0;
+      const botNetPnl = b.net_pnl || 0;
+      const isProfitable = botNetPnl >= 0;
 
       let statusBadgeClass = 'bot-status';
       if (b.status && b.status.includes('IN_POSITION')) statusBadgeClass += ' active';
@@ -297,11 +333,15 @@ async function updateDashboard() {
           <div class="bot-pnl-row">
             <span style="color:var(--text-muted); font-size:0.8rem;">Session P&L</span>
             <span class="${isProfitable ? 'green' : 'red'}" style="font-weight:700;">
-              ${isProfitable ? '+' : ''}₹${fmt(netPnl)}
+              ${isProfitable ? '+' : ''}₹${fmt(botNetPnl)}
             </span>
           </div>
         </div>
       `;
+
+      if (active) {
+        openPositions.push({ bot: name, ...active });
+      }
 
       if (closed.length > 0) {
         closed.forEach(t => {
@@ -310,6 +350,35 @@ async function updateDashboard() {
       }
     }
     botsContainer.innerHTML = botsHtml;
+
+    // Render Open Positions Table
+    const openTbody = document.getElementById('open-positions-tbody');
+    if (openPositions.length === 0) {
+      openTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active open positions. Monitoring market opportunities...</td></tr>';
+    } else {
+      let openHtml = '';
+      openPositions.forEach(p => {
+        const uPnl = p.unrealized_pnl || p.net_pnl || 0;
+        const isUp = uPnl >= 0;
+        openHtml += `
+          <tr>
+            <td style="font-weight:600;">${p.bot}</td>
+            <td class="mono" style="color:var(--accent);">${p.contract || '--'}</td>
+            <td class="mono">${p.security_id || '--'}</td>
+            <td style="font-weight:600;">${p.side || 'BUY'}</td>
+            <td class="mono">${p.qty || p.lots || '--'}</td>
+            <td class="mono">₹${fmt(p.entry_fill || p.entry_premium)}</td>
+            <td class="mono green">₹${fmt(p.entry_bid || p.current_premium)}</td>
+            <td class="mono red">₹${fmt(p.entry_ask || p.current_premium)}</td>
+            <td class="mono ${isUp ? 'green' : 'red'}" style="font-weight:700;">${isUp ? '+' : ''}₹${fmt(uPnl)}</td>
+            <td class="mono">₹${fmt(p.target_premium)}</td>
+            <td class="mono">₹${fmt(p.stop_premium)}</td>
+            <td><span style="font-size:0.75rem; background:rgba(0,210,106,0.15); color:var(--green); padding:0.2rem 0.5rem; border-radius:4px;">${p.valuation_status || 'LIVE_QUOTE'}</span></td>
+          </tr>
+        `;
+      });
+      openTbody.innerHTML = openHtml;
+    }
 
     // Render Trades Table
     const tbody = document.getElementById('trades-tbody');

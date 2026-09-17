@@ -1,0 +1,35 @@
+{
+  "session_id": "test_sess",
+  "stage": "STARTUP",
+  "utc_timestamp": "2026-09-17T04:51:49.616286+00:00",
+  "ist_timestamp": "2026-09-17T10:21:49.616286+05:30",
+  "git_commit_sha": "c50f976c8e9622536f24e3eaa168e8fe768b0bd4",
+  "python_version": "3.13.15 (tags/v3.13.15:4061bc4, Aug  5 2026, 13:05:39) [MSC v.1944 64 bit (AMD64)]",
+  "os_platform": "Windows-11-10.0.26200-SP0",
+  "os_system": "Windows",
+  "os_release": "11",
+  "package_versions": {
+    "pandas": "2.2.3",
+    "pyarrow": "25.0.1",
+    "duckdb": "1.5.5",
+    "numpy": "2.4.6",
+    "scipy": "1.15.3",
+    "requests": "2.34.2",
+    "fastapi": "0.111.1"
+  },
+  "configuration_hash": "240a2abfeb3240e589912bafe8e3797f428fb4bf9356c5f11e049634155757c2",
+  "live_trading_enabled": false,
+  "paper_trading_enabled": true,
+  "strategy_count": 6,
+  "strategies_indexed": [
+    "Strategy 1: Apex VRP Engine / Options Theta",
+    "Strategy 2: Zen Curvature Overnight",
+    "Strategy 3: Confluence Gamma Scalper",
+    "Strategy 4: Golden Trend Runner",
+    "Strategy 5: Velocity-5 Momentum Scalper",
+    "Strategy 6: Micro Momentum Sniper"
+  ],
+  "data_source": "DhanHQ Official Data API v2",
+  "fail_closed_mode": true,
+  "extra_metadata": {}
+}

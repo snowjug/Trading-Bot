@@ -2,7 +2,7 @@
 
 Date: 2026-09-17
 Start time IST: 09:06:21
-End time IST: 09:54:10
+End time IST: 10:59:02
 Git HEAD: e1a9fe14284e3b979e307f10d36517a7c245c679
 Mode: PAPER
 LIVE_TRADING_ENABLED: FALSE
@@ -26,7 +26,7 @@ LIVE_TRADING_ENABLED: FALSE
 | Strategy 2: Zen Curvature Overnight | 0 | 0 | 0 | 0 | 0 |
 | Strategy 3: Confluence Gamma Scalper | 13 | 1 | 12 | 1 | 0 |
 | Strategy 4: Golden Trend Runner | 13 | 1 | 12 | 1 | 0 |
-| Strategy 5: Velocity-5 Momentum Scalper | 13 | 1 | 12 | 1 | 0 |
+| Strategy 5: Velocity-5 Momentum Scalper | 13 | 1 | 12 | 0 | 1 |
 | Strategy 6: Micro Momentum Sniper | 13 | 1 | 12 | 1 | 0 |
 
 ## TRADE SUMMARY
@@ -34,21 +34,21 @@ LIVE_TRADING_ENABLED: FALSE
 - Total signals: 65
 - Total paper trades: 5
 - Total rejected signals: 60
-- Total open positions: 5
-- Total closed positions: 0
+- Total open positions: 4
+- Total closed positions: 1
 
 ## P&L SUMMARY
 
-- Gross P&L: Rs +0.00
-- Total costs: Rs 0.00
-- Net P&L: Rs +0.00
-- Win count: 0
+- Gross P&L: Rs +2,863.25
+- Total costs: Rs 45.00
+- Net P&L: Rs +2,818.25
+- Win count: 1
 - Loss count: 0
 - Breakeven count: 0
-- Win rate: 0.0%
-- Average trade: Rs +0.00
-- Largest gain: Rs +0.00
-- Largest loss: Rs +0.00
+- Win rate: 100.0%
+- Average trade: Rs +2,818.25
+- Largest gain: Rs +2,818.25
+- Largest loss: Rs +2,818.25
 
 > [!IMPORTANT]
 > **Do not interpret this short session as evidence that a strategy is profitable.**
@@ -58,11 +58,11 @@ LIVE_TRADING_ENABLED: FALSE
 
 | Trade ID | Strategy | Entry Timestamp | Entry Bid | Entry Ask | Entry Fill | Exit Timestamp | Exit Bid | Exit Ask | Exit Fill | Exit Reason | Holding Duration | Gross P&L | All Configured Costs | Net P&L |
 |:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| APEX-THETA-8584 | Strategy 1: Apex VRP Engine | 09:46:24 | 70.0 | None | 70.0 | -- | -- | -- | -- | -- | -- | Rs +117.00 | Rs 80.00 | Rs +37.00 |
-| GAMMA-8585 | Strategy 3: Confluence Gamma Scalper | 09:46:25 | 135.85 | 136.0 | 136.5 | -- | -- | -- | -- | -- | -- | Rs +614.25 | Rs 45.00 | Rs +569.25 |
-| GOLDEN-8585 | Strategy 4: Golden Trend Runner | 09:46:25 | 135.85 | 136.0 | 136.5 | -- | -- | -- | -- | -- | -- | Rs +614.25 | Rs 45.00 | Rs +569.25 |
-| VELOCITY-8585 | Strategy 5: Velocity-5 Momentum Scalper | 09:46:25 | 135.85 | 136.0 | 136.5 | -- | -- | -- | -- | -- | -- | Rs +614.25 | Rs 45.00 | Rs +569.25 |
-| SNIPER-LIVE-8585 | Strategy 6: Micro Momentum Sniper | 09:46:25 | 135.85 | 136.0 | 136.5 | -- | -- | -- | -- | -- | -- | Rs +867.75 | Rs 65.00 | Rs +802.75 |
+| APEX-THETA-8584 | Strategy 1: Apex VRP Engine | 09:46:24 | 70.0 | None | 70.0 | -- | -- | -- | -- | -- | -- | Rs +377.00 | Rs 80.00 | Rs +297.00 |
+| GAMMA-8585 | Strategy 3: Confluence Gamma Scalper | 09:46:25 | 135.85 | 136.0 | 136.5 | -- | -- | -- | -- | -- | -- | Rs +919.75 | Rs 45.00 | Rs +874.75 |
+| GOLDEN-8585 | Strategy 4: Golden Trend Runner | 09:46:25 | 135.85 | 136.0 | 136.5 | -- | -- | -- | -- | -- | -- | Rs +919.75 | Rs 45.00 | Rs +874.75 |
+| VELOCITY-8585 | Strategy 5: Velocity-5 Momentum Scalper | 09:46:25 | 135.85 | 136.0 | 136.5 | 10:12:54 | 180.55 | 180.95 | 180.55 | PROFIT_TARGET | 26m 29s | Rs +2,863.25 | Rs 45.00 | Rs +2,818.25 |
+| SNIPER-LIVE-8585 | Strategy 6: Micro Momentum Sniper | 09:46:25 | 135.85 | 136.0 | 136.5 | -- | -- | -- | -- | -- | -- | Rs +767.00 | Rs 65.00 | Rs +702.00 |
 
 ## REJECTED SIGNALS
 

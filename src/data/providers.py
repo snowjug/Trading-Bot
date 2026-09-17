@@ -192,6 +192,93 @@ class YFinanceProvider(DataProvider):
             return False
 
 
+class DhanDataProvider(DataProvider):
+    """Official DhanHQ Data API Provider implementing DataProvider."""
+
+    name = "dhan"
+    supports_intraday: bool = True
+    supports_futures: bool = True
+    supports_options: bool = True
+    requires_auth: bool = True
+    rate_limit_per_min: int = 120
+
+    def __init__(self):
+        from src.data.dhan_client import get_dhan_client
+        self.client = get_dhan_client()
+
+    def is_available(self) -> bool:
+        return bool(self.client.client_id and self.client.access_token)
+
+    def fetch_ohlcv(self, request: DataRequest) -> DataResult:
+        """Fetch historical or intraday OHLCV for a symbol via Dhan."""
+        from src.execution.dhan_scrip_master import DhanScripMaster
+        meta = DhanScripMaster.resolve_equity(request.symbol)
+        sec_id = meta.get("security_id") if meta else str(request.symbol)
+
+        if not sec_id or not str(sec_id).isdigit():
+            return DataResult(
+                symbol=request.symbol, timeframe=request.timeframe,
+                data=pd.DataFrame(), provider=self.name,
+                start_date=request.start_date, end_date=request.end_date,
+                success=False, error=f"Could not resolve Dhan security_id for {request.symbol}",
+            )
+
+        if request.timeframe in ("1m", "5m", "15m", "60m", "intraday"):
+            interval = "1" if request.timeframe == "1m" else ("5" if request.timeframe == "5m" else "15")
+            df = self.client.fetch_intraday_candles(
+                security_id=sec_id,
+                exchange_segment="NSE_EQ",
+                instrument="EQUITY",
+                interval=interval,
+                from_date=f"{request.start_date} 09:15:00",
+                to_date=f"{request.end_date} 15:30:00",
+            )
+        else:
+            df = self.client.fetch_historical_daily(
+                security_id=sec_id,
+                exchange_segment="NSE_EQ",
+                instrument="EQUITY",
+                from_date=str(request.start_date),
+                to_date=str(request.end_date),
+            )
+
+        if df.empty:
+            return DataResult(
+                symbol=request.symbol, timeframe=request.timeframe,
+                data=pd.DataFrame(), provider=self.name,
+                start_date=request.start_date, end_date=request.end_date,
+                success=False, error="Empty response from Dhan API",
+            )
+
+        return DataResult(
+            symbol=request.symbol, timeframe=request.timeframe,
+            data=df, provider=self.name,
+            start_date=request.start_date, end_date=request.end_date,
+            success=True,
+        )
+
+    def fetch_index(self, index_name: str, start_date: date, end_date: date) -> DataResult:
+        """Fetch index historical daily candles."""
+        sec_map = {"NIFTY": "13", "NIFTY50": "13", "BANKNIFTY": "25"}
+        sec_id = sec_map.get(index_name.upper().replace(" ", "").replace("_", ""), "13")
+        df = self.client.fetch_historical_daily(
+            security_id=sec_id,
+            exchange_segment="NSE_EQ",
+            instrument="EQUITY",
+            from_date=str(start_date),
+            to_date=str(end_date),
+        )
+        return DataResult(
+            symbol=index_name, timeframe="daily",
+            data=df, provider=self.name,
+            start_date=start_date, end_date=end_date,
+            success=not df.empty,
+        )
+
+    def get_universe(self, universe_name: str) -> list[str]:
+        return YFinanceProvider.NIFTY50_SYMBOLS.copy()
+
+
 class DataProviderManager:
     """Manages multiple data providers with fallback support."""
 
@@ -200,18 +287,23 @@ class DataProviderManager:
         self._register_defaults()
 
     def _register_defaults(self):
-        """Register default providers."""
+        """Register default providers prioritizing official Dhan API."""
+        dhan = DhanDataProvider()
+        if dhan.is_available():
+            self.providers["dhan"] = dhan
+            logger.info("Registered DhanHQ data provider as PRIMARY")
+
         yf = YFinanceProvider()
         if yf.is_available():
             self.providers["yfinance"] = yf
-            logger.info("Registered yfinance provider")
+            logger.info("Registered yfinance provider as fallback")
 
     def register(self, provider: DataProvider):
         """Register a custom data provider."""
         self.providers[provider.name] = provider
         logger.info(f"Registered {provider.name} provider")
 
-    def fetch(self, request: DataRequest, preferred_provider: str = "yfinance") -> DataResult:
+    def fetch(self, request: DataRequest, preferred_provider: str = "dhan") -> DataResult:
         """Fetch data using preferred provider with fallback."""
         providers_to_try = [preferred_provider] + [
             p for p in self.providers if p != preferred_provider

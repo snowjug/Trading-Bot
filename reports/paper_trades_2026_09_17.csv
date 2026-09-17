@@ -1,6 +1,6 @@
 Trade ID,Strategy,Entry Timestamp,Entry Bid,Entry Ask,Entry Fill,Exit Timestamp,Exit Bid,Exit Ask,Exit Fill,Exit Reason,Holding Duration,Gross P&L,All Configured Costs,Net P&L,Contract,SecurityId,Side,Qty,Status
-APEX-THETA-8584,Strategy 1: Apex VRP Engine,09:46:24,70.0,,70.0,--,--,--,--,--,--,117.0,80.0,37.0,NIFTY 22 SEP 23550 CALL / NIFTY 22 SEP 22950 PUT,57023 / 56948,SELL,65,OPEN
-GAMMA-8585,Strategy 3: Confluence Gamma Scalper,09:46:25,135.85,136.0,136.5,--,--,--,145.95,--,--,614.25,45.0,569.25,NIFTY 22 SEP 23250 CALL (Gamma Scalp),56983,BUY,65,OPEN
-GOLDEN-8585,Strategy 4: Golden Trend Runner,09:46:25,135.85,136.0,136.5,--,--,--,145.95,--,--,614.25,45.0,569.25,NIFTY 22 SEP 23250 CALL (1:3 Runner),56983,BUY,65,OPEN
-VELOCITY-8585,Strategy 5: Velocity-5 Momentum Scalper,09:46:25,135.85,136.0,136.5,--,--,--,145.95,--,--,614.25,45.0,569.25,NIFTY 22 SEP 23250 CALL,56983,BUY,65,OPEN
-SNIPER-LIVE-8585,Strategy 6: Micro Momentum Sniper,09:46:25,135.85,136.0,136.5,--,--,--,149.85,--,--,867.75,65.0,802.75,NIFTY 22 SEP 23250 CALL (1:3 Sniper),56983,BUY,65,OPEN
+APEX-THETA-8584,Strategy 1: Apex VRP Engine,09:46:24,70.0,,70.0,--,--,--,--,--,--,377.0,80.0,297.0,NIFTY 22 SEP 23550 CALL / NIFTY 22 SEP 22950 PUT,57023 / 56948,SELL,65,OPEN
+GAMMA-8585,Strategy 3: Confluence Gamma Scalper,09:46:25,135.85,136.0,136.5,--,--,--,150.65,--,--,919.75,45.0,874.75,NIFTY 22 SEP 23250 CALL (Gamma Scalp),56983,BUY,65,OPEN
+GOLDEN-8585,Strategy 4: Golden Trend Runner,09:46:25,135.85,136.0,136.5,--,--,--,150.65,--,--,919.75,45.0,874.75,NIFTY 22 SEP 23250 CALL (1:3 Runner),56983,BUY,65,OPEN
+VELOCITY-8585,Strategy 5: Velocity-5 Momentum Scalper,09:46:25,135.85,136.0,136.5,10:12:54,180.55,180.95,180.55,PROFIT_TARGET,26m 29s,2863.25,45.0,2818.25,NIFTY 22 SEP 23250 CALL,56983,BUY,65,CLOSED
+SNIPER-LIVE-8585,Strategy 6: Micro Momentum Sniper,09:46:25,135.85,136.0,136.5,--,--,--,148.3,--,--,767.0,65.0,702.0,NIFTY 22 SEP 23250 CALL (1:3 Sniper),56983,BUY,65,OPEN

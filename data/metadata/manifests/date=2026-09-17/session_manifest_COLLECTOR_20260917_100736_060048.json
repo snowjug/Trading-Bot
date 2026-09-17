@@ -1,0 +1,10 @@
+{
+  "session_id": "COLLECTOR_20260917_100736_060048",
+  "start_time": "2026-09-17T10:07:36.754008",
+  "ticks_collected": 12,
+  "batches_written": 1,
+  "option_chains_captured": 1,
+  "api_errors": 0,
+  "duplicates_dropped": 0,
+  "end_time": "2026-09-17T10:07:54.371785"
+}
