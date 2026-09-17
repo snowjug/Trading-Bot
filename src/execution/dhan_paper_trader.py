@@ -214,17 +214,24 @@ class DhanPaperSandbox:
         symbol: str = "NIFTY",
         transaction_type: str = "BUY",
         quantity: int = 25,
-        market_spot: float = 24000.0,
-        option_premium: float = 100.0,
-        stop_premium: float = 85.0,
-        target_premium: float = 130.0,
+        market_spot: float = 0.0,
+        option_premium: Optional[float] = None,
+        stop_premium: Optional[float] = None,
+        target_premium: Optional[float] = None,
         security_id: str = "",
         product_type: str = "INTRADAY",
+        quote: Optional[Dict] = None,
+        bid: Optional[float] = None,
+        ask: Optional[float] = None,
+        quote_timestamp: Optional[str] = None,
     ) -> Dict:
         """
-        Executes order under strict fail-safe rules:
-        - If use_sandbox_server=True: Dispatches payload to https://sandbox.dhan.co/v2/orders for plumbing test.
-        - If use_sandbox_server=False: Guaranteed 0 production HTTP order calls; executed via local paper broker.
+        Executes paper order under strict execution realism and fail-closed rules:
+        - NEVER marks an order FILLED without an authentic executable market quote.
+        - BUY fills at executable Ask + 0.50 pt slippage (or LTP + 0.50 pt slippage).
+        - SELL fills at executable Bid - 0.50 pt slippage (or LTP - 0.50 pt slippage).
+        - Rejects order if security_id is empty or if real quote is unavailable.
+        - Guaranteed 0 production order HTTP calls; intercepted by hard fail-safe.
         """
         Config.assert_no_live_trading()
 
@@ -232,32 +239,87 @@ class DhanPaperSandbox:
             req = strategy_name
             transaction_type = req.get("transactionType", "BUY")
             quantity = req.get("quantity", 25)
-            option_premium = req.get("price", req.get("ltp", 100.0))
+            option_premium = req.get("price", req.get("ltp"))
             symbol = req.get("tradingSymbol", "NIFTY")
             security_id = req.get("securityId", symbol)
-            market_spot = req.get("market_spot", 24000.0)
-            stop_premium = req.get("stop_premium", option_premium * 0.85)
-            target_premium = req.get("target_premium", option_premium * 1.30)
+            market_spot = req.get("market_spot", 0.0)
+            stop_premium = req.get("stop_premium")
+            target_premium = req.get("target_premium")
             product_type = req.get("productType", "INTRADAY")
+            quote = req.get("quote")
+            bid = req.get("bid")
+            ask = req.get("ask")
+            quote_timestamp = req.get("quote_timestamp")
             strategy_name = req.get("strategy_name", "Paper Trader")
 
-        payload = self.build_order_payload(
-            security_id=security_id,
-            transaction_type=transaction_type,
-            quantity=quantity,
-            price=option_premium,
-            exchange_segment="NSE_FNO",
-            product_type=product_type,
-            order_type="MARKET",
-        )
+        # Extract quote fields if quote dict passed
+        if isinstance(quote, dict):
+            if option_premium is None or option_premium <= 0:
+                option_premium = quote.get("ltp")
+            if bid is None:
+                bid = quote.get("bid")
+            if ask is None:
+                ask = quote.get("ask")
+            if quote_timestamp is None:
+                quote_timestamp = quote.get("timestamp")
 
-        fill_premium = option_premium + 0.50 if transaction_type == "BUY" else max(0.5, option_premium - 0.50)
+        # 1. Strict Fail-Closed Validation: Reject if securityId is missing
+        sec_id_clean = str(security_id).strip()
+        if not sec_id_clean or sec_id_clean == "UNKNOWN":
+            logger.warning("Order rejected: Invalid or missing securityId. Refusing to trade.")
+            return {
+                "order_id": f"REJ-NO-SECID-{int(time.time() * 1000)}",
+                "status": "REJECTED_INVALID_SECURITY_ID",
+                "is_filled": False,
+                "reason": "INVALID_SECURITY_ID: Contract securityId is required and must be valid.",
+            }
+
+        # 2. Strict Fail-Closed Validation: Reject if real option market quote is unavailable
+        if option_premium is None or option_premium <= 0:
+            logger.warning(
+                f"Order rejected for {symbol} ({sec_id_clean}): Real market quote unavailable. "
+                "Refusing to invent execution price."
+            )
+            return {
+                "order_id": f"REJ-NO-QUOTE-{int(time.time() * 1000)}",
+                "status": "REJECTED_MISSING_QUOTE",
+                "is_filled": False,
+                "reason": "DATA UNAVAILABLE: Real market quote is missing. Never invent execution prices.",
+            }
+
+        # 3. Realistic Execution Pricing (Ask for BUY, Bid for SELL with slippage)
+        tx_type = transaction_type.upper()
+        if tx_type == "BUY":
+            if ask is not None and ask > 0:
+                fill_premium = round(ask + 0.50, 2)
+                execution_mode = "ASK_PLUS_SLIPPAGE"
+            else:
+                fill_premium = round(option_premium + 0.50, 2)
+                execution_mode = "LTP_PLUS_SLIPPAGE"
+        else:  # SELL
+            if bid is not None and bid > 0:
+                fill_premium = max(0.05, round(bid - 0.50, 2))
+                execution_mode = "BID_MINUS_SLIPPAGE"
+            else:
+                fill_premium = max(0.05, round(option_premium - 0.50, 2))
+                execution_mode = "LTP_MINUS_SLIPPAGE"
+
         costs = self.cost_calc.compute_trade_costs(
             entry_price=fill_premium,
             exit_price=fill_premium,
             quantity=quantity,
             is_option=True,
             slippage_pts=0.5,
+        )
+
+        payload = self.build_order_payload(
+            security_id=sec_id_clean,
+            transaction_type=tx_type,
+            quantity=quantity,
+            price=fill_premium,
+            exchange_segment="NSE_FNO",
+            product_type=product_type,
+            order_type="MARKET",
         )
 
         server_response = None
@@ -271,20 +333,28 @@ class DhanPaperSandbox:
                 server_response = {"error": str(e)}
 
         order_id = f"DHAN-{'SBOX' if self.use_sandbox_server else 'PAPER'}-{int(time.time() * 1000)}"
+        now_iso = datetime.now().isoformat()
         trade_record = {
             "order_id": order_id,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": now_iso,
+            "quote_timestamp": quote_timestamp or now_iso,
             "server": self.base_url,
             "strategy": strategy_name,
             "symbol": symbol,
-            "security_id": security_id,
-            "side": transaction_type.upper(),
+            "security_id": sec_id_clean,
+            "side": tx_type,
             "quantity": quantity,
             "market_spot": market_spot,
-            "entry_premium": round(fill_premium, 2),
-            "stop_premium": round(stop_premium, 2),
-            "target_premium": round(target_premium, 2),
+            "quote_ltp": option_premium,
+            "quote_bid": bid,
+            "quote_ask": ask,
+            "fill_premium": fill_premium,
+            "execution_mode": execution_mode,
+            "slippage_pts": 0.50,
+            "stop_premium": round(stop_premium, 2) if stop_premium else None,
+            "target_premium": round(target_premium, 2) if target_premium else None,
             "status": "FILLED",
+            "is_filled": True,
             "entry_costs_inr": round(costs["total_costs"] / 2.0, 2),
             "dhan_payload": payload,
             "sandbox_server_response": server_response,
@@ -295,7 +365,7 @@ class DhanPaperSandbox:
 
         logger.info(
             f"[{'DHAN SANDBOX SERVER' if self.use_sandbox_server else 'DHAN PAPER SIMULATOR'}] "
-            f"{transaction_type} {quantity} {symbol} ({security_id}) @ ₹{fill_premium:.2f} | Spot: ₹{market_spot:.2f}"
+            f"{tx_type} {quantity} {symbol} ({sec_id_clean}) @ ₹{fill_premium:.2f} ({execution_mode}) | Spot: ₹{market_spot:.2f}"
         )
         return trade_record
 

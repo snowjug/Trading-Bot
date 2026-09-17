@@ -73,3 +73,6 @@ state/*.pkl
 
 # Scratch scripts
 scratch/
+
+# Scrip master cache
+data/dhan_scrip_master_*.csv
