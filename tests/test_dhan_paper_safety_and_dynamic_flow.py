@@ -835,7 +835,7 @@ def test_data_unavailable_clears_unrealized_pnl_and_reports_cleanly(tmp_path):
             "bank": {"last": 56300.0, "open": 56250.0},
             "vix": 13.0,
         }
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
 
     t5 = s5["active_trade"]
     assert t5["valuation_status"] == "DATA_UNAVAILABLE"

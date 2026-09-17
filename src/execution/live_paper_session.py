@@ -699,6 +699,8 @@ LIVE_TRADING_ENABLED: FALSE
                 or p_bid is None or p_bid <= 0
                 or not is_quote_fresh(c_res.get("quote_timestamp"))
                 or not is_quote_fresh(p_res.get("quote_timestamp"))
+                or (c_res.get("ask") is not None and c_bid > c_res.get("ask"))
+                or (p_res.get("ask") is not None and p_bid > p_res.get("ask"))
             ):
                 logger.warning("Bot 1: Real executable Bid quotes unavailable for Strangle sell entry -> NO TRADE.")
                 self.record_signal(
@@ -882,7 +884,7 @@ LIVE_TRADING_ENABLED: FALSE
             if n_last > n_open + 15.0:
                 c5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE")
                 c5_ask = c5.get("ask") if c5 else None
-                if not c5 or c5_ask is None or c5_ask <= 0 or not is_quote_fresh(c5.get("quote_timestamp")):
+                if not c5 or c5_ask is None or c5_ask <= 0 or not is_quote_fresh(c5.get("quote_timestamp")) or (c5.get("bid") is not None and c5.get("bid") > c5_ask):
                     logger.warning("Bot 5: Executable Ask quote unavailable for CE breakout -> NO TRADE.")
                     self.record_signal(
                         strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
@@ -947,7 +949,7 @@ LIVE_TRADING_ENABLED: FALSE
             elif n_last < n_open - 15.0:
                 p5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "PE")
                 p5_ask = p5.get("ask") if p5 else None
-                if not p5 or p5_ask is None or p5_ask <= 0 or not is_quote_fresh(p5.get("quote_timestamp")):
+                if not p5 or p5_ask is None or p5_ask <= 0 or not is_quote_fresh(p5.get("quote_timestamp")) or (p5.get("bid") is not None and p5.get("bid") > p5_ask):
                     logger.warning("Bot 5: Executable Ask quote unavailable for PE breakdown -> NO TRADE.")
                     self.record_signal(
                         strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
@@ -1116,7 +1118,7 @@ LIVE_TRADING_ENABLED: FALSE
             if n_last > n_open + 10.0 and b_last >= b_open:
                 c4 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE")
                 c4_ask = c4.get("ask") if c4 else None
-                if not c4 or c4_ask is None or c4_ask <= 0 or not is_quote_fresh(c4.get("quote_timestamp")):
+                if not c4 or c4_ask is None or c4_ask <= 0 or not is_quote_fresh(c4.get("quote_timestamp")) or (c4.get("bid") is not None and c4.get("bid") > c4_ask):
                     logger.warning("Bot 4: Executable Ask quote unavailable for Golden Pullback -> NO TRADE.")
                     self.record_signal(
                         strategy_name="Strategy 4: Golden Trend Runner",
@@ -1286,7 +1288,7 @@ LIVE_TRADING_ENABLED: FALSE
                 opt_t = "CE" if n_last > n_open else "PE"
                 c3 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), opt_t)
                 c3_ask = c3.get("ask") if c3 else None
-                if not c3 or c3_ask is None or c3_ask <= 0 or not is_quote_fresh(c3.get("quote_timestamp")):
+                if not c3 or c3_ask is None or c3_ask <= 0 or not is_quote_fresh(c3.get("quote_timestamp")) or (c3.get("bid") is not None and c3.get("bid") > c3_ask):
                     logger.warning("Bot 3: Executable Ask quote unavailable for Gamma Scalp -> NO TRADE.")
                     self.record_signal(
                         strategy_name="Strategy 3: Confluence Gamma Scalper",
@@ -1469,6 +1471,8 @@ LIVE_TRADING_ENABLED: FALSE
                 or long_ask is None or long_ask <= 0
                 or not is_quote_fresh(short_c.get("quote_timestamp"))
                 or not is_quote_fresh(long_c.get("quote_timestamp"))
+                or (short_c.get("ask") is not None and short_bid > short_c.get("ask"))
+                or (long_c.get("bid") is not None and long_c.get("bid") > long_ask)
             ):
                 logger.warning("Bot 2: Executable quotes (Bid on short, Ask on long) unavailable for overnight spread -> NO TRADE.")
                 self.record_signal(
@@ -1666,7 +1670,7 @@ LIVE_TRADING_ENABLED: FALSE
                 if n_last < n_open - 25.0:
                     c6 = DhanContractResolver.resolve_option_contract(n_last, vix_val, "PE", strike_offset_steps=0)
                     c6_ask = c6.get("ask") if c6 else None
-                    if not c6 or c6_ask is None or c6_ask <= 0 or not is_quote_fresh(c6.get("quote_timestamp")):
+                    if not c6 or c6_ask is None or c6_ask <= 0 or not is_quote_fresh(c6.get("quote_timestamp")) or (c6.get("bid") is not None and c6.get("bid") > c6_ask):
                         logger.warning("Bot 6: Executable Ask quote unavailable for sniper breakdown -> NO TRADE.")
                         self.record_signal(
                             strategy_name="Strategy 6: Micro Momentum Sniper",
@@ -1735,7 +1739,7 @@ LIVE_TRADING_ENABLED: FALSE
                 elif n_last > n_open + 25.0:
                     c6 = DhanContractResolver.resolve_option_contract(n_last, vix_val, "CE", strike_offset_steps=0)
                     c6_ask = c6.get("ask") if c6 else None
-                    if not c6 or c6_ask is None or c6_ask <= 0 or not is_quote_fresh(c6.get("quote_timestamp")):
+                    if not c6 or c6_ask is None or c6_ask <= 0 or not is_quote_fresh(c6.get("quote_timestamp")) or (c6.get("bid") is not None and c6.get("bid") > c6_ask):
                         logger.warning("Bot 6: Executable Ask quote unavailable for sniper breakout -> NO TRADE.")
                         self.record_signal(
                             strategy_name="Strategy 6: Micro Momentum Sniper",

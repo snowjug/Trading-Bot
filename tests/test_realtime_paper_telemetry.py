@@ -96,7 +96,7 @@ def test_single_leg_option_realtime_telemetry(tmp_path, clean_cache, mock_client
     _quote_cache[sec_id] = (now_dt, fresh_quote)
 
     with patch.object(DhanContractResolver, "fetch_option_quote", return_value=fresh_quote):
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
         session.save_session()
 
     t3 = session.bot_states["Strategy 3: Confluence Gamma Scalper"]["active_trade"]
@@ -135,7 +135,7 @@ def test_single_leg_option_realtime_telemetry(tmp_path, clean_cache, mock_client
     stale_quote["market_timestamp"] = stale_dt.strftime("%d/%m/%Y %H:%M:%S")
 
     with patch.object(DhanContractResolver, "fetch_option_quote", return_value=stale_quote):
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
         session.save_session()
 
     t3_stale = session.bot_states["Strategy 3: Confluence Gamma Scalper"]["active_trade"]
@@ -221,15 +221,15 @@ def test_multi_leg_option_strangle_realtime_telemetry(tmp_path, clean_cache, moc
         "is_tradable": True, "source": "DHAN_LIVE_QUOTE",
     }
 
-    def mock_fetch(sec_id, **kwargs):
-        if sec_id == c_sec:
+    def mock_fetch(security_id, **kwargs):
+        if security_id == c_sec:
             return c_q
-        elif sec_id == p_sec:
+        elif security_id == p_sec:
             return p_q
         return None
 
     with patch.object(DhanContractResolver, "fetch_option_quote", side_effect=mock_fetch):
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
         session.save_session()
 
     t1 = session.bot_states["Strategy 1: Apex VRP Engine"]["active_trade"]
@@ -250,13 +250,13 @@ def test_multi_leg_option_strangle_realtime_telemetry(tmp_path, clean_cache, moc
         assert api_t1["unrealized_pnl"] == t1["unrealized_pnl"]
 
     # Case B: ONE leg drops out (Put leg returns None)
-    def mock_fetch_partial(sec_id, **kwargs):
-        if sec_id == c_sec:
+    def mock_fetch_partial(security_id, **kwargs):
+        if security_id == c_sec:
             return c_q
         return None
 
     with patch.object(DhanContractResolver, "fetch_option_quote", side_effect=mock_fetch_partial):
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
         session.save_session()
 
     t1_dropped = session.bot_states["Strategy 1: Apex VRP Engine"]["active_trade"]
@@ -270,13 +270,15 @@ def test_multi_leg_option_strangle_realtime_telemetry(tmp_path, clean_cache, moc
     c_q_inv["bid"] = 26.0
     c_q_inv["ask"] = 25.0  # Inverted!
 
-    def mock_fetch_inverted(sec_id, **kwargs):
-        if sec_id == c_sec:
+    def mock_fetch_inverted(security_id, **kwargs):
+        if security_id == c_sec:
             return c_q_inv
-        return p_q
+        elif security_id == p_sec:
+            return p_q
+        return None
 
     with patch.object(DhanContractResolver, "fetch_option_quote", side_effect=mock_fetch_inverted):
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
         session.save_session()
 
     t1_inv = session.bot_states["Strategy 1: Apex VRP Engine"]["active_trade"]
@@ -364,15 +366,15 @@ def test_multi_leg_option_spread_realtime_telemetry(tmp_path, clean_cache, mock_
         "is_tradable": True, "source": "DHAN_LIVE_QUOTE",
     }
 
-    def mock_fetch_spread(sec_id, **kwargs):
-        if sec_id == s_sec:
+    def mock_fetch_spread(security_id, **kwargs):
+        if security_id == s_sec:
             return s_q
-        elif sec_id == l_sec:
+        elif security_id == l_sec:
             return l_q
         return None
 
     with patch.object(DhanContractResolver, "fetch_option_quote", side_effect=mock_fetch_spread):
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
         session.save_session()
 
     t2 = session.bot_states["Strategy 2: Zen Curvature Overnight"]["active_trade"]
@@ -393,13 +395,13 @@ def test_multi_leg_option_spread_realtime_telemetry(tmp_path, clean_cache, mock_
         assert api_t2["unrealized_pnl"] == t2["unrealized_pnl"]
 
     # Step 2: Invalidate Long leg (drops out)
-    def mock_fetch_spread_drop(sec_id, **kwargs):
-        if sec_id == s_sec:
+    def mock_fetch_spread_drop(security_id, **kwargs):
+        if security_id == s_sec:
             return s_q
         return None
 
     with patch.object(DhanContractResolver, "fetch_option_quote", side_effect=mock_fetch_spread_drop):
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
         session.save_session()
 
     t2_drop = session.bot_states["Strategy 2: Zen Curvature Overnight"]["active_trade"]
@@ -469,7 +471,7 @@ def test_rapid_consecutive_quote_updates(tmp_path, clean_cache, mock_client):
             "source": "DHAN_LIVE_QUOTE",
         }
         with patch.object(DhanContractResolver, "fetch_option_quote", return_value=q):
-            session.evaluate_all_bots(mkt)
+            session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
             session.save_session()
 
         t4 = session.bot_states["Strategy 4: Golden Trend Runner"]["active_trade"]
@@ -545,7 +547,7 @@ def test_realized_pnl_isolation_during_quote_updates(tmp_path, clean_cache, mock
         "timestamp": stale_dt.isoformat(),
     }
     with patch.object(DhanContractResolver, "fetch_option_quote", return_value=stale_q):
-        session.evaluate_all_bots(mkt)
+        session.evaluate_all_bots(mkt, current_time=dtime(11, 0))
         session.save_session()
 
     # Step 3: Check /api/status again -> settlement MUST remain identical
@@ -556,3 +558,70 @@ def test_realized_pnl_isolation_during_quote_updates(tmp_path, clean_cache, mock
         assert settlement2["total_realized_gross"] == expected_gross
         assert settlement2["total_statutory_friction"] == expected_friction
         assert settlement2["total_net_realized_pnl"] == expected_net
+
+
+def test_inverted_book_rejected_at_entry(tmp_path, clean_cache, mock_client):
+    """
+    Regression test: a crossed/inverted order book (bid > ask) on a NEW entry
+    quote must be refused, exactly as it already is refused for open-position
+    valuation. Only Bot 5's CE breakout condition is triggered here (NIFTY move
+    of +20 clears its +15 threshold but stays under Bot 3's 35pt and Bot 6's
+    25pt thresholds; Bank Nifty is held flat/down to keep Bot 4 inactive; VIX
+    is kept above Bot 6's 18.5 ceiling; the clock is set outside Bot 1's
+    9:20-11:30 and Bot 2's 15:20-15:25 windows), so only Bot 5 is exercised.
+    """
+    state_file = tmp_path / "live_paper_session.json"
+    session = MultiBotLiveSession(state_file=str(state_file))
+
+    now_dt = datetime.now()
+    mkt = {
+        "nifty": {"last": 23220.0, "open": 23200.0},  # +20: clears Bot 5, not Bot 3/6
+        "bank": {"last": 50700.0, "open": 50800.0},  # down: keeps Bot 4 inactive
+        "vix": 20.0,  # above Bot 6's 18.5 ceiling
+        "timestamp": now_dt,
+    }
+
+    def mock_resolve_inverted(underlying_spot, vix, option_type, **kwargs):
+        if option_type == "CE":
+            return {
+                "security_id": "88888",
+                "custom_symbol": "NIFTY TEST CE",
+                "trading_symbol": "NIFTY-TEST-CE",
+                "lot_size": 75,
+                "bid": 105.0,
+                "ask": 100.0,  # Inverted: bid > ask
+                "ltp": 102.0,
+                "quote_timestamp": now_dt.isoformat(),
+            }
+        return None
+
+    with patch.object(DhanContractResolver, "resolve_option_contract", side_effect=mock_resolve_inverted):
+        session.evaluate_all_bots(mkt, current_time=dtime(12, 0))
+        session.save_session()
+
+    s5 = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
+    assert s5["active_trade"] is None, "Entry must be refused against a crossed/inverted order book"
+
+    # Control: an identical setup with a valid (non-inverted) book DOES open the trade,
+    # proving the rejection above is caused by the inversion guard and not the mock/harness.
+    def mock_resolve_valid(underlying_spot, vix, option_type, **kwargs):
+        if option_type == "CE":
+            return {
+                "security_id": "88888",
+                "custom_symbol": "NIFTY TEST CE",
+                "trading_symbol": "NIFTY-TEST-CE",
+                "lot_size": 75,
+                "bid": 99.5,
+                "ask": 100.0,  # Valid: bid <= ask
+                "ltp": 99.8,
+                "quote_timestamp": now_dt.isoformat(),
+            }
+        return None
+
+    with patch.object(DhanContractResolver, "resolve_option_contract", side_effect=mock_resolve_valid):
+        session.evaluate_all_bots(mkt, current_time=dtime(12, 0))
+        session.save_session()
+
+    s5_valid = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
+    assert s5_valid["active_trade"] is not None, "Valid, non-inverted book must still be tradable"
+    assert s5_valid["active_trade"]["entry_ask"] == 100.0
