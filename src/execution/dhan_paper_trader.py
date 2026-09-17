@@ -91,24 +91,35 @@ class DhanPaperSandbox:
         self.cost_calc = IndependentPnLCalculator()
         self.trades = self._load_trades()
 
+    # Production endpoints that mutate broker state (any non-GET verb).
+    MUTATING_PATHS = ("/orders", "/trades", "/super/orders", "/forever/orders", "/positions")
+
     def _install_safety_barrier(self):
         """
-        Hard Software Lock: Intercepts session.post.
-        If any call targets production /orders while LIVE_TRADING_ENABLED is False,
-        it throws an unrecoverable RuntimeError immediately.
+        Hard Software Lock: intercepts every state-changing HTTP verb
+        (POST/PUT/PATCH/DELETE). If any call targets a production order route
+        while LIVE_TRADING_ENABLED is False it raises immediately. Guarding POST
+        alone left order cancellation and amendment routes open.
         """
-        original_post = self.session.post
-
-        def safe_post(url, *args, **kwargs):
-            if "api.dhan.co" in url and "/orders" in url:
-                if not Config.LIVE_TRADING_ENABLED:
+        def guard(verb: str, original):
+            def wrapped(url, *args, **kwargs):
+                target = str(url)
+                if (
+                    "api.dhan.co" in target
+                    and any(path in target for path in self.MUTATING_PATHS)
+                    and not Config.LIVE_TRADING_ENABLED
+                ):
                     raise RuntimeError(
-                        f"CRITICAL SAFETY LOCK TRIGGERED: Intercepted prohibited POST to production order API {url} "
-                        f"while Config.LIVE_TRADING_ENABLED={Config.LIVE_TRADING_ENABLED}! Order submission aborted."
+                        f"CRITICAL SAFETY LOCK TRIGGERED: Intercepted prohibited {verb} to "
+                        f"production order API {target} while "
+                        f"Config.LIVE_TRADING_ENABLED={Config.LIVE_TRADING_ENABLED}! "
+                        "Order submission aborted."
                     )
-            return original_post(url, *args, **kwargs)
+                return original(url, *args, **kwargs)
+            return wrapped
 
-        self.session.post = safe_post
+        for verb in ("post", "put", "patch", "delete"):
+            setattr(self.session, verb, guard(verb.upper(), getattr(self.session, verb)))
 
     def _load_trades(self) -> List[Dict]:
         if self.state_file.exists():

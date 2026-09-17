@@ -1,5 +1,37 @@
 # PAPER TRADING SESSION REPORT
 
+> ## ⚠ VERSION-MIXED / CONTAMINATED — NOT VALID FOR PERFORMANCE EVIDENCE
+>
+> This artifact is preserved unmodified for audit purposes. Its numbers must
+> **not** be used as evidence of strategy performance, for these verified reasons:
+>
+> 1. **Version-mixed.** `src/execution/live_paper_session.py` was committed 14
+>    times while this session was running (07:37 → 16:01 IST). The header below
+>    records HEAD `e1a9fe1`, but the session continued across many later commits.
+> 2. **Two different execution semantics in one ledger.** Exit slippage
+>    (`bid − 0.50`) and the current `IndianCostModel` both arrived in commit
+>    `580d3fd` at **13:11**. All three closed trades closed at 10:12, 11:07 and
+>    12:11 — i.e. *before* that change. Their recorded friction (45.00 / 45.00 /
+>    65.00) does not match the cost model in the repository (77.94 / 84.39 /
+>    86.20), and their exit fills carry no slippage.
+> 3. **Overstated P&L.** Recomputed under the code as it now stands, net realised
+>    P&L is **₹5,328.65**, not the **₹5,519.50** reported below — an
+>    overstatement of **₹190.85 (3.58%)**.
+> 4. **Concurrent-writer contamination.** The session log contains events with no
+>    counterpart in the trade ledger, including a `TEST 25000 CE` contract and two
+>    kill-switch flattens, written by separate test/manual processes sharing
+>    `state/live_paper_session.json`. (Now prevented by the session lock, B6.)
+> 5. **No EOD square-off.** The process stopped at 15:29:46, before the 15:35
+>    boundary, leaving a short strangle open. The reported unrealised P&L was
+>    never realised. (Now handled on restart by overdue-EOD handling, B7.)
+> 6. **Signals did not come from the validated strategies.** During this session
+>    the live path used inline spot-vs-open thresholds, not the backtested
+>    strategy classes. (Now corrected by B1.)
+>
+> Future paper sessions must run on **frozen code**, under a **single process**,
+> with the session lock held. This artifact is retained as the historical record
+> of what actually happened, not as a performance claim.
+
 Date: 2026-09-17
 Start time IST: 09:06:21
 End time IST: 15:29:46

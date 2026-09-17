@@ -40,20 +40,36 @@ class DhanBrokerAdapter(BrokerAdapter):
         })
         self._install_safety_barrier()
 
+    # Production endpoints that mutate broker state. A read (GET) is safe; any
+    # other verb against these is an order-book mutation.
+    MUTATING_PATHS = ("/orders", "/trades", "/super/orders", "/forever/orders", "/positions")
+
     def _install_safety_barrier(self):
         """
-        Hard Software Fail-Safe: Intercepts session.post to prevent any live order
-        submission to https://api.dhan.co when Config.LIVE_TRADING_ENABLED is False.
+        Hard Software Fail-Safe: intercepts every state-changing HTTP verb
+        (POST/PUT/PATCH/DELETE) to prevent any live order submission, amendment
+        or cancellation against https://api.dhan.co while LIVE_TRADING_ENABLED
+        is False. Covering POST alone left cancel/modify routes unguarded.
         """
-        original_post = self.session.post
-        def safe_post(url, *args, **kwargs):
-            if "api.dhan.co" in url and "/orders" in url and not Config.LIVE_TRADING_ENABLED:
-                raise RuntimeError(
-                    f"CRITICAL SAFETY LOCK TRIGGERED: Attempted POST to Dhan Production order endpoint {url} "
-                    f"while Config.LIVE_TRADING_ENABLED={Config.LIVE_TRADING_ENABLED}! HARD FAIL-SAFE INTERCEPTOR."
-                )
-            return original_post(url, *args, **kwargs)
-        self.session.post = safe_post
+        def guard(verb: str, original):
+            def wrapped(url, *args, **kwargs):
+                target = str(url)
+                if (
+                    "api.dhan.co" in target
+                    and any(path in target for path in self.MUTATING_PATHS)
+                    and not Config.LIVE_TRADING_ENABLED
+                ):
+                    raise RuntimeError(
+                        f"CRITICAL SAFETY LOCK TRIGGERED: Attempted {verb} to Dhan production "
+                        f"order endpoint {target} while "
+                        f"Config.LIVE_TRADING_ENABLED={Config.LIVE_TRADING_ENABLED}! "
+                        "HARD FAIL-SAFE INTERCEPTOR."
+                    )
+                return original(url, *args, **kwargs)
+            return wrapped
+
+        for verb in ("post", "put", "patch", "delete"):
+            setattr(self.session, verb, guard(verb.upper(), getattr(self.session, verb)))
 
     def connect(self) -> bool:
         """Validates API token by querying the user fund limit."""

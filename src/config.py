@@ -40,7 +40,31 @@ class Config:
     PAPER_TRADING_ENABLED: bool = os.getenv("PAPER_TRADING_ENABLED", "true").lower() == "true"
     PAPER_INITIAL_CAPITAL: float = float(os.getenv("PAPER_INITIAL_CAPITAL", "100000"))
     MICRO_STRATEGY_CAPITAL: float = float(os.getenv("MICRO_STRATEGY_CAPITAL", "20000"))
-    MAX_QUOTE_AGE_SECONDS: int = int(os.getenv("MAX_QUOTE_AGE_SECONDS", "300"))
+    # Executable-quote freshness. The monitor loop polls every 30s behind a 10s
+    # quote cache, so a quote older than 60s is already two poll cycles stale and
+    # cannot be treated as executable for an intraday option. Tightened from 300s
+    # as a fail-closed safety bound, not a performance parameter.
+    MAX_QUOTE_AGE_SECONDS: int = int(os.getenv("MAX_QUOTE_AGE_SECONDS", "60"))
+
+    # Maximum acceptable bid/ask spread as a fraction of the reference price.
+    # Shared by every execution path so the live session and the sandbox order
+    # path apply an identical microstructure gate.
+    MAX_SPREAD_PCT_OF_PRICE: float = float(os.getenv("MAX_SPREAD_PCT_OF_PRICE", "0.50"))
+
+    # Portfolio-level concentration limits. Strategy labels must not be able to
+    # bypass portfolio risk: multiple bots buying the identical contract is one
+    # concentrated position, not diversification.
+    MAX_BOTS_PER_CONTRACT: int = int(os.getenv("MAX_BOTS_PER_CONTRACT", "1"))
+    MAX_SINGLE_CONTRACT_EXPOSURE_PCT: float = float(
+        os.getenv("MAX_SINGLE_CONTRACT_EXPOSURE_PCT", "0.20")
+    )
+    # Aggregate cap across all strategies. Must sit below (per-position cap x
+    # number of strategies), otherwise it can never bind and is a dead control:
+    # with MAX_POSITION_PCT=10% and six bots the reachable maximum is 60%, so a
+    # 60% aggregate cap would never trigger.
+    MAX_TOTAL_OPEN_EXPOSURE_PCT: float = float(
+        os.getenv("MAX_TOTAL_OPEN_EXPOSURE_PCT", "0.40")
+    )
 
     # Experiments
     EXPERIMENT_DIR: str = os.getenv("EXPERIMENT_DIR", "experiments")

@@ -168,24 +168,48 @@ class DhanContractResolver:
                 bdf = pd.read_csv("data/real_2026/INDEX_BANKNIFTY_daily.csv") if os.path.exists("data/real_2026/INDEX_BANKNIFTY_daily.csv") else None
                 vdf = pd.read_csv("data/real_2026/INDEX_INDIAVIX_daily.csv")
                 spot_nifty = float(ndf["close"].iloc[-1])
-                open_nifty = float(ndf["open"].iloc[-1]) if "open" in ndf.columns else spot_nifty
-                spot_bank = float(bdf["close"].iloc[-1]) if bdf is not None and not bdf.empty else (spot_nifty * 2.35)
-                open_bank = float(bdf["open"].iloc[-1]) if bdf is not None and not bdf.empty and "open" in bdf.columns else spot_bank
+                open_nifty = float(ndf["open"].iloc[-1]) if "open" in ndf.columns else None
+                spot_bank = float(bdf["close"].iloc[-1]) if bdf is not None and not bdf.empty else None
+                open_bank = float(bdf["open"].iloc[-1]) if bdf is not None and not bdf.empty and "open" in bdf.columns else None
                 v_col = "vix" if "vix" in vdf.columns else "close"
                 vix = float(vdf[v_col].iloc[-1])
             except Exception as e:
                 logger.debug(f"Local historical bhavcopy fallback exception: {e}")
 
-        # Strict Fail-Closed Rule: NEVER fabricate numbers if data is unavailable
-        if spot_nifty is None or vix is None:
-            logger.warning("Market state unavailable from live feeds. Strict Fail-Closed: DATA UNAVAILABLE -> NO SIGNAL.")
+        # 4. Authentic session opens from real intraday candles (never the current spot).
+        if open_nifty is None or open_bank is None:
+            from src.execution.live_market_bars import get_today_session_bar
+
+            if open_nifty is None:
+                n_bar = get_today_session_bar("NIFTY")
+                open_nifty = float(n_bar["open"]) if n_bar else None
+            if open_bank is None:
+                b_bar = get_today_session_bar("BANKNIFTY")
+                open_bank = float(b_bar["open"]) if b_bar else None
+
+        # Strict Fail-Closed Rule: NEVER fabricate numbers if data is unavailable.
+        # BANKNIFTY is never derived from NIFTY, and an open is never the spot price.
+        missing = [
+            label for label, value in (
+                ("NIFTY spot", spot_nifty),
+                ("INDIA VIX", vix),
+                ("BANKNIFTY spot", spot_bank),
+                ("NIFTY session open", open_nifty),
+                ("BANKNIFTY session open", open_bank),
+            ) if not value
+        ]
+        if missing:
+            logger.warning(
+                f"Market state incomplete ({', '.join(missing)}). "
+                "Strict Fail-Closed: DATA UNAVAILABLE -> NO SIGNAL -> NO TRADE."
+            )
             return None
 
         return {
             "nifty_spot": round(float(spot_nifty), 2),
-            "bank_spot": round(float(spot_bank if spot_bank else spot_nifty * 2.35), 2),
-            "nifty_open": round(float(open_nifty if open_nifty else spot_nifty), 2),
-            "bank_open": round(float(open_bank if open_bank else (spot_bank if spot_bank else spot_nifty * 2.35)), 2),
+            "bank_spot": round(float(spot_bank), 2),
+            "nifty_open": round(float(open_nifty), 2),
+            "bank_open": round(float(open_bank), 2),
             "vix": round(float(vix), 2),
             "timestamp": datetime.now(),
         }
@@ -239,6 +263,15 @@ class DhanContractResolver:
                         ask = float(sell_depth[0].get("price", 0)) if sell_depth else None
                         ltt = item.get("last_trade_time")
                         market_ts = str(ltt).strip() if ltt else None
+                        if not market_ts:
+                            # Fail-closed: local receipt time is NOT evidence of market
+                            # freshness. Without an exchange timestamp the quote is not
+                            # executable and must not enter the cache.
+                            logger.warning(
+                                f"Quote for {sid} has no exchange timestamp (last_trade_time). "
+                                "Rejecting as DATA_UNAVAILABLE — local receipt time cannot substitute."
+                            )
+                            continue
                         q = {
                             "security_id": sid,
                             "ltp": ltp,
@@ -246,7 +279,7 @@ class DhanContractResolver:
                             "ask": ask if ask and ask > 0 else None,
                             "market_timestamp": market_ts,
                             "received_at": now_dt.isoformat(),
-                            "timestamp": market_ts if market_ts else now_dt.isoformat(),
+                            "timestamp": market_ts,
                             "is_tradable": True,
                             "source": "DHAN_LIVE_QUOTE",
                         }

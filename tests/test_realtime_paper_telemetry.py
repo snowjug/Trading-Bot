@@ -18,6 +18,8 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.execution.live_paper_session import MultiBotLiveSession
+from src.execution.live_strategy_adapter import LiveSignal
+from src.risk.risk_engine import RiskEngine
 from src.execution.dhan_contract_resolver import DhanContractResolver, _quote_cache
 from src.monitoring.dashboard import app
 
@@ -44,7 +46,11 @@ def test_single_leg_option_realtime_telemetry(tmp_path, clean_cache, mock_client
     - Stale quote injection -> DATA_UNAVAILABLE restored, numerical P&L nulled, no stale leak.
     """
     state_file = tmp_path / "live_paper_session.json"
-    session = MultiBotLiveSession(state_file=str(state_file))
+    session = MultiBotLiveSession(
+        state_file=str(state_file),
+        reports_dir=tmp_path,
+        risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"),
+    )
 
     # Initialize Bot 3 (Single-leg call)
     now_dt = datetime.now()
@@ -168,7 +174,11 @@ def test_multi_leg_option_strangle_realtime_telemetry(tmp_path, clean_cache, moc
     - Inverted book (bid > ask on any leg): fails closed to DATA_UNAVAILABLE.
     """
     state_file = tmp_path / "live_paper_session.json"
-    session = MultiBotLiveSession(state_file=str(state_file))
+    session = MultiBotLiveSession(
+        state_file=str(state_file),
+        reports_dir=tmp_path,
+        risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"),
+    )
 
     now_dt = datetime.now()
     now_ts = now_dt.strftime("%H:%M:%S")
@@ -297,7 +307,11 @@ def test_multi_leg_option_spread_realtime_telemetry(tmp_path, clean_cache, mock_
     - Stale or inverted quotes correctly restore DATA_UNAVAILABLE.
     """
     state_file = tmp_path / "live_paper_session.json"
-    session = MultiBotLiveSession(state_file=str(state_file))
+    session = MultiBotLiveSession(
+        state_file=str(state_file),
+        reports_dir=tmp_path,
+        risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"),
+    )
 
     now_dt = datetime.now()
     now_ts = now_dt.strftime("%H:%M:%S")
@@ -417,7 +431,11 @@ def test_rapid_consecutive_quote_updates(tmp_path, clean_cache, mock_client):
     Verifies that position valuation and P&L update dynamically with zero lag.
     """
     state_file = tmp_path / "live_paper_session.json"
-    session = MultiBotLiveSession(state_file=str(state_file))
+    session = MultiBotLiveSession(
+        state_file=str(state_file),
+        reports_dir=tmp_path,
+        risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"),
+    )
 
     now_dt = datetime.now()
     now_ts = now_dt.strftime("%H:%M:%S")
@@ -492,7 +510,11 @@ def test_realized_pnl_isolation_during_quote_updates(tmp_path, clean_cache, mock
     or total_net_realized_pnl.
     """
     state_file = tmp_path / "live_paper_session.json"
-    session = MultiBotLiveSession(state_file=str(state_file))
+    session = MultiBotLiveSession(
+        state_file=str(state_file),
+        reports_dir=tmp_path,
+        risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"),
+    )
 
     # Add closed trades to ledger
     s5 = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
@@ -564,20 +586,28 @@ def test_inverted_book_rejected_at_entry(tmp_path, clean_cache, mock_client):
     """
     Regression test: a crossed/inverted order book (bid > ask) on a NEW entry
     quote must be refused, exactly as it already is refused for open-position
-    valuation. Only Bot 5's CE breakout condition is triggered here (NIFTY move
-    of +20 clears its +15 threshold but stays under Bot 3's 35pt and Bot 6's
-    25pt thresholds; Bank Nifty is held flat/down to keep Bot 4 inactive; VIX
-    is kept above Bot 6's 18.5 ceiling; the clock is set outside Bot 1's
-    9:20-11:30 and Bot 2's 15:20-15:25 windows), so only Bot 5 is exercised.
+    valuation. Entries are gated on the validated strategy classes, so Bot 5 is
+    given an actionable bullish signal and every other bot is held flat; the
+    inversion guard is therefore the only thing that can block the entry.
     """
     state_file = tmp_path / "live_paper_session.json"
-    session = MultiBotLiveSession(state_file=str(state_file))
+    session = MultiBotLiveSession(
+        state_file=str(state_file),
+        reports_dir=tmp_path,
+        risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"),
+    )
+
+    target_bot = "Strategy 5: Velocity-5 Momentum Scalper"
+
+    def only_bot5_bullish(bot, **kwargs):
+        return LiveSignal(bot, "TestStrategy", 1 if bot == target_bot else 0,
+                          0.85, "NIFTY", reason="STRATEGY_SIGNAL")
 
     now_dt = datetime.now()
     mkt = {
-        "nifty": {"last": 23220.0, "open": 23200.0},  # +20: clears Bot 5, not Bot 3/6
-        "bank": {"last": 50700.0, "open": 50800.0},  # down: keeps Bot 4 inactive
-        "vix": 20.0,  # above Bot 6's 18.5 ceiling
+        "nifty": {"last": 23220.0, "open": 23200.0},
+        "bank": {"last": 50700.0, "open": 50800.0},
+        "vix": 20.0,
         "timestamp": now_dt,
     }
 
@@ -595,7 +625,7 @@ def test_inverted_book_rejected_at_entry(tmp_path, clean_cache, mock_client):
             }
         return None
 
-    with patch.object(DhanContractResolver, "resolve_option_contract", side_effect=mock_resolve_inverted):
+    with patch.object(DhanContractResolver, "resolve_option_contract", side_effect=mock_resolve_inverted),          patch.object(session.strategy_adapter, "evaluate", side_effect=only_bot5_bullish):
         session.evaluate_all_bots(mkt, current_time=dtime(12, 0))
         session.save_session()
 
@@ -618,7 +648,7 @@ def test_inverted_book_rejected_at_entry(tmp_path, clean_cache, mock_client):
             }
         return None
 
-    with patch.object(DhanContractResolver, "resolve_option_contract", side_effect=mock_resolve_valid):
+    with patch.object(DhanContractResolver, "resolve_option_contract", side_effect=mock_resolve_valid),          patch.object(session.strategy_adapter, "evaluate", side_effect=only_bot5_bullish):
         session.evaluate_all_bots(mkt, current_time=dtime(12, 0))
         session.save_session()
 

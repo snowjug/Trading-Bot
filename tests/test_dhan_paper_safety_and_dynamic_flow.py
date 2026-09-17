@@ -16,6 +16,8 @@ import os
 import sys
 import pytest
 from datetime import datetime, date, timedelta, time as dtime
+from pathlib import Path
+from src.risk.risk_engine import RiskEngine
 from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -76,7 +78,9 @@ def test_invalid_or_expired_contract_rejection():
 # ─── 3. MISSING MARKET DATA -> NO SIGNAL -> NO TRADE ───
 def test_missing_market_data_leads_to_no_trade(tmp_path):
     """Verify missing spot/vix results in DATA UNAVAILABLE -> NO SIGNAL -> NO TRADE."""
-    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"))
+    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"),
+                                    reports_dir=tmp_path,
+                                    risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"))
 
     # When market state is None (offline / data unavailable)
     session.evaluate_all_bots(None)
@@ -281,7 +285,9 @@ def test_sandbox_and_production_environment_separation():
 # ─── 10. QUOTE UNAVAILABLE DURING OPEN POSITION -> PAUSE VALUATION (NO FABRICATION) ───
 def test_quote_unavailable_during_open_position_pauses_valuation(tmp_path):
     """Verify quote failure during active trade pauses valuation without fabricating prices or P&L."""
-    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"))
+    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"),
+                                    reports_dir=tmp_path,
+                                    risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"))
     s5 = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
 
     # Seed an active trade with real entry values
@@ -339,7 +345,9 @@ def test_no_fixed_theta_decay_in_apex_vrp(tmp_path):
     assert "- 0.05" not in src_text, "Found forbidden fixed '- 0.05' theta decay in live_paper_session.py"
 
     # Also prove active strangle pauses when quotes fail
-    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"))
+    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"),
+                                    reports_dir=tmp_path,
+                                    risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"))
     s1 = session.bot_states["Strategy 1: Apex VRP Engine"]
     s1["active_trade"] = {
         "id": "APEX-THETA-TEST",
@@ -558,7 +566,9 @@ def test_sell_with_missing_bid_valid_ltp_no_execution(tmp_path):
 # ─── 19. LONG VALUATION WITH MISSING BID -> DATA_UNAVAILABLE, NO SYNTHETIC P&L ───
 def test_long_valuation_with_missing_bid_data_unavailable(tmp_path):
     """Long position exit valuation requires authentic Bid. Missing Bid pauses valuation with no synthetic P&L."""
-    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"))
+    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"),
+                                    reports_dir=tmp_path,
+                                    risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"))
     s5 = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
 
     s5["active_trade"] = {
@@ -609,7 +619,9 @@ def test_long_valuation_with_missing_bid_data_unavailable(tmp_path):
 # ─── 20. SHORT VALUATION WITH MISSING ASK -> DATA_UNAVAILABLE, NO SYNTHETIC P&L ───
 def test_short_valuation_with_missing_ask_data_unavailable(tmp_path):
     """Short position valuation requires authentic Ask (cost to close). Missing Ask pauses valuation."""
-    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"))
+    session = MultiBotLiveSession(state_file=str(tmp_path / "paper_session.json"),
+                                    reports_dir=tmp_path,
+                                    risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"))
     s1 = session.bot_states["Strategy 1: Apex VRP Engine"]
 
     s1["active_trade"] = {
@@ -804,7 +816,9 @@ def test_data_unavailable_clears_unrealized_pnl_and_reports_cleanly(tmp_path):
     """Verify DATA_UNAVAILABLE sets unrealized_pnl to None and reports write DATA_UNAVAILABLE."""
     from src.execution.live_paper_session import MultiBotLiveSession
 
-    session = MultiBotLiveSession(state_file=str(tmp_path / "test_session.json"))
+    session = MultiBotLiveSession(state_file=str(tmp_path / "test_session.json"),
+                                    reports_dir=tmp_path,
+                                    risk_engine=RiskEngine(kill_switch_file=tmp_path / "ks.json"))
     s5 = session.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
     s5["active_trade"] = {
         "id": "TEST-5",
@@ -951,7 +965,8 @@ def test_data_unavailable_authoritative_payload_cannot_expose_numerical_unrealiz
     from src.monitoring.dashboard import app
 
     state_path = tmp_path / "live_paper_session.json"
-    session = MultiBotLiveSession(state_file=str(state_path))
+    session = MultiBotLiveSession(state_file=str(state_path),
+                                    risk_engine=RiskEngine(kill_switch_file=Path(state_path).parent / "ks.json"))
     s1 = session.bot_states["Strategy 1: Apex VRP Engine"]
     s1["active_trade"] = {
         "id": "APEX-STALE-CHECK",
@@ -1011,7 +1026,8 @@ def test_api_status_final_settlement_reconciles_strictly_to_closed_trade_ledger(
     from src.monitoring.dashboard import app
 
     state_path = tmp_path / "live_paper_session.json"
-    session = MultiBotLiveSession(state_file=str(state_path))
+    session = MultiBotLiveSession(state_file=str(state_path),
+                                    risk_engine=RiskEngine(kill_switch_file=Path(state_path).parent / "ks.json"))
 
     # Bot with an open trade under DATA_UNAVAILABLE (must NOT be counted in realized totals)
     s1 = session.bot_states["Strategy 1: Apex VRP Engine"]

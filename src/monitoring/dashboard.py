@@ -326,6 +326,14 @@ async function updateDashboard() {
       if (b.status && b.status.includes('IN_POSITION')) statusBadgeClass += ' active';
       else if (b.status && b.status.includes('SQUARED_OFF')) statusBadgeClass += ' stopped';
 
+      const ls = b.live_signal;
+      let sigLabel = 'not evaluated';
+      if (ls) {
+        const dirTxt = ls.direction > 0 ? 'BULLISH (CE)' : (ls.direction < 0 ? 'BEARISH (PE)' : 'FLAT');
+        sigLabel = `${dirTxt} · conf ${fmt(ls.confidence)} · ${ls.reason || ''}`;
+        if (ls.on_forming_bar) sigLabel += ' · forming bar';
+      }
+
       let pnlSnippet = '';
       if (isActUnavailable && closed.length === 0) {
         pnlSnippet = '<span style="color:#f59e0b; font-weight:700; font-size:0.85rem;">DATA_UNAVAILABLE</span>';
@@ -343,7 +351,9 @@ async function updateDashboard() {
           </div>
           <div class="bot-meta">
             Allocated: ₹${fmt(b.allocated_capital)}<br>
-            Current Capital: ₹${fmt(b.current_capital || b.allocated_capital)}
+            Current Capital: ₹${fmt(b.current_capital || b.allocated_capital)}<br>
+            <span style="font-size:0.75rem; color:var(--accent);">Strategy class: ${b.strategy_class || 'NOT_BOUND'}</span><br>
+            <span style="font-size:0.72rem; color:var(--text-muted);">Live signal: ${sigLabel}</span>
           </div>
           <div class="bot-pnl-row">
             <span style="color:var(--text-muted); font-size:0.8rem;">Session P&L</span>

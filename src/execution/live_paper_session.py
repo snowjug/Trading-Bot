@@ -28,9 +28,10 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from src.config import Config
 from src.utils.logging import setup_logging
-from src.execution.paper_broker import PaperBroker
 from src.execution.dhan_contract_resolver import DhanContractResolver, is_quote_fresh
 from src.execution.cost_model import IndianCostModel
+from src.execution.live_strategy_adapter import LiveStrategyAdapter, LiveSignal
+from src.execution.live_market_bars import get_today_session_bar
 from src.risk.risk_engine import RiskEngine
 
 logger = setup_logging("execution.live_session")
@@ -56,6 +57,17 @@ class MultiBotLiveSession:
     ):
         Config.assert_no_live_trading()
         self.risk_engine = risk_engine or RiskEngine()
+        self.strategy_adapter = LiveStrategyAdapter()
+        self.live_signals: Dict[str, LiveSignal] = {}
+        self._risk_verdict_cache: Dict[tuple, tuple] = {}
+        self._last_risk_verdict: Optional[tuple] = None
+        self._risk_baseline_set: bool = False
+        # New-day / reconciliation state (B5, B9)
+        self.requires_reconciliation: bool = False
+        self.reconciliation_reason: str = ""
+        self.carried_over_positions: Dict[str, Any] = {}
+        self.previous_session_date: Optional[str] = None
+        self._lock_handle: Optional[int] = None
         self.session_file = Path(state_file or session_file)
         self.session_file.parent.mkdir(parents=True, exist_ok=True)
         self.reports_dir = Path(reports_dir) if reports_dir is not None else (self.session_file.parent if state_file else REPORTS_DIR)
@@ -118,21 +130,94 @@ class MultiBotLiveSession:
             try:
                 with open(self.session_file, "r") as f:
                     data = json.load(f)
-                    if "bot_states" in data:
-                        loaded = data["bot_states"]
-                        for name in self.bot_names:
-                            if name in loaded:
-                                s = loaded[name]
-                                # Align allocated_capital with configured session capital
-                                s["allocated_capital"] = self.allocations.get(name, s.get("allocated_capital", 17000.0))
-                                if s.get("active_trade") is None and not s.get("closed_trades"):
-                                    s["current_capital"] = s["allocated_capital"]
-                                self.bot_states[name] = s
-                    self.session_log = data.get("session_log", [])
-                    self.signals = data.get("signals", [])
-                    self.rejected_signals = data.get("rejected_signals", [])
+
+                stored_date = data.get("session_date")
+                today_str = datetime.now().date().isoformat()
+                is_new_day = bool(stored_date) and stored_date != today_str
+
+                if is_new_day:
+                    self._handle_new_day_rollover(data, stored_date, today_str)
+                    return
+
+                if stored_date is None:
+                    # State written before session_date existed: treat as ambiguous.
+                    logger.warning(
+                        "Session state has no session_date. Trading day cannot be verified; "
+                        "requiring explicit reconciliation before any new entry."
+                    )
+                    self.requires_reconciliation = True
+                    self.reconciliation_reason = "UNDATED_SESSION_STATE"
+
+                if "bot_states" in data:
+                    loaded = data["bot_states"]
+                    for name in self.bot_names:
+                        if name in loaded:
+                            s = loaded[name]
+                            # Align allocated_capital with configured session capital
+                            s["allocated_capital"] = self.allocations.get(name, s.get("allocated_capital", 17000.0))
+                            if s.get("active_trade") is None and not s.get("closed_trades"):
+                                s["current_capital"] = s["allocated_capital"]
+                            self.bot_states[name] = s
+                self.session_log = data.get("session_log", [])
+                self.signals = data.get("signals", [])
+                self.rejected_signals = data.get("rejected_signals", [])
             except Exception as e:
                 logger.warning(f"Could not load previous session: {e}")
+
+    def _handle_new_day_rollover(self, data: dict, stored_date: str, today_str: str):
+        """
+        Explicit new-trading-day handling (never a silent resume).
+
+        Day-specific state (closed trades, session log, signals) is archived and
+        cleared. A position still open from a previous session is NOT resumed as
+        if it were today's: it is quarantined and trading is halted pending
+        explicit operator reconciliation.
+        """
+        logger.critical(
+            f"NEW TRADING DAY DETECTED: stored session_date={stored_date}, today={today_str}. "
+            "Previous-day state will not be silently resumed."
+        )
+        loaded = data.get("bot_states", {})
+        stale_open = {
+            name: s.get("active_trade")
+            for name, s in loaded.items()
+            if s.get("active_trade") and s["active_trade"].get("status") != "CLOSED"
+        }
+
+        self.carried_over_positions = stale_open
+        self.previous_session_date = stored_date
+        self.session_log = []
+        self.signals = []
+        self.rejected_signals = []
+
+        for name in self.bot_names:
+            self.bot_states[name] = {
+                "allocated_capital": self.allocations.get(name, 16000.0),
+                "current_capital": self.allocations.get(name, 16000.0),
+                "status": "ACTIVE_MONITORING",
+                "active_trade": None,
+                "closed_trades": [],
+                "net_pnl": 0.0,
+            }
+
+        if stale_open:
+            self.requires_reconciliation = True
+            self.reconciliation_reason = (
+                f"UNRECONCILED_PRIOR_DAY_POSITIONS: {len(stale_open)} position(s) "
+                f"left open on {stored_date} ({', '.join(stale_open)})"
+            )
+            logger.critical(
+                f"{self.reconciliation_reason}. Trading is HALTED until these are "
+                "explicitly reconciled — they are NOT resumed as today's positions."
+            )
+
+        try:
+            archive = self.session_file.parent / f"archive_{self.session_file.stem}_{stored_date}.json"
+            with open(archive, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, default=str)
+            logger.info(f"Previous trading day archived to {archive}")
+        except Exception as e:
+            logger.warning(f"Failed to archive previous session state: {e}")
 
     def save_session(self):
         all_closed = []
@@ -154,6 +239,9 @@ class MultiBotLiveSession:
 
         data = {
             "last_updated": datetime.now().isoformat(),
+            "session_date": datetime.now().date().isoformat(),
+            "requires_reconciliation": self.requires_reconciliation,
+            "reconciliation_reason": self.reconciliation_reason,
             "total_capital_deployed": sum(b["allocated_capital"] for b in self.bot_states.values()),
             "bot_states": self.bot_states,
             "session_log": self.session_log[-120:],
@@ -623,6 +711,371 @@ LIVE_TRADING_ENABLED: FALSE
         if closed_count > 0:
             self.save_session()
 
+    def evaluate_live_strategies(self, mkt: Optional[dict]) -> Dict[str, LiveSignal]:
+        """
+        Runs every validated strategy class against the current authentic bar
+        state and caches the resulting signals for this cycle.
+
+        Fail-closed: if the session bar or VIX is unavailable the adapter returns
+        non-actionable signals carrying an explicit DATA_UNAVAILABLE reason.
+        """
+        self.strategy_adapter.reset_cycle()
+        self.live_signals = {}
+        self._risk_verdict_cache = {}
+        self._last_risk_verdict = None
+        if not mkt:
+            return self.live_signals
+
+        session_bar = get_today_session_bar("NIFTY")
+        today_vix = mkt.get("vix")
+        for bot_name in self.bot_names:
+            sig = self.strategy_adapter.evaluate(
+                bot_name, session_bar=session_bar, today_vix=today_vix,
+            )
+            self.live_signals[bot_name] = sig
+            # Publish the strategy actually executing, so the dashboard reports
+            # the real code object rather than a decorative label.
+            state = self.bot_states.get(bot_name)
+            if state is not None:
+                state["strategy_class"] = sig.strategy_class
+                state["live_signal"] = {
+                    "direction": sig.direction,
+                    "confidence": round(float(sig.confidence), 3),
+                    "reason": sig.reason,
+                    "on_forming_bar": sig.on_forming_bar,
+                    "bar_source": sig.bar_source,
+                    "evaluated_at": sig.evaluated_at,
+                }
+        return self.live_signals
+
+    def get_live_signal(self, bot_name: str) -> Optional[LiveSignal]:
+        """Returns this cycle's validated-strategy signal for a bot."""
+        return self.live_signals.get(bot_name)
+
+    # ───────────────────── SINGLE-INSTANCE OWNERSHIP (B6) ─────────────────────
+
+    @property
+    def lock_file(self) -> Path:
+        return self.session_file.parent / f".{self.session_file.name}.lock"
+
+    def acquire_session_lock(self) -> None:
+        """
+        Takes exclusive ownership of the state file for this process.
+
+        Two sessions writing one state file silently discard each other's trades,
+        which is exactly how the 2026-09-17 session became contaminated. A second
+        process must refuse to start rather than race.
+        """
+        lock_path = self.lock_file
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            holder = "unknown"
+            try:
+                holder = lock_path.read_text(encoding="utf-8").strip()
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"SESSION LOCK HELD: another live paper session already owns "
+                f"{self.session_file} (lock: {lock_path}, holder: {holder}). "
+                "Refusing to start a second instance. If the previous process died, "
+                f"remove {lock_path} after confirming it is not running."
+            )
+        os.write(fd, f"pid={os.getpid()} started={datetime.now().isoformat()}".encode("utf-8"))
+        os.close(fd)
+        self._lock_handle = os.getpid()
+
+    def release_session_lock(self) -> None:
+        """Releases the state-file lock if this process owns it."""
+        if self._lock_handle is None:
+            return
+        try:
+            if self.lock_file.exists():
+                self.lock_file.unlink()
+        except Exception as e:
+            logger.warning(f"Failed to release session lock: {e}")
+        finally:
+            self._lock_handle = None
+
+    # ───────────────────── BROKER RECONCILIATION (B9) ─────────────────────
+
+    def reconcile_with_broker(
+        self,
+        broker_positions: Optional[List[Dict[str, Any]]] = None,
+        broker_available: Optional[bool] = None,
+    ):
+        """
+        Compares the local book against broker-reported positions and halts new
+        trading on any unexplained disagreement. Read-only: no order is sent.
+        """
+        from src.execution.position_reconciler import (
+            fetch_broker_positions_readonly,
+            reconcile_positions,
+        )
+
+        if broker_positions is None and broker_available is None:
+            broker_positions, broker_available = fetch_broker_positions_readonly()
+        if broker_available is None:
+            broker_available = broker_positions is not None
+
+        result = reconcile_positions(self.bot_states, broker_positions, broker_available)
+        self.last_reconciliation = result
+        if result.halt_required:
+            self.requires_reconciliation = True
+            self.reconciliation_reason = result.reason
+            logger.critical(f"TRADING HALTED BY RECONCILIATION: {result.reason}")
+        return result
+
+    # ─────────────────── OVERDUE EOD / RECOVERY HANDLING (B7) ───────────────────
+
+    def handle_overdue_eod(self, current_time: Optional[dtime] = None) -> int:
+        """
+        Squares off positions that are still open after the 15:35 EOD boundary.
+
+        The 15:35 square-off inside the monitoring loop only runs while the
+        process is alive; on 2026-09-17 the process stopped at 15:29 and left a
+        short strangle open. This runs at startup and each cycle so a restart
+        after the boundary still flattens the book.
+
+        NOTE: this is SOFTWARE-side protection only. It is NOT equivalent to a
+        broker-native protective order and provides no cover while the process
+        is down.
+        """
+        now_time = current_time or datetime.now().time()
+        if now_time < dtime(15, 35):
+            return 0
+        open_count = sum(
+            1 for b in self.bot_states.values()
+            if b.get("active_trade") and b["active_trade"].get("status") != "CLOSED"
+        )
+        if open_count == 0:
+            return 0
+        logger.critical(
+            f"OVERDUE EOD: {open_count} position(s) still open after 15:35. "
+            "Executing mandatory square-off on startup/cycle."
+        )
+        self._eod_force_square_off_all_positions()
+        return open_count
+
+    @staticmethod
+    def validate_entry_microstructure(
+        bid: Optional[float],
+        ask: Optional[float],
+        quote_timestamp: Any,
+        require_side: str = "ASK",
+    ) -> tuple:
+        """
+        The live entry microstructure gate (B14). Returns (ok, reason).
+
+        Applies the same checks the sandbox order path already enforced, which
+        the live session previously skipped: a valid executable side, positive
+        prices, a non-inverted book, an acceptable spread and a fresh quote.
+        There is no LTP fallback anywhere in this path.
+        """
+        if not is_quote_fresh(quote_timestamp):
+            return False, "DATA_UNAVAILABLE: Stale or missing exchange quote timestamp"
+
+        side_price = ask if require_side.upper() == "ASK" else bid
+        if side_price is None or not isinstance(side_price, (int, float)) or side_price <= 0:
+            return False, f"DATA_UNAVAILABLE: Missing executable {require_side.upper()} price"
+
+        if bid is not None and ask is not None and bid > 0 and ask > 0:
+            if bid > ask:
+                return False, f"INVERTED_MARKET_SPREAD: bid {bid} > ask {ask}"
+            spread = ask - bid
+            if spread / float(side_price) > Config.MAX_SPREAD_PCT_OF_PRICE:
+                return False, (
+                    f"EXCESSIVE_SPREAD_WIDTH: spread {spread:.2f} exceeds "
+                    f"{Config.MAX_SPREAD_PCT_OF_PRICE:.0%} of {side_price:.2f}"
+                )
+        return True, "MICROSTRUCTURE_OK"
+
+    def _strategy_allows_entry(self, bot_name: str, required_direction: Optional[int] = None) -> bool:
+        """
+        Entry gate: the validated strategy class must produce an actionable
+        signal (optionally in a specific direction). Absent or flat signals mean
+        NO TRADE — the live path never invents an entry of its own.
+        """
+        sig = self.live_signals.get(bot_name)
+        if sig is None or not sig.is_actionable:
+            return False
+        if required_direction is not None and sig.direction != required_direction:
+            return False
+        return True
+
+    # ─────────────────────── RISK & PORTFOLIO EXPOSURE ───────────────────────
+
+    def portfolio_snapshot(self) -> Dict[str, Any]:
+        """
+        Aggregates live portfolio state ACROSS all strategies.
+
+        Strategy labels are deliberately ignored when aggregating exposure: two
+        bots holding the same contract are one concentrated position.
+        """
+        allocated = sum(b.get("allocated_capital", 0.0) for b in self.bot_states.values())
+        realized = 0.0
+        unrealized = 0.0
+        open_positions = 0
+        contract_exposure: Dict[str, Dict[str, Any]] = {}
+
+        for name, b in self.bot_states.items():
+            realized += sum(c.get("net_pnl", 0.0) or 0.0 for c in b.get("closed_trades", []))
+            at = b.get("active_trade")
+            if not at or at.get("status") == "CLOSED":
+                continue
+            open_positions += 1
+            if at.get("valuation_status") != "DATA_UNAVAILABLE" and at.get("unrealized_pnl") is not None:
+                unrealized += float(at["unrealized_pnl"])
+
+            sec_id = str(at.get("security_id", "UNKNOWN"))
+            qty = float(at.get("qty", 0) or 0)
+            price = float(at.get("entry_fill") or at.get("entry_premium") or 0.0)
+            entry = contract_exposure.setdefault(
+                sec_id, {"qty": 0.0, "notional": 0.0, "bots": [], "contract": at.get("contract")}
+            )
+            entry["qty"] += qty
+            entry["notional"] += abs(qty * price)
+            entry["bots"].append(name)
+
+        equity = allocated + realized
+        return {
+            "allocated_capital": allocated,
+            "realized_pnl": round(realized, 2),
+            "unrealized_pnl": round(unrealized, 2),
+            "equity": round(equity, 2),
+            "open_positions": open_positions,
+            "contract_exposure": contract_exposure,
+            "total_open_notional": round(sum(v["notional"] for v in contract_exposure.values()), 2),
+        }
+
+    def sync_risk_state(self) -> Dict[str, Any]:
+        """Pushes the live portfolio snapshot into the RiskEngine each cycle."""
+        snap = self.portfolio_snapshot()
+
+        # Seed the engine's capital baseline from the capital this session
+        # actually deploys. Without this the engine's default initial_capital
+        # becomes peak_equity and every session reads as an enormous drawdown.
+        if not self._risk_baseline_set and snap["allocated_capital"] > 0:
+            self.risk_engine.initial_capital = snap["allocated_capital"]
+            self.risk_engine.state.equity = snap["equity"]
+            self.risk_engine.state.peak_equity = max(snap["equity"], snap["allocated_capital"])
+            self._risk_baseline_set = True
+
+        self.risk_engine.update_state(
+            equity=snap["equity"],
+            daily_pnl=snap["realized_pnl"] + snap["unrealized_pnl"],
+            weekly_pnl=snap["realized_pnl"] + snap["unrealized_pnl"],
+            open_positions=snap["open_positions"],
+        )
+        return snap
+
+    def evaluate_entry_risk(
+        self,
+        bot_name: str,
+        security_id: Optional[str],
+        qty: float,
+        entry_price: float,
+    ) -> tuple:
+        """
+        The real risk gate for a proposed entry. Returns (approved, reason).
+
+        Combines the independent RiskEngine verdict (kill switch, drawdown,
+        daily/weekly loss, max positions) with portfolio-level concentration
+        limits that strategy labels cannot bypass.
+
+        Memoised per cycle so a call site can test the verdict and then read its
+        reason without re-running the gate or double-counting exposure.
+        """
+        memo_key = (bot_name, str(security_id), float(qty or 0), float(entry_price or 0.0))
+        if memo_key in self._risk_verdict_cache:
+            verdict = self._risk_verdict_cache[memo_key]
+        else:
+            verdict = self._compute_entry_risk(bot_name, security_id, qty, entry_price)
+            self._risk_verdict_cache[memo_key] = verdict
+        self._last_risk_verdict = verdict
+        return verdict
+
+    def _last_risk_decision(self) -> str:
+        """
+        The real risk verdict recorded in the audit trail.
+
+        Returns NOT_EVALUATED when a signal was rejected before the risk gate
+        was ever consulted (for example on a missing executable quote). That is
+        deliberately truthful: the previous hardcoded "APPROVED" asserted a risk
+        approval that had never been computed.
+        """
+        verdict = getattr(self, "_last_risk_verdict", None)
+        if verdict is None:
+            return "NOT_EVALUATED"
+        approved, reason = verdict
+        return "APPROVED" if approved else f"REJECTED ({reason})"
+
+    def _compute_entry_risk(
+        self,
+        bot_name: str,
+        security_id: Optional[str],
+        qty: float,
+        entry_price: float,
+    ) -> tuple:
+        """Uncached risk computation backing `evaluate_entry_risk`."""
+        if self.requires_reconciliation:
+            return False, f"TRADING_HALTED: {self.reconciliation_reason}"
+
+        snap = self.sync_risk_state()
+
+        decision = self.risk_engine.evaluate_trade(
+            symbol=str(security_id or "UNKNOWN"),
+            direction=1,
+            entry_price=float(entry_price or 0.0),
+            confidence=float(getattr(self.live_signals.get(bot_name), "confidence", 0.0) or 0.0),
+            sector="INDEX_OPTIONS",
+        )
+        # The engine's ATR/fractional share sizing is not the sizing rule this
+        # session uses (positions are a fixed exchange lot), so its
+        # "position size too small" verdict is a sizing artefact rather than a
+        # limit breach. Every genuine limit rejection is still honoured, and the
+        # position-value cap is enforced below against the actual lot notional.
+        if not decision.approved and not decision.rejection_reason.startswith("Position size too small"):
+            return False, f"RISK_REJECTED: {decision.rejection_reason}"
+
+        proposed_notional_check = abs(float(qty or 0) * float(entry_price or 0.0))
+        if decision.max_position_value > 0 and proposed_notional_check > decision.max_position_value:
+            return False, (
+                f"RISK_REJECTED: position notional Rs {proposed_notional_check:,.0f} exceeds "
+                f"max position value Rs {decision.max_position_value:,.0f} "
+                f"({self.risk_engine.max_position_pct:.0%} of equity)"
+            )
+
+        sec_id = str(security_id or "UNKNOWN")
+        exposure = snap["contract_exposure"].get(sec_id)
+        proposed_notional = abs(float(qty or 0) * float(entry_price or 0.0))
+        equity_base = max(snap["allocated_capital"], 1.0)
+
+        if exposure and len(exposure["bots"]) >= Config.MAX_BOTS_PER_CONTRACT:
+            return False, (
+                f"PORTFOLIO_CONCENTRATION: contract {sec_id} already held by "
+                f"{len(exposure['bots'])} strategy(ies) ({', '.join(exposure['bots'])}); "
+                f"limit is {Config.MAX_BOTS_PER_CONTRACT}"
+            )
+
+        combined_contract = (exposure["notional"] if exposure else 0.0) + proposed_notional
+        if combined_contract / equity_base > Config.MAX_SINGLE_CONTRACT_EXPOSURE_PCT:
+            return False, (
+                f"PORTFOLIO_CONCENTRATION: contract {sec_id} exposure "
+                f"{combined_contract / equity_base:.1%} exceeds "
+                f"{Config.MAX_SINGLE_CONTRACT_EXPOSURE_PCT:.0%} of deployed capital"
+            )
+
+        combined_total = snap["total_open_notional"] + proposed_notional
+        if combined_total / equity_base > Config.MAX_TOTAL_OPEN_EXPOSURE_PCT:
+            return False, (
+                f"PORTFOLIO_EXPOSURE: total open exposure {combined_total / equity_base:.1%} "
+                f"exceeds {Config.MAX_TOTAL_OPEN_EXPOSURE_PCT:.0%} of deployed capital"
+            )
+
+        return True, "RISK_APPROVED"
+
     def evaluate_all_bots(self, mkt: Optional[dict], current_time: Optional[dtime] = None):
         now_time = current_time or datetime.now().time()
 
@@ -677,9 +1130,18 @@ LIVE_TRADING_ENABLED: FALSE
         except Exception as e:
             logger.debug(f"Candidate quote prefetch exception: {e}")
 
+        # Evaluate the VALIDATED strategy classes against authentic live bar state.
+        # Entries below are gated on these signals, so the live path and the
+        # backtested path execute the same strategy objects.
+        self.evaluate_live_strategies(mkt)
+
         # ─── BOT 1: APEX VRP ENGINE (THETA HARVEST) ───
         s1 = self.bot_states["Strategy 1: Apex VRP Engine"]
-        if s1["active_trade"] is None and not s1["closed_trades"] and now_time >= dtime(9, 20) and now_time <= dtime(11, 30):
+        if (
+            s1["active_trade"] is None and not s1["closed_trades"]
+            and now_time >= dtime(9, 20) and now_time <= dtime(11, 30)
+            and self._strategy_allows_entry("Strategy 1: Apex VRP Engine")
+        ):
             call_k = round((n_last + 300) / 50.0) * 50.0
             put_k = round((n_last - 300) / 50.0) * 50.0
             c_res = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE", strike=call_k)
@@ -709,11 +1171,28 @@ LIVE_TRADING_ENABLED: FALSE
                     signal_direction="SELL (STRANGLE)",
                     contract=comb_contract,
                     security_id=comb_sec_id,
-                    risk_decision="APPROVED",
+                    risk_decision=self._last_risk_decision(),
                     execution_decision="NO_EXECUTION",
                     final_status="NO_EXECUTION",
                     reason="DATA_UNAVAILABLE: Stale/Missing Bid Quote",
                     quote_bid=c_bid if c_bid else p_bid,
+                )
+            elif not self.evaluate_entry_risk(
+                "Strategy 1: Apex VRP Engine", comb_sec_id, c_res["lot_size"],
+                round(max(0.05, round(float(c_bid) - 0.50, 2)) + max(0.05, round(float(p_bid) - 0.50, 2)), 2),
+            )[0]:
+                _risk_reason = self._last_risk_verdict[1]
+                logger.warning(f"Bot 1: entry blocked by risk engine -> {_risk_reason}")
+                self.record_signal(
+                    strategy_name="Strategy 1: Apex VRP Engine",
+                    underlying="NIFTY",
+                    signal_direction="SELL (STRANGLE)",
+                    contract=comb_contract,
+                    security_id=comb_sec_id,
+                    risk_decision="REJECTED",
+                    execution_decision="NO_EXECUTION",
+                    final_status="NO_EXECUTION",
+                    reason=_risk_reason,
                 )
             else:
                 c_fill = max(0.05, round(float(c_bid) - 0.50, 2))
@@ -759,7 +1238,7 @@ LIVE_TRADING_ENABLED: FALSE
                     signal_direction="SELL (STRANGLE)",
                     contract=comb_contract,
                     security_id=comb_sec_id,
-                    risk_decision="APPROVED",
+                    risk_decision=self._last_risk_decision(),
                     execution_decision="EXECUTED",
                     final_status="EXECUTED",
                     fill_price=net_credit,
@@ -880,11 +1359,12 @@ LIVE_TRADING_ENABLED: FALSE
         # ─── BOT 5: VELOCITY-5 MOMENTUM SCALPER ───
         s5 = self.bot_states["Strategy 5: Velocity-5 Momentum Scalper"]
         if s5["active_trade"] is None and not s5["closed_trades"] and now_time >= dtime(9, 20) and now_time < dtime(14, 30):
-            n_open = mkt["nifty"].get("open", n_last)
-            if n_last > n_open + 15.0:
+            if self._strategy_allows_entry("Strategy 5: Velocity-5 Momentum Scalper", required_direction=1):
                 c5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE")
                 c5_ask = c5.get("ask") if c5 else None
-                if not c5 or c5_ask is None or c5_ask <= 0 or not is_quote_fresh(c5.get("quote_timestamp")) or (c5.get("bid") is not None and c5.get("bid") > c5_ask):
+                if not c5 or not self.validate_entry_microstructure(
+                        c5.get("bid"), c5_ask, c5.get("quote_timestamp"), require_side="ASK"
+                    )[0]:
                     logger.warning("Bot 5: Executable Ask quote unavailable for CE breakout -> NO TRADE.")
                     self.record_signal(
                         strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
@@ -892,10 +1372,31 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="BUY",
                         contract=c5["custom_symbol"] if c5 else "NIFTY ATM CE",
                         security_id=c5["security_id"] if c5 else "NONE",
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="NO_EXECUTION",
                         final_status="NO_EXECUTION",
                         reason="DATA_UNAVAILABLE: Stale/Missing Ask Quote",
+                        quote_ask=c5_ask,
+                    )
+                elif not self.evaluate_entry_risk(
+                    "Strategy 5: Velocity-5 Momentum Scalper", c5.get("security_id"), c5.get("lot_size", 0),
+                    round(float(c5_ask) + 0.50, 2),
+                )[0]:
+                    _risk_ok, _risk_reason = self.evaluate_entry_risk(
+                        "Strategy 5: Velocity-5 Momentum Scalper", c5.get("security_id"), c5.get("lot_size", 0),
+                        round(float(c5_ask) + 0.50, 2),
+                    )
+                    logger.warning(f"Strategy 5: Velocity-5 Momentum Scalper: entry blocked by risk engine -> {_risk_reason}")
+                    self.record_signal(
+                        strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
+                        underlying="NIFTY",
+                        signal_direction="BUY",
+                        contract=c5.get("custom_symbol"),
+                        security_id=c5.get("security_id"),
+                        risk_decision="REJECTED",
+                        execution_decision="NO_EXECUTION",
+                        final_status="NO_EXECUTION",
+                        reason=_risk_reason,
                         quote_ask=c5_ask,
                     )
                 else:
@@ -939,17 +1440,19 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="BUY",
                         contract=c5["custom_symbol"],
                         security_id=c5["security_id"],
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="EXECUTED",
                         final_status="EXECUTED",
                         fill_price=prem,
                         quote_ask=c5_ask,
                         quote_ltp=c5.get("ltp"),
                     )
-            elif n_last < n_open - 15.0:
+            elif self._strategy_allows_entry("Strategy 5: Velocity-5 Momentum Scalper", required_direction=-1):
                 p5 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "PE")
                 p5_ask = p5.get("ask") if p5 else None
-                if not p5 or p5_ask is None or p5_ask <= 0 or not is_quote_fresh(p5.get("quote_timestamp")) or (p5.get("bid") is not None and p5.get("bid") > p5_ask):
+                if not p5 or not self.validate_entry_microstructure(
+                        p5.get("bid"), p5_ask, p5.get("quote_timestamp"), require_side="ASK"
+                    )[0]:
                     logger.warning("Bot 5: Executable Ask quote unavailable for PE breakdown -> NO TRADE.")
                     self.record_signal(
                         strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
@@ -957,10 +1460,31 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="BUY",
                         contract=p5["custom_symbol"] if p5 else "NIFTY ATM PE",
                         security_id=p5["security_id"] if p5 else "NONE",
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="NO_EXECUTION",
                         final_status="NO_EXECUTION",
                         reason="DATA_UNAVAILABLE: Stale/Missing Ask Quote",
+                        quote_ask=p5_ask,
+                    )
+                elif not self.evaluate_entry_risk(
+                    "Strategy 5: Velocity-5 Momentum Scalper", p5.get("security_id"), p5.get("lot_size", 0),
+                    round(float(p5_ask) + 0.50, 2),
+                )[0]:
+                    _risk_ok, _risk_reason = self.evaluate_entry_risk(
+                        "Strategy 5: Velocity-5 Momentum Scalper", p5.get("security_id"), p5.get("lot_size", 0),
+                        round(float(p5_ask) + 0.50, 2),
+                    )
+                    logger.warning(f"Strategy 5: Velocity-5 Momentum Scalper: entry blocked by risk engine -> {_risk_reason}")
+                    self.record_signal(
+                        strategy_name="Strategy 5: Velocity-5 Momentum Scalper",
+                        underlying="NIFTY",
+                        signal_direction="BUY",
+                        contract=p5.get("custom_symbol"),
+                        security_id=p5.get("security_id"),
+                        risk_decision="REJECTED",
+                        execution_decision="NO_EXECUTION",
+                        final_status="NO_EXECUTION",
+                        reason=_risk_reason,
                         quote_ask=p5_ask,
                     )
                 else:
@@ -1004,7 +1528,7 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="BUY",
                         contract=p5["custom_symbol"],
                         security_id=p5["security_id"],
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="EXECUTED",
                         final_status="EXECUTED",
                         fill_price=prem,
@@ -1113,12 +1637,15 @@ LIVE_TRADING_ENABLED: FALSE
         # ─── BOT 4: GOLDEN TREND RUNNER ───
         s4 = self.bot_states["Strategy 4: Golden Trend Runner"]
         if s4["active_trade"] is None and not s4["closed_trades"] and now_time < dtime(15, 10):
-            n_open = mkt["nifty"].get("open", n_last)
-            b_open = mkt["bank"].get("open", b_last)
-            if n_last > n_open + 10.0 and b_last >= b_open:
+            # NOTE: only the bullish (CE) leg is implemented in the live path.
+            # A bearish signal from the validated strategy is recorded as an
+            # unsupported-direction rejection rather than silently dropped.
+            if self._strategy_allows_entry("Strategy 4: Golden Trend Runner", required_direction=1):
                 c4 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE")
                 c4_ask = c4.get("ask") if c4 else None
-                if not c4 or c4_ask is None or c4_ask <= 0 or not is_quote_fresh(c4.get("quote_timestamp")) or (c4.get("bid") is not None and c4.get("bid") > c4_ask):
+                if not c4 or not self.validate_entry_microstructure(
+                        c4.get("bid"), c4_ask, c4.get("quote_timestamp"), require_side="ASK"
+                    )[0]:
                     logger.warning("Bot 4: Executable Ask quote unavailable for Golden Pullback -> NO TRADE.")
                     self.record_signal(
                         strategy_name="Strategy 4: Golden Trend Runner",
@@ -1126,10 +1653,31 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="BUY",
                         contract=c4["custom_symbol"] if c4 else "NIFTY ATM CE",
                         security_id=c4["security_id"] if c4 else "NONE",
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="NO_EXECUTION",
                         final_status="NO_EXECUTION",
                         reason="DATA_UNAVAILABLE: Stale/Missing Ask Quote",
+                        quote_ask=c4_ask,
+                    )
+                elif not self.evaluate_entry_risk(
+                    "Strategy 4: Golden Trend Runner", c4.get("security_id"), c4.get("lot_size", 0),
+                    round(float(c4_ask) + 0.50, 2),
+                )[0]:
+                    _risk_ok, _risk_reason = self.evaluate_entry_risk(
+                        "Strategy 4: Golden Trend Runner", c4.get("security_id"), c4.get("lot_size", 0),
+                        round(float(c4_ask) + 0.50, 2),
+                    )
+                    logger.warning(f"Strategy 4: Golden Trend Runner: entry blocked by risk engine -> {_risk_reason}")
+                    self.record_signal(
+                        strategy_name="Strategy 4: Golden Trend Runner",
+                        underlying="NIFTY",
+                        signal_direction="BUY",
+                        contract=c4.get("custom_symbol"),
+                        security_id=c4.get("security_id"),
+                        risk_decision="REJECTED",
+                        execution_decision="NO_EXECUTION",
+                        final_status="NO_EXECUTION",
+                        reason=_risk_reason,
                         quote_ask=c4_ask,
                     )
                 else:
@@ -1176,7 +1724,7 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="BUY",
                         contract=c4["custom_symbol"],
                         security_id=c4["security_id"],
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="EXECUTED",
                         final_status="EXECUTED",
                         fill_price=prem,
@@ -1283,12 +1831,14 @@ LIVE_TRADING_ENABLED: FALSE
         # ─── BOT 3: CONFLUENCE GAMMA SCALPER ───
         s3 = self.bot_states["Strategy 3: Confluence Gamma Scalper"]
         if s3["active_trade"] is None and not s3["closed_trades"] and now_time < dtime(15, 10):
-            n_open = mkt["nifty"].get("open", n_last)
-            if abs(n_last - n_open) >= 35.0:
-                opt_t = "CE" if n_last > n_open else "PE"
+            sig3 = self.get_live_signal("Strategy 3: Confluence Gamma Scalper")
+            if self._strategy_allows_entry("Strategy 3: Confluence Gamma Scalper"):
+                opt_t = "CE" if sig3.direction > 0 else "PE"
                 c3 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), opt_t)
                 c3_ask = c3.get("ask") if c3 else None
-                if not c3 or c3_ask is None or c3_ask <= 0 or not is_quote_fresh(c3.get("quote_timestamp")) or (c3.get("bid") is not None and c3.get("bid") > c3_ask):
+                if not c3 or not self.validate_entry_microstructure(
+                        c3.get("bid"), c3_ask, c3.get("quote_timestamp"), require_side="ASK"
+                    )[0]:
                     logger.warning("Bot 3: Executable Ask quote unavailable for Gamma Scalp -> NO TRADE.")
                     self.record_signal(
                         strategy_name="Strategy 3: Confluence Gamma Scalper",
@@ -1296,10 +1846,31 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="BUY",
                         contract=c3["custom_symbol"] if c3 else f"NIFTY ATM {opt_t}",
                         security_id=c3["security_id"] if c3 else "NONE",
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="NO_EXECUTION",
                         final_status="NO_EXECUTION",
                         reason="DATA_UNAVAILABLE: Stale/Missing Ask Quote",
+                        quote_ask=c3_ask,
+                    )
+                elif not self.evaluate_entry_risk(
+                    "Strategy 3: Confluence Gamma Scalper", c3.get("security_id"), c3.get("lot_size", 0),
+                    round(float(c3_ask) + 0.50, 2),
+                )[0]:
+                    _risk_ok, _risk_reason = self.evaluate_entry_risk(
+                        "Strategy 3: Confluence Gamma Scalper", c3.get("security_id"), c3.get("lot_size", 0),
+                        round(float(c3_ask) + 0.50, 2),
+                    )
+                    logger.warning(f"Strategy 3: Confluence Gamma Scalper: entry blocked by risk engine -> {_risk_reason}")
+                    self.record_signal(
+                        strategy_name="Strategy 3: Confluence Gamma Scalper",
+                        underlying="NIFTY",
+                        signal_direction="BUY",
+                        contract=c3.get("custom_symbol"),
+                        security_id=c3.get("security_id"),
+                        risk_decision="REJECTED",
+                        execution_decision="NO_EXECUTION",
+                        final_status="NO_EXECUTION",
+                        reason=_risk_reason,
                         quote_ask=c3_ask,
                     )
                 else:
@@ -1345,7 +1916,7 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="BUY",
                         contract=c3["custom_symbol"],
                         security_id=c3["security_id"],
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="EXECUTED",
                         final_status="EXECUTED",
                         fill_price=prem,
@@ -1451,7 +2022,11 @@ LIVE_TRADING_ENABLED: FALSE
 
         # ─── BOT 2: ZEN CURVATURE OVERNIGHT ───
         s2 = self.bot_states["Strategy 2: Zen Curvature Overnight"]
-        if now_time >= dtime(15, 20) and now_time <= dtime(15, 25) and s2["active_trade"] is None:
+        if (
+            now_time >= dtime(15, 20) and now_time <= dtime(15, 25)
+            and s2["active_trade"] is None
+            and self._strategy_allows_entry("Strategy 2: Zen Curvature Overnight")
+        ):
             short_k = round((n_last + 250) / 50.0) * 50.0
             long_k = short_k + 150
             short_c = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE", strike=short_k)
@@ -1481,10 +2056,27 @@ LIVE_TRADING_ENABLED: FALSE
                     signal_direction="SELL (SPREAD)",
                     contract=spread_contract,
                     security_id=spread_sec_id,
-                    risk_decision="APPROVED",
+                    risk_decision=self._last_risk_decision(),
                     execution_decision="NO_EXECUTION",
                     final_status="NO_EXECUTION",
                     reason="DATA_UNAVAILABLE: Stale/Missing Executable Quotes",
+                )
+            elif not self.evaluate_entry_risk(
+                "Strategy 2: Zen Curvature Overnight", spread_sec_id, short_c["lot_size"],
+                round(max(0.05, round(float(short_bid) - 0.50, 2)) - round(float(long_ask) + 0.50, 2), 2),
+            )[0]:
+                _risk_reason = self._last_risk_verdict[1]
+                logger.warning(f"Bot 2: entry blocked by risk engine -> {_risk_reason}")
+                self.record_signal(
+                    strategy_name="Strategy 2: Zen Curvature Overnight",
+                    underlying="NIFTY",
+                    signal_direction="SELL (SPREAD)",
+                    contract=spread_contract,
+                    security_id=spread_sec_id,
+                    risk_decision="REJECTED",
+                    execution_decision="NO_EXECUTION",
+                    final_status="NO_EXECUTION",
+                    reason=_risk_reason,
                 )
             else:
                 s_fill = max(0.05, round(float(short_bid) - 0.50, 2))
@@ -1542,7 +2134,7 @@ LIVE_TRADING_ENABLED: FALSE
                         signal_direction="SELL (SPREAD)",
                         contract=spread_contract,
                         security_id=spread_sec_id,
-                        risk_decision="APPROVED",
+                        risk_decision=self._last_risk_decision(),
                         execution_decision="EXECUTED",
                         final_status="EXECUTED",
                         fill_price=net_credit,
@@ -1665,12 +2257,13 @@ LIVE_TRADING_ENABLED: FALSE
         s6 = self.bot_states["Strategy 6: Micro Momentum Sniper"]
         if s6["active_trade"] is None and not s6["closed_trades"] and now_time >= dtime(9, 20) and now_time < dtime(15, 10):
             vix_val = mkt.get("vix")
-            n_open = mkt["nifty"].get("open", n_last)
-            if vix_val is not None and vix_val <= 18.5:
-                if n_last < n_open - 25.0:
+            if vix_val is not None:
+                if self._strategy_allows_entry("Strategy 6: Micro Momentum Sniper", required_direction=-1):
                     c6 = DhanContractResolver.resolve_option_contract(n_last, vix_val, "PE", strike_offset_steps=0)
                     c6_ask = c6.get("ask") if c6 else None
-                    if not c6 or c6_ask is None or c6_ask <= 0 or not is_quote_fresh(c6.get("quote_timestamp")) or (c6.get("bid") is not None and c6.get("bid") > c6_ask):
+                    if not c6 or not self.validate_entry_microstructure(
+                        c6.get("bid"), c6_ask, c6.get("quote_timestamp"), require_side="ASK"
+                    )[0]:
                         logger.warning("Bot 6: Executable Ask quote unavailable for sniper breakdown -> NO TRADE.")
                         self.record_signal(
                             strategy_name="Strategy 6: Micro Momentum Sniper",
@@ -1678,10 +2271,52 @@ LIVE_TRADING_ENABLED: FALSE
                             signal_direction="BUY (PE)",
                             contract=c6["custom_symbol"] if c6 else "NIFTY ATM PE",
                             security_id=c6["security_id"] if c6 else "NONE",
-                            risk_decision="APPROVED",
+                            risk_decision=self._last_risk_decision(),
                             execution_decision="NO_EXECUTION",
                             final_status="NO_EXECUTION",
                             reason="DATA_UNAVAILABLE: Stale/Missing Ask Quote",
+                            quote_ask=c6_ask,
+                        )
+                    elif not self.evaluate_entry_risk(
+                        "Strategy 6: Micro Momentum Sniper", c6.get("security_id"), c6.get("lot_size", 0),
+                        round(float(c6_ask) + 0.50, 2),
+                    )[0]:
+                        _risk_ok, _risk_reason = self.evaluate_entry_risk(
+                            "Strategy 6: Micro Momentum Sniper", c6.get("security_id"), c6.get("lot_size", 0),
+                            round(float(c6_ask) + 0.50, 2),
+                        )
+                        logger.warning(f"Strategy 6: Micro Momentum Sniper: entry blocked by risk engine -> {_risk_reason}")
+                        self.record_signal(
+                            strategy_name="Strategy 6: Micro Momentum Sniper",
+                            underlying="NIFTY",
+                            signal_direction="BUY (PE)",
+                            contract=c6.get("custom_symbol"),
+                            security_id=c6.get("security_id"),
+                            risk_decision="REJECTED",
+                            execution_decision="NO_EXECUTION",
+                            final_status="NO_EXECUTION",
+                            reason=_risk_reason,
+                            quote_ask=c6_ask,
+                        )
+                    elif not self.evaluate_entry_risk(
+                        "Strategy 6: Micro Momentum Sniper", c6.get("security_id"), c6.get("lot_size", 0),
+                        round(float(c6_ask) + 0.50, 2),
+                    )[0]:
+                        _risk_ok, _risk_reason = self.evaluate_entry_risk(
+                            "Strategy 6: Micro Momentum Sniper", c6.get("security_id"), c6.get("lot_size", 0),
+                            round(float(c6_ask) + 0.50, 2),
+                        )
+                        logger.warning(f"Strategy 6: Micro Momentum Sniper: entry blocked by risk engine -> {_risk_reason}")
+                        self.record_signal(
+                            strategy_name="Strategy 6: Micro Momentum Sniper",
+                            underlying="NIFTY",
+                            signal_direction="BUY (CE)",
+                            contract=c6.get("custom_symbol"),
+                            security_id=c6.get("security_id"),
+                            risk_decision="REJECTED",
+                            execution_decision="NO_EXECUTION",
+                            final_status="NO_EXECUTION",
+                            reason=_risk_reason,
                             quote_ask=c6_ask,
                         )
                     else:
@@ -1729,17 +2364,19 @@ LIVE_TRADING_ENABLED: FALSE
                             signal_direction="BUY (PE)",
                             contract=c6["custom_symbol"],
                             security_id=c6["security_id"],
-                            risk_decision="APPROVED",
+                            risk_decision=self._last_risk_decision(),
                             execution_decision="EXECUTED",
                             final_status="EXECUTED",
                             fill_price=prem,
                             quote_ask=c6_ask,
                             quote_ltp=c6.get("ltp"),
                         )
-                elif n_last > n_open + 25.0:
+                elif self._strategy_allows_entry("Strategy 6: Micro Momentum Sniper", required_direction=1):
                     c6 = DhanContractResolver.resolve_option_contract(n_last, vix_val, "CE", strike_offset_steps=0)
                     c6_ask = c6.get("ask") if c6 else None
-                    if not c6 or c6_ask is None or c6_ask <= 0 or not is_quote_fresh(c6.get("quote_timestamp")) or (c6.get("bid") is not None and c6.get("bid") > c6_ask):
+                    if not c6 or not self.validate_entry_microstructure(
+                        c6.get("bid"), c6_ask, c6.get("quote_timestamp"), require_side="ASK"
+                    )[0]:
                         logger.warning("Bot 6: Executable Ask quote unavailable for sniper breakout -> NO TRADE.")
                         self.record_signal(
                             strategy_name="Strategy 6: Micro Momentum Sniper",
@@ -1747,7 +2384,7 @@ LIVE_TRADING_ENABLED: FALSE
                             signal_direction="BUY (CE)",
                             contract=c6["custom_symbol"] if c6 else "NIFTY ATM CE",
                             security_id=c6["security_id"] if c6 else "NONE",
-                            risk_decision="APPROVED",
+                            risk_decision=self._last_risk_decision(),
                             execution_decision="NO_EXECUTION",
                             final_status="NO_EXECUTION",
                             reason="DATA_UNAVAILABLE: Stale/Missing Ask Quote",
@@ -1798,7 +2435,7 @@ LIVE_TRADING_ENABLED: FALSE
                             signal_direction="BUY (CE)",
                             contract=c6["custom_symbol"],
                             security_id=c6["security_id"],
-                            risk_decision="APPROVED",
+                            risk_decision=self._last_risk_decision(),
                             execution_decision="EXECUTED",
                             final_status="EXECUTED",
                             fill_price=prem,
@@ -1941,6 +2578,14 @@ def run_multi_bot_monitor(
         micro_capital=micro_capital,
         reset_for_today=reset_for_today,
     )
+    # Exclusive ownership of the state file (B6) — a second instance refuses to start.
+    session.acquire_session_lock()
+    # Square off anything left open past 15:35 by a previous process (B7).
+    session.handle_overdue_eod()
+    if session.requires_reconciliation:
+        session.log_event(
+            f"TRADING HALTED PENDING RECONCILIATION: {session.reconciliation_reason}"
+        )
     tot_cap = sum(b["allocated_capital"] for b in session.bot_states.values())
     micro_alloc = session.bot_states["Strategy 6: Micro Momentum Sniper"]["allocated_capital"]
     session.log_event("=== ALL 6 BOTS CONCURRENTLY DEPLOYED IN LIVE PAPER SESSION ===")
@@ -1948,17 +2593,21 @@ def run_multi_bot_monitor(
     session.log_event("Safety Gate: Config.LIVE_TRADING_ENABLED = False (Simulated Fills)")
 
     start_time = time.time()
-    while time.time() - start_time < duration_seconds:
-        mkt = session.fetch_live_market_state()
-        session.evaluate_all_bots(mkt)
-        session.print_multi_bot_status(mkt)
-        session.save_session()
+    try:
+        while time.time() - start_time < duration_seconds:
+            mkt = session.fetch_live_market_state()
+            session.evaluate_all_bots(mkt)
+            session.print_multi_bot_status(mkt)
+            session.save_session()
 
-        if datetime.now().time() >= dtime(15, 35):
-            session.log_event("Market Closed & Settlement Finalized (03:35 PM IST).")
-            break
+            if datetime.now().time() >= dtime(15, 35):
+                session.handle_overdue_eod()
+                session.log_event("Market Closed & Settlement Finalized (03:35 PM IST).")
+                break
 
-        time.sleep(30)
+            time.sleep(30)
+    finally:
+        session.release_session_lock()
 
 
 if __name__ == "__main__":
