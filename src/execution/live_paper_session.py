@@ -54,6 +54,7 @@ class MultiBotLiveSession:
         reset_for_today: bool = False,
         reports_dir: Optional[Union[str, Path]] = None,
         risk_engine: Optional[RiskEngine] = None,
+        auto_reconcile: bool = True,
     ):
         Config.assert_no_live_trading()
         self.risk_engine = risk_engine or RiskEngine()
@@ -68,6 +69,9 @@ class MultiBotLiveSession:
         self.carried_over_positions: Dict[str, Any] = {}
         self.previous_session_date: Optional[str] = None
         self._lock_handle: Optional[int] = None
+        # Reconcile the local book against the broker on every cycle (B9).
+        self.auto_reconcile: bool = auto_reconcile
+        self.last_reconciliation = None
         self.session_file = Path(state_file or session_file)
         self.session_file.parent.mkdir(parents=True, exist_ok=True)
         self.reports_dir = Path(reports_dir) if reports_dir is not None else (self.session_file.parent if state_file else REPORTS_DIR)
@@ -827,6 +831,30 @@ LIVE_TRADING_ENABLED: FALSE
             logger.critical(f"TRADING HALTED BY RECONCILIATION: {result.reason}")
         return result
 
+    def reconcile_cycle(self):
+        """
+        Per-cycle broker reconciliation. Read-only; never sends an order.
+
+        A mismatch, or an outage while credentials are configured, halts NEW
+        ENTRIES via `requires_reconciliation`. Valuation, exits and the EOD
+        square-off deliberately keep running: refusing to close an existing
+        position because the broker book is unreadable would be less safe, not
+        more.
+        """
+        if not self.auto_reconcile:
+            return None
+
+        from src.execution.position_reconciler import broker_source_configured
+
+        if not broker_source_configured():
+            # No credentials at all: there is no broker book to compare against.
+            # run_multi_bot_monitor refuses to start a session in this state, so
+            # reaching here means a non-live context (tests, offline analysis).
+            self.last_reconciliation = None
+            return None
+
+        return self.reconcile_with_broker()
+
     # ─────────────────── OVERDUE EOD / RECOVERY HANDLING (B7) ───────────────────
 
     def handle_overdue_eod(self, current_time: Optional[dtime] = None) -> int:
@@ -1086,7 +1114,11 @@ LIVE_TRADING_ENABLED: FALSE
             self._emergency_flatten_all_positions(reason=f"KILL_SWITCH: {reason}")
             return
 
-        # 2. Authoritative 15:35 EOD Square-Off (Must execute regardless of quote availability)
+        # 2. Broker position reconciliation every cycle (read-only, B9).
+        #    Halts NEW entries on mismatch; never blocks exits or the EOD square-off.
+        self.reconcile_cycle()
+
+        # 3. Authoritative 15:35 EOD Square-Off (Must execute regardless of quote availability)
         if now_time >= dtime(15, 35):
             logger.info("15:35 EOD boundary reached. Executing mandatory square-off for all open positions.")
             self._eod_force_square_off_all_positions()
@@ -2580,6 +2612,23 @@ def run_multi_bot_monitor(
     )
     # Exclusive ownership of the state file (B6) — a second instance refuses to start.
     session.acquire_session_lock()
+
+    # A live paper session must be reconcilable against the broker book (B9).
+    # Starting without a readable broker state means exposure can never be
+    # verified, so refuse rather than run blind.
+    from src.execution.position_reconciler import broker_source_configured
+    if not broker_source_configured():
+        session.release_session_lock()
+        raise RuntimeError(
+            "BROKER SOURCE NOT CONFIGURED: DHAN_CLIENT_ID / DHAN_ACCESS_TOKEN are required "
+            "so that local positions can be reconciled against the broker book every cycle. "
+            "Refusing to start an unreconcilable live paper session."
+        )
+    startup_recon = session.reconcile_with_broker()
+    if startup_recon is not None and startup_recon.halt_required:
+        session.log_event(
+            f"STARTUP RECONCILIATION FAILED: {startup_recon.reason}. New entries are HALTED."
+        )
     # Square off anything left open past 15:35 by a previous process (B7).
     session.handle_overdue_eod()
     if session.requires_reconciliation:

@@ -147,3 +147,8 @@ def fetch_broker_positions_readonly() -> tuple:
     except Exception as e:
         logger.warning(f"Broker position fetch failed: {e}")
         return None, False
+
+
+def broker_source_configured() -> bool:
+    """True when Dhan credentials exist, i.e. a broker book can be queried at all."""
+    return bool(Config.DHAN_CLIENT_ID and Config.DHAN_ACCESS_TOKEN)
