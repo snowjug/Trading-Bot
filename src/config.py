@@ -38,7 +38,8 @@ class Config:
 
     # Paper trading
     PAPER_TRADING_ENABLED: bool = os.getenv("PAPER_TRADING_ENABLED", "true").lower() == "true"
-    PAPER_INITIAL_CAPITAL: float = float(os.getenv("PAPER_INITIAL_CAPITAL", "1000000"))
+    PAPER_INITIAL_CAPITAL: float = float(os.getenv("PAPER_INITIAL_CAPITAL", "100000"))
+    MICRO_STRATEGY_CAPITAL: float = float(os.getenv("MICRO_STRATEGY_CAPITAL", "15000"))
     MAX_QUOTE_AGE_SECONDS: int = int(os.getenv("MAX_QUOTE_AGE_SECONDS", "300"))
 
     # Experiments

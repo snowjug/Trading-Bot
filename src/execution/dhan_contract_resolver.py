@@ -59,6 +59,8 @@ class DhanContractResolver:
         """
         spot_nifty = None
         spot_bank = None
+        open_nifty = None
+        open_bank = None
         vix = None
 
         # 1. Try Dhan Live Market Quote if session provided
@@ -96,10 +98,18 @@ class DhanContractResolver:
                         c_series = tickers["Close"]["^NSEI"].dropna()
                         if not c_series.empty and float(c_series.iloc[-1]) > 0:
                             spot_nifty = float(c_series.iloc[-1])
+                        if "^NSEI" in tickers["Open"]:
+                            o_series = tickers["Open"]["^NSEI"].dropna()
+                            if not o_series.empty and float(o_series.iloc[0]) > 0:
+                                open_nifty = float(o_series.iloc[0])
                     if "^NSEBANK" in tickers["Close"]:
                         b_series = tickers["Close"]["^NSEBANK"].dropna()
                         if not b_series.empty and float(b_series.iloc[-1]) > 0:
                             spot_bank = float(b_series.iloc[-1])
+                        if "^NSEBANK" in tickers["Open"]:
+                            ob_series = tickers["Open"]["^NSEBANK"].dropna()
+                            if not ob_series.empty and float(ob_series.iloc[0]) > 0:
+                                open_bank = float(ob_series.iloc[0])
                     if "^INDIAVIX" in tickers["Close"]:
                         v_series = tickers["Close"]["^INDIAVIX"].dropna()
                         if not v_series.empty and float(v_series.iloc[-1]) > 0:
@@ -114,7 +124,9 @@ class DhanContractResolver:
                 bdf = pd.read_csv("data/real_2026/INDEX_BANKNIFTY_daily.csv") if os.path.exists("data/real_2026/INDEX_BANKNIFTY_daily.csv") else None
                 vdf = pd.read_csv("data/real_2026/INDEX_INDIAVIX_daily.csv")
                 spot_nifty = float(ndf["close"].iloc[-1])
+                open_nifty = float(ndf["open"].iloc[-1]) if "open" in ndf.columns else spot_nifty
                 spot_bank = float(bdf["close"].iloc[-1]) if bdf is not None and not bdf.empty else (spot_nifty * 2.35)
+                open_bank = float(bdf["open"].iloc[-1]) if bdf is not None and not bdf.empty and "open" in bdf.columns else spot_bank
                 v_col = "vix" if "vix" in vdf.columns else "close"
                 vix = float(vdf[v_col].iloc[-1])
             except Exception as e:
@@ -128,6 +140,8 @@ class DhanContractResolver:
         return {
             "nifty_spot": round(float(spot_nifty), 2),
             "bank_spot": round(float(spot_bank if spot_bank else spot_nifty * 2.35), 2),
+            "nifty_open": round(float(open_nifty if open_nifty else spot_nifty), 2),
+            "bank_open": round(float(open_bank if open_bank else (spot_bank if spot_bank else spot_nifty * 2.35)), 2),
             "vix": round(float(vix), 2),
             "timestamp": datetime.now(),
         }
