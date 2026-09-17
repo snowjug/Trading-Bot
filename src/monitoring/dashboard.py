@@ -456,6 +456,8 @@ async def api_status():
                     act["unrealized_pnl"] = None
                     act["gross_pnl"] = None
                     act["net_pnl"] = None
+                    act["current_bid"] = None
+                    act["current_ask"] = None
                 closed = b.get("closed_trades", [])
                 all_closed.extend(closed)
                 closed_pnl = sum(c.get("net_pnl", 0.0) for c in closed)

@@ -660,6 +660,10 @@ LIVE_TRADING_ENABLED: FALSE
                         candidate_ids.append(str(at["call_security_id"]))
                     if at.get("put_security_id"):
                         candidate_ids.append(str(at["put_security_id"]))
+                    if at.get("short_security_id"):
+                        candidate_ids.append(str(at["short_security_id"]))
+                    if at.get("long_security_id"):
+                        candidate_ids.append(str(at["long_security_id"]))
             if n_last and n_last > 0:
                 atm_k = round(n_last / 50.0) * 50.0
                 call_k = round((n_last + 300) / 50.0) * 50.0
@@ -734,7 +738,7 @@ LIVE_TRADING_ENABLED: FALSE
                     "slippage": 1.0,
                     "net_credit_collected": net_credit,
                     "current_val": net_credit,
-                    "current_bid": None,
+                    "current_bid": net_credit,
                     "current_ask": net_credit,
                     "lots": 1,
                     "qty": c_res["lot_size"],
@@ -767,18 +771,24 @@ LIVE_TRADING_ENABLED: FALSE
             p_q = DhanContractResolver.fetch_option_quote(p_sec) if p_sec else None
             c_ask = c_q.get("ask") if c_q else None
             p_ask = p_q.get("ask") if p_q else None
+            c_bid = c_q.get("bid") if c_q else None
+            p_bid = p_q.get("bid") if p_q else None
             if (
                 not c_q or not p_q
                 or c_ask is None or c_ask <= 0
                 or p_ask is None or p_ask <= 0
                 or not is_quote_fresh(c_q.get("timestamp"))
                 or not is_quote_fresh(p_q.get("timestamp"))
+                or (c_bid is not None and c_ask is not None and c_bid > c_ask)
+                or (p_bid is not None and p_ask is not None and p_bid > p_ask)
             ):
                 logger.warning("Bot 1: Executable Ask quotes unavailable for active short strangle. Pausing valuation.")
                 t1["valuation_status"] = "DATA_UNAVAILABLE"
                 t1["unrealized_pnl"] = None
                 t1["gross_pnl"] = None
                 t1["net_pnl"] = None
+                t1["current_bid"] = None
+                t1["current_ask"] = None
                 s1["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s1.get("closed_trades", [])), 2)
             else:
                 c_exit = float(c_ask)
@@ -786,8 +796,9 @@ LIVE_TRADING_ENABLED: FALSE
                 curr_val = round(c_exit + p_exit, 2)
                 t1["current_val"] = curr_val
                 t1["current_ask"] = curr_val
-                t1["current_bid"] = None
+                t1["current_bid"] = round(float(c_bid) + float(p_bid), 2) if (c_bid and p_bid and c_bid > 0 and p_bid > 0) else None
                 t1["quote_timestamp"] = c_q.get("market_timestamp") or c_q.get("timestamp")
+                t1["received_at"] = c_q.get("received_at")
                 t1["valuation_status"] = "LIVE_QUOTE"
                 t1["info_call_ltp"] = c_q.get("ltp")
                 t1["info_put_ltp"] = p_q.get("ltp")
@@ -909,6 +920,8 @@ LIVE_TRADING_ENABLED: FALSE
                         "target_premium": round(prem * 1.30, 2),
                         "stop_premium": round(prem * 0.85, 2),
                         "current_premium": prem,
+                        "current_bid": c5.get("bid"),
+                        "current_ask": c5_ask,
                         "qty": c5["lot_size"],
                         "gross_pnl": 0.0,
                         "statutory_friction": 45.0,
@@ -972,6 +985,8 @@ LIVE_TRADING_ENABLED: FALSE
                         "target_premium": round(prem * 1.30, 2),
                         "stop_premium": round(prem * 0.85, 2),
                         "current_premium": prem,
+                        "current_bid": p5.get("bid"),
+                        "current_ask": p5_ask,
                         "qty": p5["lot_size"],
                         "gross_pnl": 0.0,
                         "statutory_friction": 45.0,
@@ -999,19 +1014,23 @@ LIVE_TRADING_ENABLED: FALSE
             t5 = s5["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t5["security_id"]) if t5.get("security_id") else None
             bid = q.get("bid") if q else None
-            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
+            ask = q.get("ask") if q else None
+            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")) or (ask is not None and bid > ask):
                 logger.warning("Bot 5: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t5["valuation_status"] = "DATA_UNAVAILABLE"
                 t5["unrealized_pnl"] = None
                 t5["gross_pnl"] = None
                 t5["net_pnl"] = None
+                t5["current_bid"] = None
+                t5["current_ask"] = None
                 s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
                 t5["current_premium"] = curr_prem
                 t5["current_bid"] = bid
-                t5["current_ask"] = q.get("ask")
+                t5["current_ask"] = ask
                 t5["quote_timestamp"] = q.get("market_timestamp") or q.get("timestamp")
+                t5["received_at"] = q.get("received_at")
                 t5["valuation_status"] = "LIVE_QUOTE"
                 t5["info_ltp"] = q.get("ltp")
                 gross5 = round((curr_prem - t5["entry_premium"]) * t5["qty"], 2)
@@ -1166,19 +1185,23 @@ LIVE_TRADING_ENABLED: FALSE
             t4 = s4["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t4["security_id"]) if t4.get("security_id") else None
             bid = q.get("bid") if q else None
-            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
+            ask = q.get("ask") if q else None
+            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")) or (ask is not None and bid > ask):
                 logger.warning("Bot 4: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t4["valuation_status"] = "DATA_UNAVAILABLE"
                 t4["unrealized_pnl"] = None
                 t4["gross_pnl"] = None
                 t4["net_pnl"] = None
+                t4["current_bid"] = None
+                t4["current_ask"] = None
                 s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
                 t4["current_premium"] = curr_prem
                 t4["current_bid"] = bid
-                t4["current_ask"] = q.get("ask")
+                t4["current_ask"] = ask
                 t4["quote_timestamp"] = q.get("market_timestamp") or q.get("timestamp")
+                t4["received_at"] = q.get("received_at")
                 t4["valuation_status"] = "LIVE_QUOTE"
                 t4["info_ltp"] = q.get("ltp")
                 gross4 = round((curr_prem - t4["entry_premium"]) * t4["qty"], 2)
@@ -1333,19 +1356,23 @@ LIVE_TRADING_ENABLED: FALSE
             t3 = s3["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t3["security_id"]) if t3.get("security_id") else None
             bid = q.get("bid") if q else None
-            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
+            ask = q.get("ask") if q else None
+            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")) or (ask is not None and bid > ask):
                 logger.warning("Bot 3: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t3["valuation_status"] = "DATA_UNAVAILABLE"
                 t3["unrealized_pnl"] = None
                 t3["gross_pnl"] = None
                 t3["net_pnl"] = None
+                t3["current_bid"] = None
+                t3["current_ask"] = None
                 s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
                 t3["current_premium"] = curr_prem
                 t3["current_bid"] = bid
-                t3["current_ask"] = q.get("ask")
+                t3["current_ask"] = ask
                 t3["quote_timestamp"] = q.get("market_timestamp") or q.get("timestamp")
+                t3["received_at"] = q.get("received_at")
                 t3["valuation_status"] = "LIVE_QUOTE"
                 t3["info_ltp"] = q.get("ltp")
                 gross3 = round((curr_prem - t3["entry_premium"]) * t3["qty"], 2)
@@ -1493,6 +1520,8 @@ LIVE_TRADING_ENABLED: FALSE
                         "slippage": 1.0,
                         "net_credit": net_credit,
                         "current_debit": net_credit,
+                        "current_bid": net_credit,
+                        "current_ask": net_credit,
                         "qty": short_c["lot_size"],
                         "gross_pnl": 0.0,
                         "statutory_friction": init_costs2,
@@ -1522,18 +1551,24 @@ LIVE_TRADING_ENABLED: FALSE
             l_q = DhanContractResolver.fetch_option_quote(l_sec) if l_sec else None
             s_ask = s_q.get("ask") if s_q else None
             l_bid = l_q.get("bid") if l_q else None
+            s_bid = s_q.get("bid") if s_q else None
+            l_ask = l_q.get("ask") if l_q else None
             if (
                 not s_q or not l_q
                 or s_ask is None or s_ask <= 0
                 or l_bid is None or l_bid <= 0
                 or not is_quote_fresh(s_q.get("timestamp"))
                 or not is_quote_fresh(l_q.get("timestamp"))
+                or (s_bid is not None and s_ask is not None and s_bid > s_ask)
+                or (l_bid is not None and l_ask is not None and l_bid > l_ask)
             ):
                 logger.warning("Bot 2: Executable quotes (Ask on short, Bid on long) unavailable for spread valuation. Pausing valuation.")
                 t2["valuation_status"] = "DATA_UNAVAILABLE"
                 t2["unrealized_pnl"] = None
                 t2["gross_pnl"] = None
                 t2["net_pnl"] = None
+                t2["current_bid"] = None
+                t2["current_ask"] = None
                 s2["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s2.get("closed_trades", [])), 2)
             else:
                 curr_short = float(s_ask)
@@ -1542,6 +1577,10 @@ LIVE_TRADING_ENABLED: FALSE
                 t2["current_debit"] = curr_debit
                 t2["current_short_ask"] = s_ask
                 t2["current_long_bid"] = l_bid
+                t2["current_ask"] = curr_debit
+                t2["current_bid"] = round(float(s_bid) - float(l_ask), 2) if (s_bid and l_ask and s_bid > 0 and l_ask > 0) else None
+                t2["quote_timestamp"] = s_q.get("market_timestamp") or s_q.get("timestamp")
+                t2["received_at"] = s_q.get("received_at")
                 t2["valuation_status"] = "LIVE_QUOTE"
                 t2["info_short_ltp"] = s_q.get("ltp")
                 t2["info_long_ltp"] = l_q.get("ltp")
@@ -1766,19 +1805,23 @@ LIVE_TRADING_ENABLED: FALSE
             t6 = s6["active_trade"]
             q = DhanContractResolver.fetch_option_quote(t6["security_id"]) if t6.get("security_id") else None
             bid = q.get("bid") if q else None
-            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")):
+            ask = q.get("ask") if q else None
+            if not q or bid is None or bid <= 0 or not is_quote_fresh(q.get("timestamp")) or (ask is not None and bid > ask):
                 logger.warning("Bot 6: Executable Bid quote unavailable for active long position. Pausing valuation.")
                 t6["valuation_status"] = "DATA_UNAVAILABLE"
                 t6["unrealized_pnl"] = None
                 t6["gross_pnl"] = None
                 t6["net_pnl"] = None
+                t6["current_bid"] = None
+                t6["current_ask"] = None
                 s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2)
             else:
                 curr_prem = float(bid)
                 t6["current_premium"] = curr_prem
                 t6["current_bid"] = bid
-                t6["current_ask"] = q.get("ask")
+                t6["current_ask"] = ask
                 t6["quote_timestamp"] = q.get("market_timestamp") or q.get("timestamp")
+                t6["received_at"] = q.get("received_at")
                 t6["valuation_status"] = "LIVE_QUOTE"
                 t6["info_ltp"] = q.get("ltp")
                 gross6 = round((curr_prem - t6["entry_premium"]) * t6["qty"], 2)

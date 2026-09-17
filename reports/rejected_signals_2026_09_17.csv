@@ -59,3 +59,5 @@ Time,Strategy,Signal,Contract,SecurityId,Reason,Status
 09:43:59,Strategy 4: Golden Trend Runner,BUY,NIFTY 22 SEP 23250 CALL,56983,DATA_UNAVAILABLE: Stale/Missing Ask Quote,NO_EXECUTION
 09:43:59,Strategy 3: Confluence Gamma Scalper,BUY,NIFTY 22 SEP 23250 CALL,56983,DATA_UNAVAILABLE: Stale/Missing Ask Quote,NO_EXECUTION
 09:43:59,Strategy 6: Micro Momentum Sniper,BUY (CE),NIFTY 22 SEP 23250 CALL,56983,DATA_UNAVAILABLE: Stale/Missing Ask Quote,NO_EXECUTION
+15:22:41,Strategy 2: Zen Curvature Overnight,SELL (SPREAD),NIFTY 22 SEP 23550 CALL / NIFTY 22 SEP 23700 CALL,57023 / 57063,DATA_UNAVAILABLE: Stale/Missing Executable Quotes,NO_EXECUTION
+15:24:23,Strategy 2: Zen Curvature Overnight,SELL (SPREAD),NIFTY 22 SEP 23550 CALL / NIFTY 22 SEP 23700 CALL,57023 / 57063,DATA_UNAVAILABLE: Stale/Missing Executable Quotes,NO_EXECUTION

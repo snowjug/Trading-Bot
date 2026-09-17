@@ -26,6 +26,18 @@ logger = setup_logging("execution.dhan_resolver")
 
 _quote_cache: Dict[str, Tuple[datetime, Dict[str, Any]]] = {}
 _shared_dhan_session: Optional[requests.Session] = None
+_last_dhan_request_time: float = 0.0
+
+
+def _pace_dhan_request(min_interval: float = 1.05) -> None:
+    """Enforces a minimum interval between outbound DhanHQ REST requests to avoid HTTP 429."""
+    global _last_dhan_request_time
+    import time
+    now = time.time()
+    elapsed = now - _last_dhan_request_time
+    if elapsed < min_interval:
+        time.sleep(min_interval - elapsed)
+    _last_dhan_request_time = time.time()
 
 
 def get_dhan_session() -> Optional[requests.Session]:
@@ -93,6 +105,7 @@ class DhanContractResolver:
         session = dhan_session or get_dhan_session()
         if session:
             try:
+                _pace_dhan_request()
                 # Dhan v2 LTP query endpoint for official indices
                 resp = session.post(
                     f"{base_url}/marketfeed/ltp",
@@ -203,7 +216,15 @@ class DhanContractResolver:
         try:
             int_ids = [int(sid) for sid in clean_ids]
             payload = {exchange_segment: int_ids}
+            _pace_dhan_request()
             resp = session.post(f"{base_url}/marketfeed/quote", json=payload, timeout=4)
+            if resp.status_code == 429:
+                logger.warning("DhanHQ rate limit (HTTP 429) during batch prefetch. Backing off 1.1s and retrying once...")
+                import time
+                time.sleep(1.1)
+                _pace_dhan_request()
+                resp = session.post(f"{base_url}/marketfeed/quote", json=payload, timeout=4)
+
             if resp.status_code == 200:
                 data = resp.json().get("data", {})
                 seg_data = data.get(exchange_segment, {})
@@ -243,11 +264,12 @@ class DhanContractResolver:
         dhan_session: Optional[requests.Session] = None,
         base_url: str = "https://api.dhan.co/v2",
         exchange_segment: str = "NSE_FNO",
-        cache_ttl_seconds: float = 5.0,
+        cache_ttl_seconds: float = 10.0,
     ) -> Optional[Dict[str, Any]]:
         """
         Fetches the real executable option quote (LTP, bid, ask) from DhanHQ market data.
         Returns None if quote is unavailable or market is closed (Fail-Closed).
+        Never falls back to LTP without valid executable Bid/Ask depth.
         """
         if not security_id or str(security_id).strip() == "":
             return None
@@ -264,38 +286,13 @@ class DhanContractResolver:
         session = dhan_session or get_dhan_session()
 
         if session:
-            # 1. Try Market Quote endpoint via batch prefetch
+            # Batch prefetch endpoint (with rate pacing)
             res = cls.prefetch_quotes([sec_id_str], dhan_session=session, base_url=base_url, exchange_segment=exchange_segment)
             if sec_id_str in res:
                 return res[sec_id_str]
 
-            # 2. Try LTP fallback endpoint
-            try:
-                sec_id_int = int(sec_id_str)
-                ltp_payload = {exchange_segment: [sec_id_int]}
-                resp = session.post(f"{base_url}/marketfeed/ltp", json=ltp_payload, timeout=3)
-                if resp.status_code == 200:
-                    data = resp.json().get("data", {})
-                    seg_data = data.get(exchange_segment, {})
-                    val = seg_data.get(sec_id_str) or seg_data.get(sec_id_int) or data.get(sec_id_str)
-                    if isinstance(val, dict) and val.get("last_price", 0) > 0:
-                        ltp = float(val["last_price"])
-                        quote_res = {
-                            "security_id": sec_id_str,
-                            "ltp": ltp,
-                            "bid": None,
-                            "ask": None,
-                            "timestamp": now_dt.isoformat(),
-                            "is_tradable": True,
-                            "source": "DHAN_LIVE_LTP",
-                        }
-                        _quote_cache[sec_id_str] = (now_dt, quote_res)
-                        return quote_res
-            except Exception as e:
-                logger.debug(f"Dhan /marketfeed/ltp query failed for {sec_id_str}: {e}")
-
-        # If live market quotes could not be obtained, return None (fail closed)
-        logger.debug(f"Real option quote unavailable for securityId {sec_id_str}.")
+        # Fail-closed: No LTP fallback without executable depth
+        logger.debug(f"Real executable option quote unavailable for securityId {sec_id_str}.")
         return None
 
     @classmethod

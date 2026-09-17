@@ -4,8 +4,8 @@ import pytest
 from src.risk.risk_engine import RiskEngine
 
 
-def test_position_sizing():
-    risk = RiskEngine()
+def test_position_sizing(tmp_path):
+    risk = RiskEngine(kill_switch_file=tmp_path / "ks.json")
     capital = 1_000_000.0
     price = 2_000.0
     atr = 40.0
@@ -17,8 +17,8 @@ def test_position_sizing():
     assert pos_value <= capital * 0.25
 
 
-def test_kill_switch_activation():
-    risk = RiskEngine()
+def test_kill_switch_activation(tmp_path):
+    risk = RiskEngine(kill_switch_file=tmp_path / "ks.json")
     capital = 1_000_000.0
 
     # Normal state allows trading
@@ -33,8 +33,8 @@ def test_kill_switch_activation():
     assert risk.can_trade(capital) is True
 
 
-def test_drawdown_limit_breach():
-    risk = RiskEngine()
+def test_drawdown_limit_breach(tmp_path):
+    risk = RiskEngine(kill_switch_file=tmp_path / "ks.json")
     initial_cap = 1_000_000.0
     risk.state.peak_equity = initial_cap
 
