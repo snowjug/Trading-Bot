@@ -58,34 +58,58 @@ def temp_env(tmp_path):
 
 # ─── 1. KILL SWITCH + OPEN POSITION ───
 def test_m1_kill_switch_flattens_open_position(temp_env):
-    """Scenario 1: Tripping kill switch immediately flattens all open positions."""
+    """
+    Scenario 1: tripping the kill switch acts on every open position.
+
+    With a fresh executable quote it flattens. Without one it must NOT invent a
+    fill (C1) — the position stays open, is flagged unresolved with null P&L, and
+    trading halts. Either way the kill switch never leaves a position unhandled.
+    """
+    from datetime import datetime as _dt
+
+    # --- Case A: fresh executable quote -> genuine flatten ---
     risk = RiskEngine(kill_switch_file=temp_env["kill_switch_file"])
     session = MultiBotLiveSession(
         state_file=str(temp_env["session_file"]),
         reports_dir=temp_env["reports_dir"],
         risk_engine=risk,
     )
-    # Seed an open active trade for Bot 4
     session.bot_states["Strategy 4: Golden Trend Runner"]["active_trade"] = {
-        "id": "TEST-GTR-001",
-        "contract": "NIFTY 25000 CE",
-        "entry_fill": 100.0,
-        "current_val": 95.0,
-        "qty": 25,
-        "side": "BUY",
-        "status": "OPEN",
+        "id": "TEST-GTR-001", "contract": "NIFTY 25000 CE", "entry_fill": 100.0,
+        "current_val": 95.0, "current_bid": 95.0, "current_ask": 95.5,
+        "quote_timestamp": _dt.now().isoformat(),
+        "qty": 25, "side": "BUY", "status": "OPEN",
     }
-    assert session.bot_states["Strategy 4: Golden Trend Runner"]["active_trade"] is not None
-
-    # Trip kill switch
     session.trip_kill_switch("Adversarial Test Kill Switch")
 
-    # Assert position was flattened immediately
     b4 = session.bot_states["Strategy 4: Golden Trend Runner"]
     assert b4["active_trade"] is None
     assert b4["status"] == "EMERGENCY_FLATTENED"
     assert len(b4["closed_trades"]) == 1
     assert "KILL_SWITCH" in b4["closed_trades"][0]["exit_reason"]
+    assert b4["closed_trades"][0]["exit_fill"] == pytest.approx(94.5), "long exits on BID - slippage"
+
+    # --- Case B: no executable quote -> unresolved, never a fabricated fill ---
+    risk2 = RiskEngine(kill_switch_file=temp_env["kill_switch_file"])
+    session2 = MultiBotLiveSession(
+        state_file=str(temp_env["session_file"]) + ".c1",
+        reports_dir=temp_env["reports_dir"],
+        risk_engine=risk2,
+    )
+    session2.bot_states["Strategy 4: Golden Trend Runner"]["active_trade"] = {
+        "id": "TEST-GTR-002", "contract": "NIFTY 25000 CE", "entry_fill": 100.0,
+        "current_val": 95.0, "current_bid": None, "current_ask": None,
+        "quote_timestamp": None,
+        "qty": 25, "side": "BUY", "status": "OPEN",
+    }
+    session2.trip_kill_switch("Adversarial Test Kill Switch")
+
+    b4b = session2.bot_states["Strategy 4: Golden Trend Runner"]
+    assert b4b["closed_trades"] == [], "no fabricated fill may enter the realised ledger"
+    assert b4b["active_trade"] is not None
+    assert b4b["active_trade"]["status"] == "UNRESOLVED_KILL_SWITCH"
+    assert b4b["active_trade"]["net_pnl"] is None
+    assert session2.requires_reconciliation is True
 
 
 # ─── 2. KILL SWITCH + NEW ENTRY ───

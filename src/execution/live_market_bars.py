@@ -16,7 +16,7 @@ cross-multiples, no carried-forward values.
 import os
 import sys
 import time
-from datetime import datetime, date
+from datetime import datetime, date, time as dtime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -175,6 +175,38 @@ def get_today_session_bar(
         _session_bar_cache[cache_key] = bar
         _session_bar_fetched_at[cache_key] = time.time()
     return bar
+
+
+SESSION_CLOSE = dtime(15, 30)
+
+
+def is_session_bar_settled(bar: Optional[Dict[str, Any]], now: Optional[datetime] = None) -> bool:
+    """
+    True only when today's daily bar is FINAL (the session has closed).
+
+    A daily bar settles at 15:30 IST. Before that its close, volume, high and low
+    are all still moving, so any indicator derived from them (EMA, RSI, VWAP,
+    volume ratios) is provisional. Strategies validated on settled daily bars
+    must not be evaluated against such a bar.
+
+    Determined from the bar's own EXCHANGE timestamp, never from the local clock
+    alone, so a stale or undateable bar is never reported as settled.
+    """
+    if not bar:
+        return False
+    ts = bar.get("market_timestamp")
+    if not ts:
+        return False
+    try:
+        bar_dt = datetime.fromisoformat(str(ts))
+    except Exception:
+        return False
+
+    ref = now or datetime.now()
+    # The bar is settled once the session has closed on the bar's own trading day.
+    if bar_dt.date() < ref.date():
+        return True
+    return bar_dt.time() >= SESSION_CLOSE and ref.time() >= SESSION_CLOSE
 
 
 def load_daily_history(symbol: str, before_day: Optional[date] = None) -> Optional[pd.DataFrame]:

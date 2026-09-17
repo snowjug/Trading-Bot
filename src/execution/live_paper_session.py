@@ -646,41 +646,104 @@ LIVE_TRADING_ENABLED: FALSE
         self.log_event("Kill switch manually reset. Bot monitoring resumed.")
 
     def _emergency_flatten_all_positions(self, reason: str = "EMERGENCY_FLATTEN"):
-        """Emergency flatten: Immediately force closes all open positions across all bots."""
+        """
+        Kill-switch flatten. Closes positions ONLY at an authentic executable price.
+
+        C1: this path previously used `current_val or current_premium or entry_fill
+        or 0.0` with no freshness check, so a kill switch booked a fabricated
+        (usually ~zero) realised P&L straight into the ledger. Now a long exits on
+        a fresh BID, a short exits on a fresh ASK, and anything stale, missing or
+        inverted leaves the position OPEN and explicitly UNRESOLVED.
+
+        This is SOFTWARE-side only. It does not and cannot flatten a position at
+        the broker; live trading is disabled and no order is sent.
+        """
         flattened_count = 0
+        unresolved_count = 0
+
         for name, b_state in self.bot_states.items():
             at = b_state.get("active_trade")
-            if at and at.get("status") != "CLOSED":
-                now_str = datetime.now().strftime("%H:%M:%S")
-                exit_fill = at.get("current_val") or at.get("current_premium") or at.get("entry_fill") or 0.0
-                qty = at.get("qty", 25)
-                entry_fill = at.get("entry_fill", exit_fill)
-                side = at.get("side", "BUY")
-                costs = IndianCostModel.calculate_roundtrip_costs(entry_fill, exit_fill, qty)
-                
-                if side == "SELL":
-                    real_gross = round((entry_fill - exit_fill) * qty, 2)
-                else:
-                    real_gross = round((exit_fill - entry_fill) * qty, 2)
-                real_net = round(real_gross - costs.total_costs, 2)
+            if not at or at.get("status") == "CLOSED":
+                continue
 
-                at["exit_time"] = now_str
-                at["exit_fill"] = exit_fill
-                at["exit_reason"] = reason
-                at["status"] = "CLOSED"
-                at["trade_state"] = "CLOSED"
-                at["statutory_friction"] = costs.total_costs
-                at["gross_pnl"] = real_gross
-                at["net_pnl"] = real_net
-                at["unrealized_pnl"] = 0.0
-                b_state["closed_trades"].append(at)
-                b_state["active_trade"] = None
-                b_state["status"] = "EMERGENCY_FLATTENED"
-                b_state["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in b_state.get("closed_trades", [])), 2)
-                self.log_event(f"EMERGENCY FLATTEN: {name} | {at.get('contract')} force closed | Net Rs {real_net:+,.2f} | Reason: {reason}")
-                flattened_count += 1
-        if flattened_count > 0:
+            now_str = datetime.now().strftime("%H:%M:%S")
+            qty = at.get("qty", 25)
+            entry_fill = at.get("entry_fill", 0.0)
+            side = at.get("side", "BUY")
+
+            bid = at.get("current_bid")
+            ask = at.get("current_ask")
+            fresh = is_quote_fresh(at.get("quote_timestamp"))
+            inverted = (
+                bid is not None and ask is not None
+                and bid > 0 and ask > 0 and bid > ask
+            )
+
+            exit_fill = None
+            if fresh and not inverted:
+                if side == "SELL":
+                    # Buying back a short requires the executable ASK.
+                    if ask is not None and ask > 0:
+                        exit_fill = round(float(ask) + 1.0, 2)
+                else:
+                    # Selling a long requires the executable BID.
+                    if bid is not None and bid > 0:
+                        exit_fill = max(0.05, round(float(bid) - 0.50, 2))
+
+            if exit_fill is None or exit_fill <= 0:
+                at["valuation_status"] = "DATA_UNAVAILABLE"
+                at["status"] = "UNRESOLVED_KILL_SWITCH"
+                at["trade_state"] = "UNRESOLVED_KILL_SWITCH"
+                at["exit_reason"] = "KILL_SWITCH_UNRESOLVED_NO_EXECUTABLE_QUOTE"
+                at["unrealized_pnl"] = None
+                at["gross_pnl"] = None
+                at["net_pnl"] = None
+                b_state["status"] = "KILL_SWITCH_UNRESOLVED"
+                self.requires_reconciliation = True
+                self.reconciliation_reason = (
+                    f"KILL_SWITCH_UNRESOLVED: {name} could not be flattened — no fresh "
+                    f"executable quote for {at.get('contract')} (fresh={fresh}, "
+                    f"inverted={inverted}). Position remains OPEN and must be resolved "
+                    "manually. NOTE: software-side only; nothing was sent to the broker."
+                )
+                logger.critical(self.reconciliation_reason)
+                self.log_event(
+                    f"KILL SWITCH UNRESOLVED: {name} | {at.get('contract')} | NO EXECUTABLE QUOTE"
+                )
+                unresolved_count += 1
+                continue
+
+            costs = IndianCostModel.calculate_roundtrip_costs(entry_fill, exit_fill, qty)
+            if side == "SELL":
+                real_gross = round((entry_fill - exit_fill) * qty, 2)
+            else:
+                real_gross = round((exit_fill - entry_fill) * qty, 2)
+            real_net = round(real_gross - costs.total_costs, 2)
+
+            at["exit_time"] = now_str
+            at["exit_fill"] = exit_fill
+            at["exit_reason"] = reason
+            at["status"] = "CLOSED"
+            at["trade_state"] = "CLOSED"
+            at["statutory_friction"] = costs.total_costs
+            at["gross_pnl"] = real_gross
+            at["net_pnl"] = real_net
+            at["unrealized_pnl"] = 0.0
+            b_state["closed_trades"].append(at)
+            b_state["active_trade"] = None
+            b_state["status"] = "EMERGENCY_FLATTENED"
+            b_state["net_pnl"] = round(
+                sum(c.get("net_pnl", 0.0) for c in b_state.get("closed_trades", [])), 2
+            )
+            self.log_event(
+                f"EMERGENCY FLATTEN: {name} | {at.get('contract')} @ Rs {exit_fill:.2f} "
+                f"| Net Rs {real_net:+,.2f} | Reason: {reason}"
+            )
+            flattened_count += 1
+
+        if flattened_count > 0 or unresolved_count > 0:
             self.save_session()
+        return flattened_count
 
     def _eod_force_square_off_all_positions(self):
         """Authoritative EOD 15:35 square-off: Closes all open positions before market close."""
@@ -1888,9 +1951,33 @@ LIVE_TRADING_ENABLED: FALSE
         # ─── BOT 4: GOLDEN TREND RUNNER ───
         s4 = self.bot_states["Strategy 4: Golden Trend Runner"]
         if s4["active_trade"] is None and not s4["closed_trades"] and now_time < dtime(15, 10):
-            # NOTE: only the bullish (CE) leg is implemented in the live path.
-            # A bearish signal from the validated strategy is recorded as an
-            # unsupported-direction rejection rather than silently dropped.
+            # H1: only the bullish (CE) leg is implemented in the live path. A
+            # bearish signal from the validated strategy is NOT tradable here, but
+            # it must never vanish silently — it is recorded as an explicit
+            # UNSUPPORTED_DIRECTION rejection. No bearish execution logic is
+            # implemented and no position can be created on this branch.
+            _sig4 = self.get_live_signal("Strategy 4: Golden Trend Runner")
+            if _sig4 is not None and _sig4.direction < 0:
+                logger.warning(
+                    "Bot 4: validated strategy produced a BEARISH signal, which the live "
+                    "implementation does not support -> NO_EXECUTION (recorded)."
+                )
+                self.record_signal(
+                    strategy_name="Strategy 4: Golden Trend Runner",
+                    underlying="NIFTY",
+                    signal_direction="SELL (PE) [strategy bearish]",
+                    contract="UNSUPPORTED_DIRECTION",
+                    security_id="NONE",
+                    risk_decision="NOT_EVALUATED",
+                    execution_decision="NO_EXECUTION",
+                    final_status="NO_EXECUTION",
+                    reason=(
+                        "UNSUPPORTED_DIRECTION: GoldenTrendOptionBuyerStrategy emitted "
+                        f"direction={_sig4.direction} (confidence {_sig4.confidence:.2f}) but the "
+                        "live path implements only the bullish CE leg. No position created."
+                    ),
+                )
+
             if self._strategy_allows_entry("Strategy 4: Golden Trend Runner", required_direction=1):
                 c4 = DhanContractResolver.resolve_option_contract(n_last, mkt.get("vix"), "CE")
                 c4_ask = c4.get("ask") if c4 else None

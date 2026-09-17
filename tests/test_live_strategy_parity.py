@@ -208,10 +208,15 @@ def test_adapter_fails_closed_without_vix_for_vix_dependent_strategy():
 
 
 def test_signal_discloses_forming_bar_semantics():
-    """Live signals must disclose that they run on an unsettled forming bar."""
+    """
+    Live signals must disclose that they run on an unsettled forming bar.
+
+    Uses Bot 6, the only strategy whose research semantics legitimately support
+    forming-bar evaluation (H3); Bots 3/4/5 now refuse a partial bar outright.
+    """
     adapter = LiveStrategyAdapter()
     sig = adapter.evaluate(
-        "Strategy 3: Confluence Gamma Scalper",
+        "Strategy 6: Micro Momentum Sniper",
         session_bar=SESSION_BAR, today_vix=13.2, trading_day=date(2026, 9, 17),
     )
     assert sig.on_forming_bar is True

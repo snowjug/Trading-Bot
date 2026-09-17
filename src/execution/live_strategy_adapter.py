@@ -59,6 +59,8 @@ STRATEGY_BINDINGS: Dict[str, Dict[str, Any]] = {
     "Strategy 1: Apex VRP Engine": {
         "module": "src.strategies.options_theta",
         "class": "NiftyWeeklyIronCondorStrategy",
+        "requires_settled_bar": True,
+        "bar_timing_evidence": "generate_signals reads df['vix'] and df['rsi_14'] on the CURRENT row; rsi_14 depends on today's close.",
         "underlying": "NIFTY",
         "require_vix": True,
         "require_rsi": True,
@@ -74,6 +76,8 @@ STRATEGY_BINDINGS: Dict[str, Dict[str, Any]] = {
     "Strategy 2: Zen Curvature Overnight": {
         "module": "src.strategies.curvature_credit_spread",
         "class": "CurvatureCreditSpreadStrategy",
+        "requires_settled_bar": True,
+        "bar_timing_evidence": "generate_signals reads df['rsi_14'] / df['vix'] on the CURRENT row; rsi_14 depends on today's close.",
         "underlying": "NIFTY",
         "require_vix": True,
         "require_rsi": True,
@@ -89,6 +93,8 @@ STRATEGY_BINDINGS: Dict[str, Dict[str, Any]] = {
     "Strategy 3: Confluence Gamma Scalper": {
         "module": "src.strategies.confluence_scalper",
         "class": "ConfluenceGammaScalperStrategy",
+        "requires_settled_bar": True,
+        "bar_timing_evidence": "is_ce/is_pe use row['ema_9/20/50'], row['rsi_14'] and row['volume'] > row['vol_ma20'] — all require today's final close and full-day volume.",
         "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": False,
@@ -96,6 +102,8 @@ STRATEGY_BINDINGS: Dict[str, Dict[str, Any]] = {
     "Strategy 4: Golden Trend Runner": {
         "module": "src.strategies.golden_trend_buyer",
         "class": "GoldenTrendOptionBuyerStrategy",
+        "requires_settled_bar": True,
+        "bar_timing_evidence": "Conditions use row['close'], row['ema_*'], row['vwap_20'], row['rsi_14'] and row['volume'] — all require today's settled close/volume.",
         "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": False,
@@ -103,6 +111,8 @@ STRATEGY_BINDINGS: Dict[str, Dict[str, Any]] = {
     "Strategy 5: Velocity-5 Momentum Scalper": {
         "module": "src.strategies.active_momentum_scalper",
         "class": "ActiveMomentumOptionScalperStrategy",
+        "requires_settled_bar": True,
+        "bar_timing_evidence": "Uses row['ema_20'] and row['rsi_14'], both of which depend on today's close, alongside the intraday breakout test.",
         "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": False,
@@ -110,6 +120,8 @@ STRATEGY_BINDINGS: Dict[str, Dict[str, Any]] = {
     "Strategy 6: Micro Momentum Sniper": {
         "module": "src.strategies.micro_momentum_buyer",
         "class": "MicroMomentumBuyerStrategy",
+        "requires_settled_bar": False,
+        "bar_timing_evidence": "Indicators are read from prev (settled) bar only: prev['ema_9/21/50'], prev['rsi'], prev['high'], prev['low']. The current bar contributes ONLY curr['high']/curr['low'], i.e. a running breakout that is observable in real time and uses no future data. Forming-bar evaluation is legitimate.",
         "parity": "PASS",
         "underlying": "NIFTY",
         "require_vix": True,
@@ -201,6 +213,32 @@ class LiveStrategyAdapter:
                 bot_name, binding["class"], 0, 0.0, binding["underlying"],
                 reason=f"STRATEGY_PARITY_UNRESOLVED: {binding.get('parity_note', '')}",
             )
+
+        # H3: strategies validated on SETTLED daily bars must not be evaluated
+        # against an unsettled forming bar — that is a different timing model than
+        # the one the research validated. Only strategies whose current-bar usage
+        # is limited to a real-time high/low breakout may run on a forming bar.
+        if binding.get("requires_settled_bar", True):
+            from src.execution.live_market_bars import (
+                get_today_session_bar,
+                is_session_bar_settled,
+            )
+
+            # Resolve the bar first so a MISSING bar is reported as
+            # DATA_UNAVAILABLE by the frame builder rather than being
+            # mislabelled as an unsettled-bar refusal. Both fail closed; only the
+            # reason differs, and the reason is what an auditor reads.
+            resolved_bar = session_bar if session_bar is not None else get_today_session_bar(
+                binding["underlying"], trading_day
+            )
+            if resolved_bar is not None and not is_session_bar_settled(resolved_bar):
+                return LiveSignal(
+                    bot_name, binding["class"], 0, 0.0, binding["underlying"],
+                    reason=(
+                        "FORMING_BAR_UNSUPPORTED: this strategy requires a settled daily "
+                        f"bar. {binding.get('bar_timing_evidence', '')}"
+                    ),
+                )
 
         strategy = self.get_strategy(bot_name)
         if strategy is None:

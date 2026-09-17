@@ -105,9 +105,11 @@ def test_bots_1_and_2_have_sufficient_history_when_parity_gate_lifted(bot):
     adapter = LiveStrategyAdapter()
     binding = dict(STRATEGY_BINDINGS[bot])
     binding["parity"] = "PASS"
-    with patch.dict(STRATEGY_BINDINGS, {bot: binding}):
+    # These strategies require a SETTLED daily bar (H3), so supply one.
+    settled_bar = {**SESSION_BAR, "market_timestamp": "2026-09-17T15:30:00"}
+    with patch.dict(STRATEGY_BINDINGS, {bot: binding}),          patch("src.execution.live_market_bars.is_session_bar_settled", return_value=True):
         sig = adapter.evaluate(
-            bot, session_bar=SESSION_BAR, today_vix=13.2, trading_day=date(2026, 9, 17)
+            bot, session_bar=settled_bar, today_vix=13.2, trading_day=date(2026, 9, 17)
         )
     assert "authentic bar/VIX state unavailable" not in sig.reason
     assert sig.reason in ("STRATEGY_SIGNAL", "NO_SIGNAL: strategy flat")
