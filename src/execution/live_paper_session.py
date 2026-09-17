@@ -487,6 +487,33 @@ LIVE_TRADING_ENABLED: FALSE
         b_last = mkt["bank"]["last"]
         now_time = current_time or datetime.now().time()
 
+        # Batch prefetch quotes for all candidate contracts in a single HTTP request to eliminate rate limits
+        try:
+            from src.execution.dhan_scrip_master import DhanScripMaster
+            candidate_ids: List[str] = []
+            for b_data in self.bot_states.values():
+                at = b_data.get("active_trade")
+                if at:
+                    sid = at.get("security_id")
+                    if sid and "/" not in str(sid):
+                        candidate_ids.append(str(sid))
+                    if at.get("call_security_id"):
+                        candidate_ids.append(str(at["call_security_id"]))
+                    if at.get("put_security_id"):
+                        candidate_ids.append(str(at["put_security_id"]))
+            if n_last and n_last > 0:
+                atm_k = round(n_last / 50.0) * 50.0
+                call_k = round((n_last + 300) / 50.0) * 50.0
+                put_k = round((n_last - 300) / 50.0) * 50.0
+                for k, o_type in [(atm_k, "CE"), (atm_k, "PE"), (call_k, "CE"), (put_k, "PE")]:
+                    meta = DhanScripMaster.resolve_contract("NIFTY", o_type, target_strike=k)
+                    if meta and meta.get("security_id"):
+                        candidate_ids.append(str(meta["security_id"]))
+            if candidate_ids:
+                DhanContractResolver.prefetch_quotes(list(set(candidate_ids)))
+        except Exception as e:
+            logger.debug(f"Candidate quote prefetch exception: {e}")
+
         # ─── BOT 1: APEX VRP ENGINE (THETA HARVEST) ───
         s1 = self.bot_states["Strategy 1: Apex VRP Engine"]
         if s1["active_trade"] is None and not s1["closed_trades"] and now_time >= dtime(9, 20) and now_time <= dtime(11, 30):

@@ -24,6 +24,32 @@ from src.utils.logging import setup_logging
 logger = setup_logging("execution.dhan_resolver")
 
 
+_quote_cache: Dict[str, Tuple[datetime, Dict[str, Any]]] = {}
+_shared_dhan_session: Optional[requests.Session] = None
+
+
+def get_dhan_session() -> Optional[requests.Session]:
+    """Provides a singleton requests.Session authenticated with Dhan credentials."""
+    global _shared_dhan_session
+    if _shared_dhan_session is not None:
+        return _shared_dhan_session
+    try:
+        from src.config import Config
+        if Config.DHAN_ACCESS_TOKEN and Config.DHAN_CLIENT_ID:
+            s = requests.Session()
+            s.headers.update({
+                "access-token": str(Config.DHAN_ACCESS_TOKEN),
+                "client-id": str(Config.DHAN_CLIENT_ID),
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            })
+            _shared_dhan_session = s
+            return _shared_dhan_session
+    except Exception as e:
+        logger.debug(f"Failed to initialize shared Dhan session: {e}")
+    return None
+
+
 class DhanContractResolver:
     """
     Dynamically resolves authentic exchange contracts, official Dhan numeric security IDs,
@@ -63,19 +89,21 @@ class DhanContractResolver:
         open_bank = None
         vix = None
 
-        # 1. Try Dhan Live Market Quote if session provided
-        if dhan_session:
+        # 1. Try Dhan Live Market Quote if session provided or available
+        session = dhan_session or get_dhan_session()
+        if session:
             try:
                 # Dhan v2 LTP query endpoint
-                resp = dhan_session.post(
+                resp = session.post(
                     f"{base_url}/marketfeed/ltp",
-                    json={"NSE_INDEX": [13, 25]},  # 13: NIFTY 50, 25: BANK NIFTY
+                    json={"NSE_EQ": [13, 25]},  # 13: NIFTY 50 ETF / EQ, 25: BANK NIFTY
                     timeout=3,
                 )
                 if resp.status_code == 200:
                     data = resp.json().get("data", {})
-                    n_p = float(data.get("NSE_INDEX:13", {}).get("last_price", 0))
-                    b_p = float(data.get("NSE_INDEX:25", {}).get("last_price", 0))
+                    seg_data = data.get("NSE_EQ", {})
+                    n_p = float(seg_data.get("13", {}).get("last_price", 0))
+                    b_p = float(seg_data.get("25", {}).get("last_price", 0))
                     if n_p > 0:
                         spot_nifty = n_p
                     if b_p > 0:
@@ -146,12 +174,69 @@ class DhanContractResolver:
             "timestamp": datetime.now(),
         }
 
-    @staticmethod
+    @classmethod
+    def prefetch_quotes(
+        cls,
+        security_ids: list[str],
+        dhan_session: Optional[requests.Session] = None,
+        base_url: str = "https://api.dhan.co/v2",
+        exchange_segment: str = "NSE_FNO",
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Batch prefetches market quotes for multiple security IDs in a single HTTP request.
+        Populates the in-memory quote cache to prevent per-bot redundant calls and rate limits.
+        """
+        clean_ids = [str(sid).strip() for sid in security_ids if sid and str(sid).strip().isdigit()]
+        if not clean_ids:
+            return {}
+
+        session = dhan_session or get_dhan_session()
+        if not session:
+            return {}
+
+        now_dt = datetime.now()
+        results = {}
+
+        try:
+            int_ids = [int(sid) for sid in clean_ids]
+            payload = {exchange_segment: int_ids}
+            resp = session.post(f"{base_url}/marketfeed/quote", json=payload, timeout=4)
+            if resp.status_code == 200:
+                data = resp.json().get("data", {})
+                seg_data = data.get(exchange_segment, {})
+                for sid in clean_ids:
+                    item = seg_data.get(sid) or seg_data.get(int(sid))
+                    if isinstance(item, dict) and item.get("last_price", 0) > 0:
+                        depth = item.get("depth", {})
+                        buy_depth = depth.get("buy", [])
+                        sell_depth = depth.get("sell", [])
+                        bid = float(buy_depth[0].get("price", 0)) if buy_depth else None
+                        ask = float(sell_depth[0].get("price", 0)) if sell_depth else None
+                        ltp = float(item["last_price"])
+                        q = {
+                            "security_id": sid,
+                            "ltp": ltp,
+                            "bid": bid if bid and bid > 0 else None,
+                            "ask": ask if ask and ask > 0 else None,
+                            "timestamp": now_dt.isoformat(),
+                            "is_tradable": True,
+                            "source": "DHAN_LIVE_QUOTE",
+                        }
+                        _quote_cache[sid] = (now_dt, q)
+                        results[sid] = q
+        except Exception as e:
+            logger.debug(f"Batch prefetch quote exception: {e}")
+
+        return results
+
+    @classmethod
     def fetch_option_quote(
+        cls,
         security_id: str,
         dhan_session: Optional[requests.Session] = None,
         base_url: str = "https://api.dhan.co/v2",
         exchange_segment: str = "NSE_FNO",
+        cache_ttl_seconds: float = 5.0,
     ) -> Optional[Dict[str, Any]]:
         """
         Fetches the real executable option quote (LTP, bid, ask) from DhanHQ market data.
@@ -163,48 +248,32 @@ class DhanContractResolver:
         sec_id_str = str(security_id).strip()
         now_dt = datetime.now()
 
-        if dhan_session:
-            # 1. Try Market Quote endpoint (LTP + Market Depth / Bid / Ask)
-            try:
-                payload = {
-                    "instruments": [
-                        {"exchangeSegment": exchange_segment, "securityId": sec_id_str}
-                    ]
-                }
-                resp = dhan_session.post(f"{base_url}/marketfeed/quote", json=payload, timeout=3)
-                if resp.status_code == 200:
-                    data = resp.json().get("data", {})
-                    # Dhan returns instruments either by key or list
-                    item = data.get(f"{exchange_segment}:{sec_id_str}") or data.get(sec_id_str)
-                    if isinstance(item, dict) and item.get("last_price", 0) > 0:
-                        depth = item.get("depth", {})
-                        buy_depth = depth.get("buy", [])
-                        sell_depth = depth.get("sell", [])
-                        bid = float(buy_depth[0].get("price", 0)) if buy_depth else None
-                        ask = float(sell_depth[0].get("price", 0)) if sell_depth else None
-                        ltp = float(item["last_price"])
-                        return {
-                            "security_id": sec_id_str,
-                            "ltp": ltp,
-                            "bid": bid if bid and bid > 0 else None,
-                            "ask": ask if ask and ask > 0 else None,
-                            "timestamp": now_dt.isoformat(),
-                            "is_tradable": True,
-                            "source": "DHAN_LIVE_QUOTE",
-                        }
-            except Exception as e:
-                logger.debug(f"Dhan /marketfeed/quote query failed for {sec_id_str}: {e}")
+        # Check in-memory cache for rate-limit protection
+        if sec_id_str in _quote_cache:
+            cache_time, cached_quote = _quote_cache[sec_id_str]
+            if (now_dt - cache_time).total_seconds() < cache_ttl_seconds:
+                return cached_quote
+
+        session = dhan_session or get_dhan_session()
+
+        if session:
+            # 1. Try Market Quote endpoint via batch prefetch
+            res = cls.prefetch_quotes([sec_id_str], dhan_session=session, base_url=base_url, exchange_segment=exchange_segment)
+            if sec_id_str in res:
+                return res[sec_id_str]
 
             # 2. Try LTP fallback endpoint
             try:
-                ltp_payload = {exchange_segment: [int(sec_id_str)]}
-                resp = dhan_session.post(f"{base_url}/marketfeed/ltp", json=ltp_payload, timeout=3)
+                sec_id_int = int(sec_id_str)
+                ltp_payload = {exchange_segment: [sec_id_int]}
+                resp = session.post(f"{base_url}/marketfeed/ltp", json=ltp_payload, timeout=3)
                 if resp.status_code == 200:
                     data = resp.json().get("data", {})
-                    val = data.get(f"{exchange_segment}:{sec_id_str}") or data.get(sec_id_str)
+                    seg_data = data.get(exchange_segment, {})
+                    val = seg_data.get(sec_id_str) or seg_data.get(sec_id_int) or data.get(sec_id_str)
                     if isinstance(val, dict) and val.get("last_price", 0) > 0:
                         ltp = float(val["last_price"])
-                        return {
+                        quote_res = {
                             "security_id": sec_id_str,
                             "ltp": ltp,
                             "bid": None,
@@ -213,6 +282,8 @@ class DhanContractResolver:
                             "is_tradable": True,
                             "source": "DHAN_LIVE_LTP",
                         }
+                        _quote_cache[sec_id_str] = (now_dt, quote_res)
+                        return quote_res
             except Exception as e:
                 logger.debug(f"Dhan /marketfeed/ltp query failed for {sec_id_str}: {e}")
 
