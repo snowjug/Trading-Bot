@@ -1,0 +1,46 @@
+{
+  "BOT1": {
+    "structure": "4-leg iron condor",
+    "legs_resolved": 4,
+    "risk": "APPROVED",
+    "position_id": "BOT1-131440-1",
+    "entry_costs": 121.42,
+    "marked_unrealized": -264.42,
+    "realized_pnl": -515.85,
+    "total_costs": 242.85,
+    "result": "FULL_PATH_OK"
+  },
+  "BOT2": {
+    "structure": "2-leg bull put spread",
+    "legs_resolved": 2,
+    "risk": "APPROVED",
+    "position_id": "BOT2-131445-2",
+    "entry_costs": 61.42,
+    "marked_unrealized": -136.17,
+    "realized_pnl": -262.6,
+    "total_costs": 122.85,
+    "result": "FULL_PATH_OK"
+  },
+  "BOT6": {
+    "structure": "1-leg long CE",
+    "legs_resolved": 1,
+    "risk": "APPROVED",
+    "position_id": "BOT6-131449-3",
+    "entry_costs": 36.7,
+    "marked_unrealized": -69.2,
+    "realized_pnl": -138.35,
+    "total_costs": 73.35,
+    "result": "FULL_PATH_OK"
+  },
+  "BOT7": {
+    "structure": "1-leg long PE",
+    "legs_resolved": 1,
+    "risk": "APPROVED",
+    "position_id": "BOT7-131453-4",
+    "entry_costs": 37.22,
+    "marked_unrealized": -59.97,
+    "realized_pnl": -129.65,
+    "total_costs": 74.4,
+    "result": "FULL_PATH_OK"
+  }
+}

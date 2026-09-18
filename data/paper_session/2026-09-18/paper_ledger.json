@@ -1,0 +1,40 @@
+{
+  "written_at": "2026-09-18 13:18:18",
+  "slippage_points": 0.5,
+  "PAPER": {
+    "summary": {
+      "ledger": "PAPER",
+      "total_positions": 0,
+      "open_positions": 0,
+      "closed_positions": 0,
+      "realized_pnl": 0,
+      "unrealized_pnl": 0,
+      "total_costs": 0,
+      "max_drawdown": 0.0,
+      "wins": 0,
+      "losses": 0,
+      "unresolved": 0
+    },
+    "open": [],
+    "closed": []
+  },
+  "SHADOW": {
+    "summary": {
+      "ledger": "SHADOW",
+      "total_positions": 0,
+      "open_positions": 0,
+      "closed_positions": 0,
+      "realized_pnl": 0,
+      "unrealized_pnl": 0,
+      "total_costs": 0,
+      "max_drawdown": 0.0,
+      "wins": 0,
+      "losses": 0,
+      "unresolved": 0
+    },
+    "open": [],
+    "closed": []
+  },
+  "rejections": [],
+  "errors": []
+}

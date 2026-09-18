@@ -55,7 +55,7 @@ class DhanAPIClient:
         self._last_request_time: float = 0.0
         self._request_lock = threading.Lock()
 
-    def _apply_rate_limit(self, min_interval_seconds: float = 0.15):
+    def _apply_rate_limit(self, min_interval_seconds: float = 0.35):
         """Enforces inter-request spacing to prevent Dhan 805 / 429 throttling."""
         with self._request_lock:
             now = time.time()
