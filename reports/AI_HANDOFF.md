@@ -62,8 +62,13 @@ work that is already finished or re-litigate settled decisions.
 5. **Costs are side-aware.** `IndianCostModel.calculate_roundtrip_costs` assumes
    buy-then-sell, which charges a short leg's STT on its exit — near zero for an
    option expiring worthless. `condor_leg_costs()` charges sell-side STT on the
-   premium received at entry and 0.125% exercise STT on ITM longs. This makes
-   costs HIGHER, not lower.
+   premium received at entry and 0.125% exercise STT on ITM longs.
+   It is nonetheless CHEAPER overall than the naive helper, because holding to
+   a cash settlement involves no exit ORDER — one brokerage charge and one
+   slippage event per leg instead of two. That optimism is bounded by the
+   slippage sensitivity, which prices 0.25-2.0 extra points per leg, far more
+   than a second brokerage charge. (An earlier note here claimed the opposite;
+   `test_short_leg_stt_is_charged_on_the_premium_received` pins the real behaviour.)
 
 6. **Per-lot economics are the headline.** SPAN margin is not obtainable
    read-only, so no portfolio-scale number may depend on it. The old
@@ -77,32 +82,64 @@ work that is already finished or re-litigate settled decisions.
 - Do not re-audit the risk gate, reconciliation or Dhan safety barrier.
 - Do not redesign Bot 6 or change its parameters. It is a protected baseline and
   is frozen absent a PROVEN defect.
-- Do not try to renew, work around or bypass the Dhan token. It is expired
-  (401 DH-901, verified 2026-09-18); that is an external dependency to report.
+- The Dhan token was RENEWED by the user on 2026-09-18 and is valid until
+  2026-09-19 08:43. Do not re-probe what is already measured below; do not try to
+  refresh it yourself — ask the user if it lapses again.
 - Do not tune `otm_sd`, `wing_sd`, `max_vix`, the RSI band, or the hold period to
   improve results.
 
 ---
 
+## DHAN RE-PROBE — MEASURED 2026-09-18, DO NOT REPEAT
+
+| Fact | Value |
+|---|---|
+| `/charts/rollingoption` history floor | **2020-09** (2019-09 empty) |
+| Request window | **one month** — longer returns empty |
+| Strike ceiling | **ATM±10**, stable across 2021 / 2023 / 2026 |
+| Option side | CALL → `ce`, PUT → `pe`; two separate calls |
+| `expiryCode` 1/2/3 and `expiryFlag=MONTH` | all serve data |
+| `/charts/intraday` with an option securityId | **works, reaches ATM+17** |
+| Expired contracts via `/charts/intraday` | **0 rows — listed only** |
+| bhavcopy `FinInstrmId` vs Dhan `securityId` | **identical, 1694/1694** |
+
+Consequence: Bot 5/6's intraday blocker is resolved (~6 years of 5-min bars).
+Bot 1's far strikes remain unreachable intraday for HISTORICAL sessions, so its
+historical pricing stays on the daily bhavcopy.
+
+## CORRECTION TO AN EARLIER FINDING IN THIS SESSION
+
+The first adverse-fill test priced entries at the worst tick of the WHOLE session
+and concluded every Bot 1 variant flips negative. That bound is wrong for a
+close-entry strategy. Measured at the exact offsets Bot 1 uses: the daily close sat
+inside the closing half-hour range on **223/223** observations, and that half-hour
+span averaged **17.7%** of the full-day span. The close is achievable; the realistic
+adverse band is ~1 point per leg. The full-day figure is kept only as a floor.
+
 ## KNOWN OPEN ITEMS
 
 | Item | Nature |
 |---|---|
-| Bot 1 sample size | ~1 trade/week caps the sample near 85 over 20 months; being extended to 2024-01-02 |
+| Bot 1 sample size | THE binding blocker: ~320 trades (~7 yrs) needed for a conclusive breach-rate CI; 2019-2026 ingest should supply it |
+| Bot 1 time scaling | `sqrt(5/365)` over a ~7-day hold puts the "1.8 SD" short at ~1.52 SD — reported, NOT corrected. **Strategy-owner decision** |
 | Bot 1 RSI band inconsistency | class declares 40/68, `simulate_weekly_condors` hardcodes 38/70 — **strategy-owner decision** |
 | Bot 1 margin basis | SPAN unverifiable read-only |
-| No bid/ask history anywhere | all option fills are traded-price approximations |
+| No bid/ask history anywhere | all option fills are traded-price approximations; the closing-window measurement bounds the error for Bot 1 |
 | Bots 3/4 cannot enter | settled-bar requirement vs pre-15:10 windows (out of scope here) |
 | `get_upcoming_weekly_expiry()` | assumes Thursday; returns 2026-09-24 while Scrip Master gives Tuesday 2026-09-22. Live path uses Scrip Master, so unaffected — but the helper is stale |
 
 ---
 
 ## CURRENT TASK
-Bot 1: finish ingest → full backtest → validation battery → tests → checkpoint.
+Bot 1 full-history rerun, then Bot 5/6 on the new 5-minute grid.
 
 ## EXACT NEXT STEP
-Wait for `scripts/ingest_nse_fo_bhavcopy.py` to reach 423/423, extend it back to
-2024-01-02, then re-run `scripts/run_bot1_real_condor.py` on the full sample.
+1. Let `scripts/ingest_nse_fo_bhavcopy.py` (2019-2024) and
+   `scripts/ingest_dhan_option_grid.py` finish.
+2. `python scripts/validate_bot1_condor.py` on the full 2019-2026 history and
+   compare against the 2025-2026 numbers in AI_MASTER_STATUS.md.
+3. Rebuild Bot 5/6 option economics on `data/raw/dhan/option_grid_5m` and
+   revalidate. The old n=8 / n=3 result is SUPERSEDED — do not cite it.
 
 ## LATEST CHECKPOINT SHA
-`749db3e` (baseline). No new commit yet this session.
+`9d7b85f` — Bot 1 real four-leg condor, 32 tests passing.

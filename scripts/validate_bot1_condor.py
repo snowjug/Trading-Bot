@@ -33,7 +33,7 @@ VARIANTS_EXAMINED = 4          # specified, causal lag-1, calendar-DTE window, R
 
 
 def underlying(index_parquet: str = "data/raw/nse/index_history/nse_index_daily.parquet",
-               start: str = "2024-01-01") -> pd.DataFrame:
+               start: str = "2019-01-01") -> pd.DataFrame:
     """
     NIFTY + India VIX daily history.
 
@@ -195,6 +195,30 @@ def report(tag: str, res: dict, out: dict) -> None:
               f"   win% {af['win_rate']:.1f}   "
               f"{'PROFITABLE' if af['still_profitable'] else 'LOSS'}"
               f"   ({af['trades_unpriceable']} unpriceable)")
+
+    # ── capital viability: what this structure actually ties up ──
+    max_loss_rupees = float(df["max_loss"].mean() * lot)
+    out[tag]["capital_viability"] = {
+        "lot_size": lot,
+        "avg_max_loss_per_lot_rupees": round(max_loss_rupees, 2),
+        "avg_credit_per_lot_rupees": round(float(df["credit"].mean() * lot), 2),
+        "expectancy_per_lot_rupees": round(float(df["net_pnl"].mean()), 2),
+        "margin_basis": (
+            "DEFINED_RISK_MAX_LOSS. SPAN/exposure margin is not obtainable "
+            "read-only, so capital is sized on the structural maximum loss, which "
+            "is computable exactly. Real SPAN for a hedged condor is close to but "
+            "not identical to this — treat lot counts as indicative."
+        ),
+    }
+    for cap in (50_000, 100_000):
+        lots = int((cap * 0.65) // max_loss_rupees) if max_loss_rupees > 0 else 0
+        out[tag]["capital_viability"][f"lots_at_{cap}"] = lots
+        out[tag]["capital_viability"][f"weekly_expectancy_at_{cap}"] = round(
+            lots * float(df["net_pnl"].mean()), 2)
+    cv = out[tag]["capital_viability"]
+    print(f"\n  CAPITAL: max loss {cv['avg_max_loss_per_lot_rupees']:,.0f}/lot "
+          f"(credit {cv['avg_credit_per_lot_rupees']:,.0f}) -> "
+          f"50k: {cv['lots_at_50000']} lot(s), 1L: {cv['lots_at_100000']} lot(s)")
 
     o = out[tag]["oos"]
     if "is" in o:

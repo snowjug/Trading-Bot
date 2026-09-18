@@ -56,21 +56,31 @@ def sample_size_verdict(n_trades: int, observed_adverse: int, breakeven: Optiona
     if breakeven is None:
         return {"verdict": "INDETERMINATE", "reason": "no losing trades to estimate the tail",
                 "adverse_ci": ci, "breakeven_rate": None}
-    conclusive = ci["hi"] < breakeven
+    # Three outcomes, not two. A sample can settle the question in EITHER direction,
+    # and collapsing "we cannot tell" with "we can tell it loses" would let a
+    # demonstrably negative strategy hide behind an inconclusive-sounding label.
+    if ci["hi"] < breakeven:
+        verdict = "EDGE_DISTINGUISHABLE"
+        reason = (f"the 95% upper bound on the adverse rate ({ci['hi']:.3f}) is below "
+                  f"the break-even rate ({breakeven:.3f})")
+    elif ci["lo"] > breakeven:
+        verdict = "CONCLUSIVELY_ADVERSE"
+        reason = (f"the 95% LOWER bound on the adverse rate ({ci['lo']:.3f}) is above "
+                  f"the break-even rate ({breakeven:.3f}), so this sample shows a "
+                  f"losing structure rather than merely failing to confirm a winning one")
+    else:
+        verdict = "NOT_DISTINGUISHABLE"
+        reason = (f"the break-even rate ({breakeven:.3f}) lies inside the 95% interval "
+                  f"[{ci['lo']:.3f}, {ci['hi']:.3f}], so this sample cannot separate a "
+                  f"winning structure from a losing one")
     return {
         "n_trades": n_trades,
         "observed_adverse": observed_adverse,
         "adverse_rate": ci["point"],
         "adverse_ci95": [round(ci["lo"], 5), round(ci["hi"], 5)],
         "breakeven_rate": round(breakeven, 5),
-        "verdict": "EDGE_DISTINGUISHABLE" if conclusive else "NOT_DISTINGUISHABLE",
-        "reason": (
-            f"the 95% upper bound on the adverse rate ({ci['hi']:.3f}) is below the "
-            f"break-even rate ({breakeven:.3f})" if conclusive else
-            f"the 95% upper bound on the adverse rate ({ci['hi']:.3f}) exceeds the "
-            f"break-even rate ({breakeven:.3f}), so this sample cannot rule out a "
-            f"losing structure"
-        ),
+        "verdict": verdict,
+        "reason": reason,
     }
 
 

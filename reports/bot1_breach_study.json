@@ -1,0 +1,75 @@
+{
+  "cycles": 158,
+  "breached": 12,
+  "breakeven": 0.04853218181818182,
+  "verdict": {
+    "n_trades": 164,
+    "observed_adverse": 12,
+    "adverse_rate": 0.07317073170731707,
+    "adverse_ci95": [
+      0.03838,
+      0.12433
+    ],
+    "breakeven_rate": 0.04853,
+    "verdict": "NOT_DISTINGUISHABLE",
+    "reason": "the break-even rate (0.049) lies inside the 95% interval [0.038, 0.124], so this sample cannot separate a winning structure from a losing one"
+  },
+  "by_year": [
+    {
+      "yr": 2019,
+      "cycles": 20,
+      "breached": 2,
+      "rate": 0.1,
+      "med_vix": 14.940000000000001
+    },
+    {
+      "yr": 2020,
+      "cycles": 7,
+      "breached": 0,
+      "rate": 0.0,
+      "med_vix": 14.0
+    },
+    {
+      "yr": 2021,
+      "cycles": 19,
+      "breached": 1,
+      "rate": 0.05263157894736842,
+      "med_vix": 16.16
+    },
+    {
+      "yr": 2022,
+      "cycles": 21,
+      "breached": 3,
+      "rate": 0.14285714285714285,
+      "med_vix": 17.85
+    },
+    {
+      "yr": 2023,
+      "cycles": 23,
+      "breached": 2,
+      "rate": 0.08695652173913043,
+      "med_vix": 11.7
+    },
+    {
+      "yr": 2024,
+      "cycles": 24,
+      "breached": 3,
+      "rate": 0.125,
+      "med_vix": 13.704999999999998
+    },
+    {
+      "yr": 2025,
+      "cycles": 31,
+      "breached": 0,
+      "rate": 0.0,
+      "med_vix": 12.49
+    },
+    {
+      "yr": 2026,
+      "cycles": 19,
+      "breached": 1,
+      "rate": 0.05263157894736842,
+      "med_vix": 12.6
+    }
+  ]
+}

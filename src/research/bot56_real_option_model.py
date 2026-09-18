@@ -46,6 +46,7 @@ from datetime import time as dtime
 from typing import Any, Dict, List, Optional
 
 import glob
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -58,6 +59,7 @@ from src.utils.logging import setup_logging
 logger = setup_logging("research.bot56_real_options")
 
 ATM_DIR = "data/raw/dhan/rollingoption/symbol=NIFTY/interval=5m/strike=ATM"
+GRID_5M_DIR = "data/raw/dhan/option_grid_5m"
 EOD_FLAT = dtime(15, 15)          # both strategies specify an intraday MIS exit
 EXECUTION_BASIS = "TRADED_PRICE_NO_BIDASK"
 
@@ -123,6 +125,52 @@ def load_option_grid() -> Optional[Dict[str, pd.DataFrame]]:
                   .sort_values(["datetime", "strike"])
                   .reset_index(drop=True))
         out[side] = grid
+    return out
+
+
+
+def load_option_grid_5m(directory: str = GRID_5M_DIR) -> Optional[Dict[str, pd.DataFrame]]:
+    """
+    The DEEP 5-minute option grid: ATM+/-6, CE and PE, from 2020-09.
+
+    WHY THIS EXISTS: the original loader read a 10-session cache, which is why the
+    first "real option economics" for these bots rested on n=8 and n=3. Re-probed
+    with a valid token on 2026-09-18, `/charts/rollingoption` actually serves
+    5-minute bars back to 2020-09 — about six years — one month per request, with a
+    hard ATM+/-10 strike ceiling. `scripts/ingest_dhan_option_grid.py` pulls that
+    ladder; this function stitches it.
+
+    The same rolling-ATM trap applies and is the reason the whole ladder is pulled:
+    the "ATM" label RE-ANCHORS as spot moves, so following it across bars silently
+    swaps the contract. Stitching by REAL strike yields a per-contract history from
+    which one fixed contract can be held for the life of a trade.
+
+    Timestamps are already naive IST: the client converts from the epoch on read,
+    so unlike the legacy cache no re-conversion is applied here.
+    """
+    root = Path(directory)
+    if not root.exists():
+        logger.warning(f"No deep option grid under {directory}")
+        return None
+    out: Dict[str, pd.DataFrame] = {}
+    for side in ("ce", "pe"):
+        paths = sorted(root.glob(f"strike=*/{side}_*.parquet"))
+        if not paths:
+            logger.warning(f"No {side.upper()} bars in the deep grid.")
+            return None
+        frames = []
+        for path in paths:
+            df = pd.read_parquet(path)
+            if "datetime" not in df.columns or df.empty:
+                continue
+            frames.append(df[["datetime", "strike", "spot", "close", "high", "low",
+                              "iv", "oi", "volume"]])
+        if not frames:
+            return None
+        out[side] = (pd.concat(frames)
+                     .drop_duplicates(subset=["datetime", "strike"])
+                     .sort_values(["datetime", "strike"])
+                     .reset_index(drop=True))
     return out
 
 

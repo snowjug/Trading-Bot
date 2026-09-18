@@ -1,90 +1,107 @@
 # AI MASTER STATUS
 
-**Updated:** 2026-09-18
+**Updated:** 2026-09-18 (after Dhan token renewal)
 **Branch:** `rebuild/bots-1-5-6-7`
 **Baseline tag:** `pre-master-bots-1-5-6-7` → `749db3e1ef7a4c8d88711490719dc82c56cd3880`
-**Current SHA:** (uncommitted work in progress — see AI_HANDOFF.md)
+**Last checkpoint:** `9d7b85f` — Bot 1 real condor
 **`main` modified:** NO
 **`LIVE_TRADING_ENABLED`:** `false`
-**Dhan mutation endpoints called:** NONE (read-only probes only)
+**Dhan mutation endpoints called:** NONE. Read-only only: `/charts/historical`,
+`/charts/intraday`, `/charts/rollingoption`.
 
 ---
 
-## CURRENT BOT: 1 — NIFTY Weekly Iron Condor
+## DHAN TOKEN RENEWED — RE-PROBE RESULTS
 
-### Headline change: the Bot 1 data blocker is RESOLVED
+Token valid 2026-09-18 08:43 → **2026-09-19 08:43 (≈24h)**. Everything previously
+recorded as "blocked by an expired token" was re-measured.
 
-The previous verdict — "0.0% of 420 sessions feasible" — was a limitation of ONE
-vendor endpoint (DhanHQ `/charts/rollingoption`, which serves only ATM±10), not of
-the data. NSE publishes the complete daily F&O UDiFF bhavcopy publicly and
-unauthenticated:
+### The previous "10 sessions of option data" was a caching artefact, not a limit
 
-| Measured | Value |
+| Probe | Previous belief | **Measured 2026-09-18** |
+|---|---|---|
+| `/charts/rollingoption` history | 10 sessions | **2020-09 → today (~6 years)**; 2019-09 empty |
+| Request window | unknown | **one month**; a quarter or longer returns empty |
+| Strike ceiling | ATM±10 | **ATM±10 confirmed, and stable across 2021 / 2023 / 2026** |
+| Option side | both in one call | CALL populates `ce`, PUT populates `pe` — **two calls** |
+| `expiryCode` | near only | **1, 2 and 3 all serve data**; `expiryFlag=MONTH` also works |
+| `/charts/intraday` with an OPTION securityId | untested | **WORKS, and reaches ATM+17** — 74 bars/session at 5-min |
+| Expired contracts via `/charts/intraday` | untested | **0 rows — listed contracts only** |
+| bhavcopy `FinInstrmId` vs Dhan `securityId` | untested | **identical: 1694/1694 = 100%** |
+
+### Consequences
+- **Bots 5/6:** the intraday blocker is **RESOLVED**. Ingesting ATM±6 × CE/PE ×
+  5-minute from 2020-09; ATM alone already yields **1,240 sessions** (was 10).
+- **Bot 1:** the ATM±10 ceiling is real and stable, so `/charts/rollingoption`
+  still cannot serve the 1.8/2.4-SD legs (~ATM±13/±17). `/charts/intraday` can
+  serve those strikes but **only while listed**, so it cannot backfill history.
+  Bot 1's historical pricing therefore stays on the NSE bhavcopy (daily), which
+  is complete.
+
+---
+
+## BOT 1 — NIFTY Weekly Iron Condor
+
+### Data blocker: RESOLVED
+NSE's public F&O bhavcopy carries every strike (12000–34500 vs a ~23200 spot) with
+six-figure volume at exactly the specified legs. Ingest covers **2019 → 2026**
+(UDiFF from 2024-01-02, legacy layout before it). Index + VIX history ingested from
+NSE's public `ind_close_all` archive and **independently cross-checked** against the
+repo's own files: 422 overlapping sessions, max diff 0.0008 points, none over 0.1%.
+
+### Execution question: MEASURED, and my earlier bound was too pessimistic
+The first adverse-fill test priced entries at the worst tick of the whole session
+and every variant flipped negative. That bound is wrong for a strategy that enters
+at the CLOSE. Measured on 5-minute bars at the exact offsets Bot 1 uses:
+
+- the daily close fell inside the **closing half-hour range on 223/223** observations
+- that half-hour span averaged **17.7%** of the full-day span on weekly contracts
+
+So the close is an achievable fill. The realistic adverse band is ~1 point per leg,
+where the strategy stays positive but thin (+₹19,060/lot at +1.0 pt/leg vs
++₹32,260 at the close). The full-day bound is retained as a floor, labelled as such.
+
+### Research result (2025–2026, 44 trades, canonical entry)
+| | value |
 |---|---|
-| Strike range on 2026-09-16 | 12000 – 34500 (spot ≈ 23200) → ATM±226 strikes |
-| All four specified legs present | YES |
-| Daily volume at the specified legs | 360k – 650k contracts each |
-| Archive reach | UDiFF starts 2024-01-02 (2023-11-01 → 404) |
+| win rate | 97.73% |
+| net per lot | ₹32,260 |
+| avg credit | 12.45 pts (₹809/lot) |
+| avg max loss | 226.19 pts (₹14,702/lot) |
+| break-even breach rate | **4.51%** |
+| observed breach rate | 1/44 = 2.27%, **CI95 [0.06%, 12.02%]** |
+| **verdict** | **NOT_DISTINGUISHABLE** |
 
-### Completed
-- `scripts/ingest_nse_fo_bhavcopy.py` — read-only ingester, per-session parquet.
-- `scripts/ingest_nse_index_history.py` — NIFTY + India VIX OHLC from NSE's public
-  `ind_close_all` archive, with a cross-check against the repo's own history.
-- `src/research/bot1_condor_real.py` — authentic four-leg condor engine.
-  - entry: each leg's own traded close, **only if that contract traded** that day
-  - exit: exact cash settlement at expiry vs the exchange's official settlement price
-  - costs: `condor_leg_costs()` — side-aware STT (sell-side on premium at entry,
-    0.125% exercise STT on ITM longs), entry-only brokerage and slippage
-  - entry rule: exactly 5 trading sessions to expiry (the faithful reading of
-    `df.iloc[i+1:i+6]` + `sqrt(5/365)`), decided from the spec before results
-- `scripts/run_bot1_real_condor.py` — runner + causal-lag sensitivity.
+All four variants return NOT_DISTINGUISHABLE. OOS 70/30 agrees in sign, 4/4
+walk-forward folds positive — but none of that resolves the tail.
 
-### Current research result (PARTIAL DATA — 223 of 423 sessions)
-| | as specified | causal lag-1 |
-|---|---|---|
-| trades | 20 | 21 |
-| win rate | 100.00% | 100.00% |
-| breach rate | 0.00% | 0.00% |
-| avg credit | 13.62 pts (₹885/lot) | 14.56 pts |
-| avg max loss | 228.88 pts (₹14,877/lot) | 235.44 pts |
-| net per lot | ₹17,864 | ₹20,222 |
+### Structural finding (reported, deliberately NOT "fixed")
+`exp_move` uses `sqrt(5/365)` while the position is held ~7 calendar days. The true
+holding-period sigma is 1.183× larger, so a strike labelled **1.8 SD actually sits
+at ~1.52 SD**. Correcting the formula would change the strategy, so it is reported
+as-is. **Strategy-owner decision required.**
 
-**This is NOT evidence of edge.** Risk/reward is ≈ 1:17, so break-even needs a
-breach rate under ~5.9%. A 0/20 observation has a 95% upper bound near 16.8%,
-which comfortably includes strongly negative rates.
-
-**Disclosure:** an earlier calendar-window variant (DTE 3–9) produced 26 trades
-with 2 breaches, including a −₹14,094 loss on 2025-04-03. The canonical
-5-trading-session rule excludes that entry because its expiry was 4 sessions
-away. Both variants are reported; the 100% win rate is partly an artefact of the
-entry-window definition.
-
-### Validation status
-NOT YET RUN — deliberately deferred until the full sample is ingested.
-
-### Test count
-Unchanged from baseline (419) — new Bot 1 tests not yet written.
-
-### Current blocker
-None blocking. Sample size is the open question, being addressed by extending the
-history to 2024-01-02.
-
-### Exact next action
-1. Finish bhavcopy ingest to 423/423, then extend it back to 2024-01-02.
-2. Re-run the full backtest; run the validation battery (OOS, walk-forward, cost
-   and slippage sensitivity, regime, placebo, Monte Carlo, breach-rate CI).
-3. Write Bot 1 tests; commit checkpoint.
+### Exact blocker
+**Sample size.** ~320 trades (~7 years of weekly cycles) are needed before the
+breach-rate CI can clear break-even. The 2019–2026 ingest in flight should supply
+roughly that; the full-history rerun is the next step.
 
 ---
 
-## EXTERNAL DEPENDENCIES
+## BOTS 5 / 6 — status
+Ingest of the 5-minute option grid in progress (ATM±6, CE+PE, 2020-09 →). Model and
+validation not yet rerun on it. **Do not rerun the old n=8 / n=3 result — it is
+superseded.**
 
-| Dependency | Status | Impact |
-|---|---|---|
-| Dhan access token | **EXPIRED** — `/charts/historical` → 401 DH-901 (verified 2026-09-18) | Does NOT block Bot 1 any more; NSE's public archive supersedes it. Still blocks live quote work. |
-| NSE UDiFF archive | Reachable | Starts 2024-01-02; earlier sessions use a different, older format |
+## BOT 7 — not started.
 
 ---
 
-## BOTS 5, 6, 7
-Not started in this session. See AI_HANDOFF.md for what must not be repeated.
+## TEST COUNT
+419 baseline + 32 Bot 1 = **451**, all passing.
+
+## EXACT NEXT ACTION
+1. Finish the bhavcopy (2019–2024) and option-grid ingests.
+2. Rerun Bot 1 validation on the full 2019–2026 history; compare with the
+   2025–2026 result recorded above.
+3. Rebuild Bot 5/6 real option economics on the new grid and revalidate.
