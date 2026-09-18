@@ -53,16 +53,48 @@ class DhanAPIClient:
         self._last_option_chain_time: float = 0.0
         self._option_chain_lock = threading.Lock()
         self._last_request_time: float = 0.0
+        self._last_family_request: Dict[str, float] = {}
         self._request_lock = threading.Lock()
 
-    def _apply_rate_limit(self, min_interval_seconds: float = 0.35):
-        """Enforces inter-request spacing to prevent Dhan 805 / 429 throttling."""
+    # DhanHQ throttles the marketfeed family at roughly one request per second,
+    # far tighter than the chart endpoints. A single global interval therefore
+    # either throttles charts needlessly or floods marketfeed; measured on a live
+    # session, 0.35s global produced 21 HTTP 429s in 22 cycles and skipped 5 of
+    # them entirely. Pacing is per endpoint family.
+    ENDPOINT_MIN_INTERVAL = {
+        "marketfeed": 1.15,
+        "charts": 0.40,
+    }
+    DEFAULT_MIN_INTERVAL = 0.40
+
+    def _interval_for(self, endpoint: str) -> float:
+        ep = endpoint.lower()
+        for family, interval in self.ENDPOINT_MIN_INTERVAL.items():
+            if family in ep:
+                return interval
+        return self.DEFAULT_MIN_INTERVAL
+
+    def _apply_rate_limit(self, min_interval_seconds: Optional[float] = None,
+                          endpoint: str = ""):
+        """
+        Enforces inter-request spacing to prevent Dhan 805 / 429 throttling.
+
+        Spacing is tracked PER ENDPOINT FAMILY as well as globally: a chart request
+        should not be made to wait a full marketfeed interval, and a marketfeed
+        request must not be let through early just because the last call was a chart.
+        """
+        interval = min_interval_seconds if min_interval_seconds is not None else             self._interval_for(endpoint)
+        family = next((f for f in self.ENDPOINT_MIN_INTERVAL if f in endpoint.lower()),
+                      "_default")
         with self._request_lock:
             now = time.time()
-            elapsed = now - self._last_request_time
-            if elapsed < min_interval_seconds:
-                time.sleep(min_interval_seconds - elapsed)
-            self._last_request_time = time.time()
+            last_family = self._last_family_request.get(family, 0.0)
+            wait = max(interval - (now - last_family), 0.0)
+            if wait > 0:
+                time.sleep(wait)
+            stamp = time.time()
+            self._last_request_time = stamp
+            self._last_family_request[family] = stamp
 
     def _post(self, endpoint: str, payload: dict, max_retries: int = 3) -> Optional[requests.Response]:
         """Executes a POST request with exponential backoff on HTTP 429 / 805."""
@@ -76,7 +108,7 @@ class DhanAPIClient:
         url = f"{self.BASE_URL}/{endpoint.lstrip('/')}"
         
         for attempt in range(max_retries):
-            self._apply_rate_limit()
+            self._apply_rate_limit(endpoint=endpoint)
             try:
                 resp = self._session.post(url, json=payload, timeout=self.timeout)
                 if resp.status_code == 200:

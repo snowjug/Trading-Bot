@@ -405,3 +405,65 @@ def bot7_displacement(spot: float, vix: float, frame: pd.DataFrame, today: date,
               "displacement_atr": round(abs(stretch) / a, 3),
               "structure": "LONG_ATM_OPTION", "exit_model": "ATR_TARGET_STOP_TRAIL"},
     )
+
+
+# ═════════════ BOT 8 — PRICE ACTION / MARKET STRUCTURE (wrapper) ═════════════
+
+def bot8_price_action(spot: float, vix: float, frame: pd.DataFrame, today: date,
+                      now: dtime, session_path: List[float],
+                      prev_day_high: Optional[float], prev_day_low: Optional[float],
+                      lot: int = 65, opt_delta: float = 0.5) -> Decision:
+    """
+    Adapts the price-action state machine to the common Decision interface.
+
+    The structure logic lives in `bot8_price_action.py` and is deliberately kept
+    separate: it reasons in PRICE, and knows nothing about options, lots or costs.
+    This wrapper is the only place the two meet — it turns a structural stop and
+    target, both expressed as index levels, into option P&L thresholds.
+
+    The 0.5 delta used for that conversion sizes the EXIT LEVELS only. It never
+    prices a fill; fills come from the real bid/ask like every other bot.
+    """
+    from src.execution import bot8_price_action as B8
+
+    prior = completed_bars(frame, today)
+    if len(prior) < 60:
+        return Decision("WAIT", "INSUFFICIENT_HISTORY")
+    a = float(atr(prior).iloc[-1])
+    bias = B8.daily_bias_from(prior["close"])
+
+    sig = B8.evaluate(session_path, a, vix, now, prev_day_high, prev_day_low,
+                      daily_bias=bias)
+    meta = {
+        "state": sig.state, "setup_type": sig.setup_type,
+        "trend": sig.structure.trend, "daily_bias": bias,
+        "swing_high": sig.structure.swing_high, "swing_low": sig.structure.swing_low,
+        "support": sig.structure.support, "resistance": sig.structure.resistance,
+        "breakout_state": sig.breakout_state, "retest_state": sig.retest_state,
+        "entry_level": sig.entry, "stop_level": sig.stop, "target_level": sig.target,
+        "risk_reward": sig.risk_reward, "atr": sig.atr,
+        "structure": "LONG_ATM_OPTION", "exit_model": "STRUCTURAL_STOP_TARGET_TRAIL",
+        **sig.meta,
+    }
+    if sig.state not in ("LONG_ENTRY", "SHORT_ENTRY"):
+        # ARMED / LONG_SETUP / SHORT_SETUP / REJECTED are all still WAIT for the
+        # execution layer, but the state is carried so the heartbeat and dashboard
+        # can show how far the setup has progressed.
+        return Decision("WAIT", f"[{sig.state}] {sig.reason}", meta=meta)
+
+    if sig.entry is None or sig.stop is None or sig.target is None:
+        return Decision("WAIT", f"[{sig.state}] INCOMPLETE_LEVELS", meta=meta)
+
+    pts_to_rupees = lot * opt_delta
+    stop_pts = abs(sig.entry - sig.stop)
+    target_pts = abs(sig.target - sig.entry)
+    return Decision(
+        "ENTER", f"[{sig.state}] {sig.reason}",
+        legs=[LegSpec("leg", "CE" if sig.direction > 0 else "PE", "BUY", strike_offset=0)],
+        direction=sig.direction,
+        target_pnl=round(target_pts * pts_to_rupees, 2),
+        stop_pnl=round(-stop_pts * pts_to_rupees, 2),
+        trail_trigger=round(0.6 * target_pts * pts_to_rupees, 2),
+        trail_giveback=round(0.35 * target_pts * pts_to_rupees, 2),
+        flat_by="15:10", meta=meta,
+    )

@@ -48,6 +48,7 @@ BOTS = {
     "BOT2": "Strategy 2: Zen Curvature Overnight",
     "BOT6": "Strategy 6: Micro Momentum Sniper",
     "BOT7": "Strategy 7: Intraday Displacement",
+    "BOT8": "Strategy 8: Price Action / Market Structure",
 }
 
 
@@ -310,7 +311,7 @@ def main() -> int:
 
     client = get_dhan_client()
     broker = PaperBroker()
-    risk = RiskEngine(initial_capital=args.capital, max_simultaneous_positions=4,
+    risk = RiskEngine(initial_capital=args.capital, max_simultaneous_positions=5,
                       max_position_pct=0.25)
     hist = load_history()
     today = date.today()
@@ -318,6 +319,10 @@ def main() -> int:
     expiry = next_weekly_expiry("NIFTY", today)
     logger.info(f"history {len(hist)} sessions | next weekly expiry {expiry} | "
                 f"sessions to expiry {BS.sessions_until(expiry, today, calendar) if expiry else '?'}")
+
+    prev_day_high = float(hist["high"].iloc[-1])
+    prev_day_low = float(hist["low"].iloc[-1])
+    logger.info(f"previous session range {prev_day_low:.2f} - {prev_day_high:.2f}")
 
     sess = SessionState()
     seeded = sess.seed_from_candles(client)
@@ -399,9 +404,12 @@ def main() -> int:
                     elif key == "BOT6":
                         dec = BS.bot6_micro_momentum(spot, vix, hist, today, t,
                                                      sess.high, sess.low)
-                    else:
+                    elif key == "BOT7":
                         dec = BS.bot7_displacement(spot, vix, hist, today, t, sess.twap,
                                                    sess.high, sess.low)
+                    else:
+                        dec = BS.bot8_price_action(spot, vix, hist, today, t, sess.spots,
+                                                   prev_day_high, prev_day_low)
                     st["last_eval"] = now
                     st["status"] = "WAIT" if dec.action == "WAIT" else "SIGNAL"
                     st["reason"] = dec.reason
