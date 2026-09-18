@@ -80,3 +80,345 @@ BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23387/prev23285 lo=232
 BOT7: WAIT           | NOT_DISPLACED +58 vs +/-109 (twap 23329)
 BOT8: WAIT           | [WAIT] NO_STRUCTURAL_BREAK — UPTREND, price 23387 inside [23354, 23385]
 PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[14:59:26] CYCLE 10
+DHAN: LIVE 14:59:26 (local fetch)   NIFTY 23385.0   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23329.3
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23387/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +56 vs +/-109 (twap 23329)
+BOT8: WAIT           | [WAIT] NO_STRUCTURAL_BREAK — UPTREND, price 23385 inside [23380, 23385]
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[14:59:56] CYCLE 11
+DHAN: LIVE 14:59:56 (local fetch)   NIFTY 23385.65   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23330.0
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23387/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +56 vs +/-109 (twap 23330)
+BOT8: WAIT           | [WAIT] NO_STRUCTURAL_BREAK — UPTREND, price 23386 inside [23380, 23385]
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:00:26] CYCLE 12
+DHAN: LIVE 15:00:26 (local fetch)   NIFTY 23372.85   VIX 11.36   sessHi 23387.0 sessLo 23286.6 twap 23330.6
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:00:56] CYCLE 13
+DHAN: LIVE 15:00:56 (local fetch)   NIFTY 23368.95   VIX 11.36   sessHi 23387.0 sessLo 23286.6 twap 23331.1
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:01:26] CYCLE 14
+DHAN: LIVE 15:01:26 (local fetch)   NIFTY 23364.9   VIX 11.36   sessHi 23387.0 sessLo 23286.6 twap 23331.5
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:01:57 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:01:58 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+2026-09-18 15:02:01 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 4.5s...
+2026-09-18 15:02:06 | WARNING  | data.dhan_client | Dhan marketfeed/ltp failed after 3 attempts.
+2026-09-18 15:02:06 | ERROR    | execution.multileg_paper_broker | SESSION: index quote incomplete — cycle skipped
+[15:01:57] CYCLE 15  DHAN: NO DATA — cycle skipped, no bot evaluated
+2026-09-18 15:02:36 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+
+[15:02:36] CYCLE 16
+DHAN: LIVE 15:02:36 (local fetch)   NIFTY 23359.1   VIX 11.37   sessHi 23387.0 sessLo 23286.6 twap 23331.8
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:03:07] CYCLE 17
+DHAN: LIVE 15:03:07 (local fetch)   NIFTY 23356.5   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23332.1
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:03:37] CYCLE 18
+DHAN: LIVE 15:03:37 (local fetch)   NIFTY 23362.05   VIX 11.37   sessHi 23387.0 sessLo 23286.6 twap 23332.5
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:04:07] CYCLE 19
+DHAN: LIVE 15:04:07 (local fetch)   NIFTY 23357.05   VIX 11.38   sessHi 23387.0 sessLo 23286.6 twap 23332.8
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:04:38] CYCLE 20
+DHAN: LIVE 15:04:38 (local fetch)   NIFTY 23353.65   VIX 11.37   sessHi 23387.0 sessLo 23286.6 twap 23333.0
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:05:08 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:05:09 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+2026-09-18 15:05:12 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 4.5s...
+2026-09-18 15:05:17 | WARNING  | data.dhan_client | Dhan marketfeed/ltp failed after 3 attempts.
+2026-09-18 15:05:17 | ERROR    | execution.multileg_paper_broker | SESSION: index quote incomplete — cycle skipped
+[15:05:08] CYCLE 21  DHAN: NO DATA — cycle skipped, no bot evaluated
+2026-09-18 15:05:47 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:05:48 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+
+[15:05:47] CYCLE 22
+DHAN: LIVE 15:05:47 (local fetch)   NIFTY 23351.3   VIX 11.4   sessHi 23387.0 sessLo 23286.6 twap 23333.2
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:06:21] CYCLE 23
+DHAN: LIVE 15:06:21 (local fetch)   NIFTY 23356.25   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23333.5
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:06:51] CYCLE 24
+DHAN: LIVE 15:06:51 (local fetch)   NIFTY 23355.9   VIX 11.4   sessHi 23387.0 sessLo 23286.6 twap 23333.8
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:07:21] CYCLE 25
+DHAN: LIVE 15:07:21 (local fetch)   NIFTY 23351.45   VIX 11.38   sessHi 23387.0 sessLo 23286.6 twap 23334.0
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:07:52] CYCLE 26
+DHAN: LIVE 15:07:52 (local fetch)   NIFTY 23349.6   VIX 11.38   sessHi 23387.0 sessLo 23286.6 twap 23334.1
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:08:22 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:08:23 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+
+[15:08:22] CYCLE 27
+DHAN: LIVE 15:08:22 (local fetch)   NIFTY 23346.65   VIX 11.42   sessHi 23387.0 sessLo 23286.6 twap 23334.3
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:08:56] CYCLE 28
+DHAN: LIVE 15:08:56 (local fetch)   NIFTY 23342.05   VIX 11.4   sessHi 23387.0 sessLo 23286.6 twap 23334.4
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:09:26] CYCLE 29
+DHAN: LIVE 15:09:26 (local fetch)   NIFTY 23341.35   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23334.4
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:09:56 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:09:58 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+
+[15:09:56] CYCLE 30
+DHAN: LIVE 15:09:56 (local fetch)   NIFTY 23343.5   VIX 11.41   sessHi 23387.0 sessLo 23286.6 twap 23334.5
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:10:31] CYCLE 31
+DHAN: LIVE 15:10:31 (local fetch)   NIFTY 23342.05   VIX 11.41   sessHi 23387.0 sessLo 23286.6 twap 23334.6
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:11:01 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:11:03 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+
+[15:11:01] CYCLE 32
+DHAN: LIVE 15:11:01 (local fetch)   NIFTY 23341.4   VIX 11.41   sessHi 23387.0 sessLo 23286.6 twap 23334.7
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:11:36] CYCLE 33
+DHAN: LIVE 15:11:36 (local fetch)   NIFTY 23343.9   VIX 11.43   sessHi 23387.0 sessLo 23286.6 twap 23334.8
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:12:06 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:12:07 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+2026-09-18 15:12:10 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 4.5s...
+2026-09-18 15:12:15 | WARNING  | data.dhan_client | Dhan marketfeed/ltp failed after 3 attempts.
+2026-09-18 15:12:15 | ERROR    | execution.multileg_paper_broker | SESSION: index quote incomplete — cycle skipped
+[15:12:06] CYCLE 34  DHAN: NO DATA — cycle skipped, no bot evaluated
+
+[15:12:45] CYCLE 35
+DHAN: LIVE 15:12:45 (local fetch)   NIFTY 23335.0   VIX 11.41   sessHi 23387.0 sessLo 23286.6 twap 23334.8
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:13:15 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:13:16 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+
+[15:13:15] CYCLE 36
+DHAN: LIVE 15:13:15 (local fetch)   NIFTY 23342.7   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23334.9
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:13:50 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+
+[15:13:50] CYCLE 37
+DHAN: LIVE 15:13:50 (local fetch)   NIFTY 23345.25   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23335.0
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:14:21] CYCLE 38
+DHAN: LIVE 15:14:21 (local fetch)   NIFTY 23342.05   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23335.0
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:14:51 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:14:53 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+2026-09-18 15:14:56 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 4.5s...
+2026-09-18 15:15:00 | WARNING  | data.dhan_client | Dhan marketfeed/ltp failed after 3 attempts.
+2026-09-18 15:15:00 | ERROR    | execution.multileg_paper_broker | SESSION: index quote incomplete — cycle skipped
+[15:14:51] CYCLE 39  DHAN: NO DATA — cycle skipped, no bot evaluated
+
+[15:15:30] CYCLE 40
+DHAN: LIVE 15:15:30 (local fetch)   NIFTY 23341.85   VIX 11.37   sessHi 23387.0 sessLo 23286.6 twap 23335.1
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:16:00] CYCLE 41
+DHAN: LIVE 15:16:00 (local fetch)   NIFTY 23341.85   VIX 11.37   sessHi 23387.0 sessLo 23286.6 twap 23335.2
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:16:30 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:16:32 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+2026-09-18 15:16:35 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 4.5s...
+2026-09-18 15:16:40 | WARNING  | data.dhan_client | Dhan marketfeed/ltp failed after 3 attempts.
+2026-09-18 15:16:40 | ERROR    | execution.multileg_paper_broker | SESSION: index quote incomplete — cycle skipped
+[15:16:30] CYCLE 42  DHAN: NO DATA — cycle skipped, no bot evaluated
+
+[15:17:10] CYCLE 43
+DHAN: LIVE 15:17:10 (local fetch)   NIFTY 23341.85   VIX 11.37   sessHi 23387.0 sessLo 23286.6 twap 23335.2
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 15:17:40 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:17:41 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+2026-09-18 15:17:44 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 4.5s...
+2026-09-18 15:17:49 | WARNING  | data.dhan_client | Dhan marketfeed/ltp failed after 3 attempts.
+2026-09-18 15:17:49 | ERROR    | execution.multileg_paper_broker | SESSION: index quote incomplete — cycle skipped
+[15:17:40] CYCLE 44  DHAN: NO DATA — cycle skipped, no bot evaluated
+2026-09-18 15:18:19 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 1.5s...
+2026-09-18 15:18:20 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 3.0s...
+2026-09-18 15:18:23 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/ltp (HTTP 429). Backing off 4.5s...
+2026-09-18 15:18:28 | WARNING  | data.dhan_client | Dhan marketfeed/ltp failed after 3 attempts.
+2026-09-18 15:18:28 | ERROR    | execution.multileg_paper_broker | SESSION: index quote incomplete — cycle skipped
+[15:18:19] CYCLE 45  DHAN: NO DATA — cycle skipped, no bot evaluated
+
+[15:18:58] CYCLE 46
+DHAN: LIVE 15:18:58 (local fetch)   NIFTY 23341.85   VIX 11.4   sessHi 23387.0 sessLo 23286.6 twap 23335.3
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:19:28] CYCLE 47
+DHAN: LIVE 15:19:28 (local fetch)   NIFTY 23341.85   VIX 11.4   sessHi 23387.0 sessLo 23286.6 twap 23335.3
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[15:19:58] CYCLE 48
+DHAN: LIVE 15:19:58 (local fetch)   NIFTY 23341.85   VIX 11.39   sessHi 23387.0 sessLo 23286.6 twap 23335.4
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | TOO_LATE_TO_OPEN
+BOT7: WAIT           | TOO_LATE_TO_OPEN
+BOT8: WAIT           | [WAIT] TOO_LATE_TO_OPEN
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00

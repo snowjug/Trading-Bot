@@ -219,8 +219,12 @@ def evaluate(prices: List[float], atr: float, vix: Optional[float], now: dtime,
         return PriceActionSignal("WAIT", "NO_CONFIRMED_SWINGS", structure=st, atr=atr)
 
     # ── did price break a level, and how has it behaved since? ──
-    since_break_up = [p for p in prices[-12:] if p > st.swing_high + brk]
-    since_break_dn = [p for p in prices[-12:] if p < st.swing_low - brk]
+    # Index of the most recent break, so "since the break" means exactly that.
+    recent = prices[-12:]
+    up_idx = [i for i, p in enumerate(recent) if p > st.swing_high + brk]
+    dn_idx = [i for i, p in enumerate(recent) if p < st.swing_low - brk]
+    since_break_up = [recent[i] for i in up_idx]
+    since_break_dn = [recent[i] for i in dn_idx]
 
     if since_break_up:
         peak = max(prices[-12:])
@@ -234,7 +238,12 @@ def evaluate(prices: List[float], atr: float, vix: Optional[float], now: dtime,
         # happens to satisfy both. Checking them on the same bar is what held entries
         # to 5 sessions out of 400 while 74 reached the setup: price would enter the
         # zone on one bar and resume on a later one, and neither bar passed alone.
-        touched = any(p <= st.swing_high + rtst for p in prices[-8:])
+        # A retest only counts if it happened AFTER the break. Scanning a fixed
+        # trailing window would also see the pre-break consolidation, which sits at
+        # the level by construction — that would read an extended break that never
+        # pulled back as though it had already been retested.
+        after_break = recent[up_idx[0] + 1:]
+        touched = any(p <= st.swing_high + rtst for p in after_break)
         if touched:
             if REQUIRE_TREND_ALIGNMENT and daily_bias == "DOWNTREND":
                 return PriceActionSignal(
@@ -289,7 +298,8 @@ def evaluate(prices: List[float], atr: float, vix: Optional[float], now: dtime,
             return PriceActionSignal(
                 "REJECTED", f"FAILED_BREAKDOWN — reclaimed {st.swing_low:.0f}",
                 structure=st, breakout_state="FAILED", retest_state="FAILED", atr=atr)
-        touched = any(p >= st.swing_low - rtst for p in prices[-8:])
+        after_break = recent[dn_idx[0] + 1:]
+        touched = any(p >= st.swing_low - rtst for p in after_break)
         if touched:
             if REQUIRE_TREND_ALIGNMENT and daily_bias == "UPTREND":
                 return PriceActionSignal(
