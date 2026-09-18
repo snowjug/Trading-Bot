@@ -22,8 +22,8 @@ from dotenv import load_dotenv; load_dotenv()
 from src.config import Config
 from src.data.dhan_client import get_dhan_client
 from src.execution import bot_signals as BS
-from src.execution.paper_engine import PaperBroker, validate_quote
-from src.execution.paper_engine import LegSpec
+from src.execution.multileg_paper_broker import PaperBroker, validate_quote
+from src.execution.multileg_paper_broker import LegSpec
 from src.risk.risk_engine import RiskEngine
 sys.path.insert(0, "scripts")
 from run_paper_session import resolve_legs, risk_gate, leg_quotes, next_weekly_expiry

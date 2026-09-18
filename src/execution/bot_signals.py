@@ -22,7 +22,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from src.execution.paper_engine import LegSpec
+from src.execution.multileg_paper_broker import LegSpec
 from src.utils.logging import setup_logging
 
 logger = setup_logging("execution.bot_signals")

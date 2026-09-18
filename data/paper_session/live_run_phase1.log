@@ -1,0 +1,171 @@
+2026-09-18 13:15:13 | INFO     | scripts.run_paper_session | SAFETY: LIVE_TRADING_ENABLED=False — paper only
+2026-09-18 13:15:13 | INFO     | scripts.run_paper_session | history 1901 sessions | next weekly expiry 2026-09-22 | sessions to expiry 2
+2026-09-18 13:15:14 | INFO     | scripts.run_paper_session | session seeded from 49 authentic candles: high 23349.8 low 23286.6 twap 23314.80
+
+[13:15:14] CYCLE 1
+DHAN: LIVE 13:15:14 (local fetch)   NIFTY 23330.9   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23315.1
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +16 vs +/-109 (twap 23315)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:15:44] CYCLE 2
+DHAN: LIVE 13:15:44 (local fetch)   NIFTY 23324.2   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23315.3
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +9 vs +/-109 (twap 23315)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:16:14] CYCLE 3
+DHAN: LIVE 13:16:14 (local fetch)   NIFTY 23325.0   VIX 11.55   sessHi 23349.8 sessLo 23286.6 twap 23315.5
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +10 vs +/-109 (twap 23315)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:16:44] CYCLE 4
+DHAN: LIVE 13:16:44 (local fetch)   NIFTY 23324.55   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23315.7
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +9 vs +/-109 (twap 23316)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:17:14] CYCLE 5
+DHAN: LIVE 13:17:14 (local fetch)   NIFTY 23328.7   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23315.9
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +13 vs +/-109 (twap 23316)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 13:17:44 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 1.5s...
+
+[13:17:44] CYCLE 6
+DHAN: LIVE 13:17:44 (local fetch)   NIFTY 23329.45   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23316.1
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +13 vs +/-109 (twap 23316)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 13:18:16 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 1.5s...
+
+[13:18:16] CYCLE 7
+DHAN: LIVE 13:18:16 (local fetch)   NIFTY 23324.6   VIX 11.57   sessHi 23349.8 sessLo 23286.6 twap 23316.3
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +8 vs +/-109 (twap 23316)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 13:18:48 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 1.5s...
+
+[13:18:48] CYCLE 8
+DHAN: LIVE 13:18:48 (local fetch)   NIFTY 23323.25   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23316.4
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +7 vs +/-109 (twap 23316)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:19:19] CYCLE 9
+DHAN: LIVE 13:19:19 (local fetch)   NIFTY 23322.15   VIX 11.57   sessHi 23349.8 sessLo 23286.6 twap 23316.5
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +6 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 13:19:49 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 1.5s...
+2026-09-18 13:19:51 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 3.0s...
+2026-09-18 13:19:54 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 4.5s...
+2026-09-18 13:19:58 | WARNING  | data.dhan_client | Dhan marketfeed/quote failed after 3 attempts.
+2026-09-18 13:19:58 | ERROR    | execution.paper_engine | SESSION: index quote incomplete — cycle skipped
+2026-09-18 13:20:29 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 1.5s...
+
+[13:20:28] CYCLE 11
+DHAN: LIVE 13:20:28 (local fetch)   NIFTY 23320.3   VIX 11.58   sessHi 23349.8 sessLo 23286.6 twap 23316.6
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +4 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:21:00] CYCLE 12
+DHAN: LIVE 13:21:00 (local fetch)   NIFTY 23320.4   VIX 11.58   sessHi 23349.8 sessLo 23286.6 twap 23316.6
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +4 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:21:30] CYCLE 13
+DHAN: LIVE 13:21:30 (local fetch)   NIFTY 23321.4   VIX 11.58   sessHi 23349.8 sessLo 23286.6 twap 23316.7
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +5 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:22:00] CYCLE 14
+DHAN: LIVE 13:22:00 (local fetch)   NIFTY 23323.5   VIX 11.57   sessHi 23349.8 sessLo 23286.6 twap 23316.8
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +7 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 13:22:30 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 1.5s...
+
+[13:22:30] CYCLE 15
+DHAN: LIVE 13:22:30 (local fetch)   NIFTY 23324.3   VIX 11.58   sessHi 23349.8 sessLo 23286.6 twap 23317.0
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +7 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:23:02] CYCLE 16
+DHAN: LIVE 13:23:02 (local fetch)   NIFTY 23325.0   VIX 11.57   sessHi 23349.8 sessLo 23286.6 twap 23317.1
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +8 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:23:32] CYCLE 17
+DHAN: LIVE 13:23:32 (local fetch)   NIFTY 23323.3   VIX 11.57   sessHi 23349.8 sessLo 23286.6 twap 23317.2
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +6 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 13:24:02 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 1.5s...
+
+[13:24:02] CYCLE 18
+DHAN: LIVE 13:24:02 (local fetch)   NIFTY 23324.55   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23317.3
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +7 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+2026-09-18 13:24:34 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 1.5s...
+2026-09-18 13:24:35 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 3.0s...
+2026-09-18 13:24:38 | WARNING  | data.dhan_client | Dhan rate limit on marketfeed/quote (HTTP 429). Backing off 4.5s...
+2026-09-18 13:24:43 | WARNING  | data.dhan_client | Dhan marketfeed/quote failed after 3 attempts.
+2026-09-18 13:24:43 | ERROR    | execution.paper_engine | SESSION: index quote incomplete — cycle skipped
+
+[13:25:13] CYCLE 20
+DHAN: LIVE 13:25:13 (local fetch)   NIFTY 23323.65   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23317.4
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +6 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00
+
+[13:25:43] CYCLE 21
+DHAN: LIVE 13:25:43 (local fetch)   NIFTY 23323.8   VIX 11.56   sessHi 23349.8 sessLo 23286.6 twap 23317.5
+BOT1: WAIT           | REGIME_BLOCKED rsi=27.3 outside [40.0,68.0]
+BOT2: WAIT           | NOT_ENTRY_SESSION: 2 sessions to 2026-09-22, entry is exactly 5
+BOT6: WAIT           | NO_BREAKOUT rsi=27.3 ema9<ema21 hi=23350/prev23285 lo=23287/prev23116
+BOT7: WAIT           | NOT_DISPLACED +6 vs +/-109 (twap 23317)
+PAPER_POSITIONS: 0   CLOSED: 0   REALIZED: Rs 0.00   UNREALIZED: Rs 0.00   COSTS: Rs 0.00

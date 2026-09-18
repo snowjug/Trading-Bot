@@ -32,7 +32,7 @@ from src.config import Config
 from src.data.dhan_client import get_dhan_client
 from src.execution import bot_signals as BS
 from src.execution.dhan_contract_resolver import DhanContractResolver
-from src.execution.paper_engine import PaperBroker, PaperPosition, validate_quote
+from src.execution.multileg_paper_broker import PaperBroker, PaperPosition, validate_quote
 from src.risk.risk_engine import RiskEngine
 from src.utils.logging import setup_logging
 
