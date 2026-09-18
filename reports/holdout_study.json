@@ -1,0 +1,326 @@
+{
+  "BOT6_frozen": {
+    "metrics": {
+      "trades": 14,
+      "wins": 8,
+      "losses": 6,
+      "win_rate": 57.1,
+      "gross": -1418.3,
+      "costs": 1012.95,
+      "net": -2431.25,
+      "capital_deployed": 77936.95,
+      "avg_capital": 5566.93,
+      "max_capital": 7816.9,
+      "ret_on_deployed": -3.12,
+      "ret_on_max_capital": -31.1,
+      "ret_on_account": -2.43,
+      "avg_trade": -173.66,
+      "median_trade": 392.75,
+      "expectancy": -173.66,
+      "profit_factor": 0.803,
+      "max_dd": 3908.85,
+      "max_losing_streak": 2,
+      "avg_win": 1239.93,
+      "avg_loss": -2058.45,
+      "best_day": "2026-07-17 +3,636",
+      "worst_day": "2026-07-03 -3,809",
+      "profitable_days": 8,
+      "losing_days": 6,
+      "no_trade_days": 51,
+      "sessions": 65,
+      "pct_sessions_traded": 21.5,
+      "trades_per_day": 0.22,
+      "avg_daily_ret_pct": -5.495,
+      "median_daily_ret_pct": 7.651,
+      "pct_days_ge_1pct": 57.1,
+      "pct_days_ge_2pct": 57.1,
+      "pct_days_le_m1pct": 42.9,
+      "pct_days_le_m2pct": 35.7,
+      "exit_reasons": {
+        "EOD": 13,
+        "STOP": 1
+      }
+    },
+    "scenarios": [
+      {
+        "account": 20000.0,
+        "lots": 1,
+        "capital_per_trade": 7816.9,
+        "net": -2431.25,
+        "return_pct": -12.16,
+        "max_dd": 3908.85,
+        "dd_pct": 19.54
+      },
+      {
+        "account": 50000.0,
+        "lots": 3,
+        "capital_per_trade": 23450.7,
+        "net": -7293.75,
+        "return_pct": -14.59,
+        "max_dd": 11726.55,
+        "dd_pct": 23.45
+      },
+      {
+        "account": 100000.0,
+        "lots": 7,
+        "capital_per_trade": 54718.3,
+        "net": -17018.75,
+        "return_pct": -17.02,
+        "max_dd": 27361.95,
+        "dd_pct": 27.36
+      }
+    ],
+    "type": "LONG_OPTION"
+  },
+  "BOT7_frozen": {
+    "metrics": {
+      "trades": 5,
+      "wins": 3,
+      "losses": 2,
+      "win_rate": 60.0,
+      "gross": 3739.45,
+      "costs": 370.96,
+      "net": 3368.49,
+      "capital_deployed": 28932.8,
+      "avg_capital": 5786.56,
+      "max_capital": 12898.6,
+      "ret_on_deployed": 11.64,
+      "ret_on_max_capital": 26.12,
+      "ret_on_account": 3.37,
+      "avg_trade": 673.7,
+      "median_trade": 175.55,
+      "expectancy": 673.7,
+      "profit_factor": 3.769,
+      "max_dd": 1216.39,
+      "max_losing_streak": 2,
+      "avg_win": 1528.29,
+      "avg_loss": -608.19,
+      "best_day": "2026-06-23 +4,144",
+      "worst_day": "2026-09-01 -851",
+      "profitable_days": 3,
+      "losing_days": 2,
+      "no_trade_days": 60,
+      "sessions": 65,
+      "pct_sessions_traded": 7.7,
+      "trades_per_day": 0.08,
+      "avg_daily_ret_pct": 16.434,
+      "median_daily_ret_pct": 3.254,
+      "pct_days_ge_1pct": 60.0,
+      "pct_days_ge_2pct": 60.0,
+      "pct_days_le_m1pct": 40.0,
+      "pct_days_le_m2pct": 40.0,
+      "exit_reasons": {
+        "EOD": 5
+      }
+    },
+    "scenarios": [
+      {
+        "account": 20000.0,
+        "lots": 0,
+        "note": "NOT EXECUTABLE \u2014 one lot needs up to Rs 12,899"
+      },
+      {
+        "account": 50000.0,
+        "lots": 2,
+        "capital_per_trade": 25797.2,
+        "net": 6736.98,
+        "return_pct": 13.47,
+        "max_dd": 2432.78,
+        "dd_pct": 4.87
+      },
+      {
+        "account": 100000.0,
+        "lots": 4,
+        "capital_per_trade": 51594.4,
+        "net": 13473.96,
+        "return_pct": 13.47,
+        "max_dd": 4865.56,
+        "dd_pct": 4.87
+      }
+    ],
+    "type": "LONG_OPTION"
+  },
+  "BOT8_frozen": {
+    "metrics": {
+      "trades": 0,
+      "sessions": 65,
+      "net": 0.0,
+      "note": "no trades"
+    },
+    "scenarios": [
+      {
+        "account": 20000.0,
+        "lots": 0,
+        "note": "no trades"
+      },
+      {
+        "account": 50000.0,
+        "lots": 0,
+        "note": "no trades"
+      },
+      {
+        "account": 100000.0,
+        "lots": 0,
+        "note": "no trades"
+      }
+    ],
+    "type": "LONG_OPTION"
+  },
+  "CAND_cont_thr060": {
+    "metrics": {
+      "trades": 5,
+      "wins": 3,
+      "losses": 2,
+      "win_rate": 60.0,
+      "gross": 13635.05,
+      "costs": 384.99,
+      "net": 13250.06,
+      "capital_deployed": 28160.6,
+      "avg_capital": 5632.12,
+      "max_capital": 10636.6,
+      "ret_on_deployed": 47.05,
+      "ret_on_max_capital": 124.57,
+      "ret_on_account": 13.25,
+      "avg_trade": 2650.01,
+      "median_trade": 1763.7,
+      "expectancy": 2650.01,
+      "profit_factor": 10.395,
+      "max_dd": 1410.4,
+      "max_losing_streak": 2,
+      "avg_win": 4886.82,
+      "avg_loss": -705.2,
+      "best_day": "2026-07-08 +7,157",
+      "worst_day": "2026-09-11 -790",
+      "profitable_days": 3,
+      "losing_days": 2,
+      "no_trade_days": 60,
+      "sessions": 65,
+      "pct_sessions_traded": 7.7,
+      "trades_per_day": 0.08,
+      "avg_daily_ret_pct": 56.779,
+      "median_daily_ret_pct": 67.291,
+      "pct_days_ge_1pct": 60.0,
+      "pct_days_ge_2pct": 60.0,
+      "pct_days_le_m1pct": 40.0,
+      "pct_days_le_m2pct": 40.0,
+      "exit_reasons": {
+        "EOD": 3,
+        "TARGET": 2
+      }
+    },
+    "scenarios": [
+      {
+        "account": 20000.0,
+        "lots": 1,
+        "capital_per_trade": 10636.6,
+        "net": 13250.06,
+        "return_pct": 66.25,
+        "max_dd": 1410.4,
+        "dd_pct": 7.05
+      },
+      {
+        "account": 50000.0,
+        "lots": 2,
+        "capital_per_trade": 21273.2,
+        "net": 26500.12,
+        "return_pct": 53.0,
+        "max_dd": 2820.8,
+        "dd_pct": 5.64
+      },
+      {
+        "account": 100000.0,
+        "lots": 5,
+        "capital_per_trade": 53183.0,
+        "net": 66250.3,
+        "return_pct": 66.25,
+        "max_dd": 7052.0,
+        "dd_pct": 7.05
+      }
+    ],
+    "type": "LONG_OPTION"
+  },
+  "BOT1_frozen_condor": {
+    "metrics": {
+      "trades": 10,
+      "win_rate": 100.0,
+      "gross": 6290.7,
+      "costs": 1230.21,
+      "net": 5060.49,
+      "expectancy": 506.05,
+      "profit_factor": null,
+      "max_dd": 0.0,
+      "max_losing_streak": 0,
+      "avg_win": 506.05,
+      "avg_loss": null,
+      "avg_credit_pts": 9.68,
+      "avg_max_risk": 12370.93,
+      "max_max_risk": 12705.55,
+      "ret_on_risk": 4.091,
+      "ret_on_avg_risk_total": 40.91,
+      "tstat": 7.95
+    },
+    "type": "SPREAD",
+    "breaches": 0,
+    "skips": {
+      "NOT_ENTRY_SESSION": 7,
+      "EXPIRY_USED": 37,
+      "RSI_BLOCK": 10
+    }
+  },
+  "BOT2_frozen_vertical": {
+    "metrics": {
+      "trades": 10,
+      "win_rate": 100.0,
+      "gross": 10888.8,
+      "costs": 627.48,
+      "net": 10261.32,
+      "expectancy": 1026.13,
+      "profit_factor": null,
+      "max_dd": 0.0,
+      "max_losing_streak": 0,
+      "avg_win": 1026.13,
+      "avg_loss": null,
+      "avg_credit_pts": 18.24,
+      "avg_max_risk": 37814.27,
+      "max_max_risk": 38415.0,
+      "ret_on_risk": 2.714,
+      "ret_on_avg_risk_total": 27.14,
+      "tstat": 5.52
+    },
+    "type": "SPREAD",
+    "breaches": 1,
+    "skips": {
+      "NOT_ENTRY_SESSION": 7,
+      "EXPIRY_USED": 37,
+      "RSI_BLOCK": 10
+    }
+  },
+  "CAND_condor_2.2sd": {
+    "metrics": {
+      "trades": 10,
+      "win_rate": 100.0,
+      "gross": 2941.9,
+      "costs": 1220.59,
+      "net": 1721.31,
+      "expectancy": 172.13,
+      "profit_factor": null,
+      "max_dd": 0.0,
+      "max_losing_streak": 0,
+      "avg_win": 172.13,
+      "avg_loss": null,
+      "avg_credit_pts": 4.53,
+      "avg_max_risk": 12705.81,
+      "max_max_risk": 12853.75,
+      "ret_on_risk": 1.355,
+      "ret_on_avg_risk_total": 13.55,
+      "tstat": 4.94
+    },
+    "type": "SPREAD",
+    "breaches": 0,
+    "skips": {
+      "NOT_ENTRY_SESSION": 7,
+      "EXPIRY_USED": 37,
+      "RSI_BLOCK": 10
+    }
+  }
+}

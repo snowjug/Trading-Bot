@@ -144,3 +144,41 @@ point. The open items are **strategy-owner decisions**, not engineering tasks:
 Bot 1's RSI band and time-scaling, Bot 6's unreachable target, and whether any of
 these strategies should be pursued at all given that three of four have a negative
 or zero net edge on authentic multi-year data.
+
+---
+
+## UPDATE 2026-09-18 — 3-MONTH PROFITABILITY STUDY CLOSES BOT 1
+
+Full report: `reports/FINAL_3_MONTH_PROFITABILITY_STUDY.md`.
+
+The holdout (2026-06-18 → 2026-09-18) and a fresh 5-bot candidate search were run
+on branch `main`. **Outcome B: no strategy met the money-plus-quality gate.**
+
+BOT 1 measured at **t = 6.86 over 79 rupee-priced cycles** and nearly passed. It
+was rejected after re-measurement. The rupee simulator can only run from 2024,
+because legacy bhavcopy has no `NewBrdLotQty` and it fails closed on lot size —
+silently excluding COVID, 2021-22 and the pre-2024 expiry regime. Re-measuring the
+identical geometry in **points** over 2019-2026 (259 cycles, no lot size needed):
+
+| Window | n | Gross pts/cycle | t | Breach |
+|---|---|---|---|---|
+| ALL 2019-2026 | 259 | **+0.15** | **0.06** | 8.5% |
+| Pre-2024 | 159 | −4.42 | −1.27 | 10.7% |
+| 2024+ | 100 | +7.41 | 3.19 | 5.0% |
+
+**Six of eight years lose money. The only two profitable years, 2025 and 2026, are
+the only two with a 0.0% breach rate.** This independently reproduces the 158-cycle
+finding already recorded above (+2.90 pts, t=+1.40) and confirms the "benign-period
+artefact" diagnosis was correct.
+
+The maximum-loss tail is **not** hypothetical: **6 of 259 cycles (2.3%) lost ~95% of
+the wing width** (≈ −₹12,350/lot), four of them at VIX between 12.7 and 20.6. Net
+of measured costs (₹123/cycle) the full-sample expectancy is **−₹113 per cycle**.
+
+Also closed: the sole intraday candidate to pass the DEV+VAL gate returned +₹13,250
+on the holdout but its **median trade is negative on both DEV (−₹560) and VAL
+(−₹1,009)**, and removing its single best VAL trade turns VAL negative. Rejected.
+
+Reproduce with `scripts/research/condor_regime_check.py`.
+
+**Test suite: 530 passed.**
