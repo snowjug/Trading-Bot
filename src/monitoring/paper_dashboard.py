@@ -54,7 +54,7 @@ def load_ledger(day: Optional[str] = None) -> Optional[Dict[str, Any]]:
         return None
 
 
-def parse_heartbeat(log: Path = SESSION_ROOT / "live_run.log") -> Dict[str, Any]:
+def parse_heartbeat(log: Optional[Path] = None) -> Dict[str, Any]:
     """
     Reads the LAST complete heartbeat block from the runner's log.
 
@@ -62,6 +62,10 @@ def parse_heartbeat(log: Path = SESSION_ROOT / "live_run.log") -> Dict[str, Any]
     ignored it could show "WAIT" with no explanation — which is exactly the
     ambiguity that makes "no opportunity" indistinguishable from "broken".
     """
+    # Resolved at call time, not bound as a default: a default argument captures
+    # SESSION_ROOT at import, so any later redirection of the session directory
+    # would be silently ignored and this would keep reading the original path.
+    log = log or (SESSION_ROOT / "live_run.log")
     out: Dict[str, Any] = {"cycle": None, "time": None, "bots": {},
                            "market": {}, "source": str(log), "available": False}
     if not log.exists():

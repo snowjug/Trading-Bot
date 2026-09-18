@@ -229,17 +229,34 @@ def evaluate(prices: List[float], atr: float, vix: Optional[float], now: dtime,
             return PriceActionSignal(
                 "REJECTED", f"FAILED_BREAKOUT — gave back {st.swing_high:.0f}",
                 structure=st, breakout_state="FAILED", retest_state="FAILED", atr=atr)
-        if price <= st.swing_high + rtst:
+        # Did price actually COME BACK to the level at some point since the break?
+        # The retest and the resumption are two events in sequence, not one bar that
+        # happens to satisfy both. Checking them on the same bar is what held entries
+        # to 5 sessions out of 400 while 74 reached the setup: price would enter the
+        # zone on one bar and resume on a later one, and neither bar passed alone.
+        touched = any(p <= st.swing_high + rtst for p in prices[-8:])
+        if touched:
             if REQUIRE_TREND_ALIGNMENT and daily_bias == "DOWNTREND":
                 return PriceActionSignal(
                     "WAIT", "COUNTER_STRUCTURE — break up against a DOWNTREND daily bias",
                     structure=st, breakout_state="BROKEN_UP", retest_state="HELD", atr=atr)
             if price >= st.swing_high + resume and price > prices[-2]:
-                stop = min(prices[-6:]) - 0.15 * atr
+                # The BROKEN LEVEL is the invalidation. That is the entire thesis
+                # of trading the retest: if price gives the level back, the idea is
+                # wrong. The previous `min(prices[-6:])` was an arbitrary lookback
+                # with no structural meaning, and it produced stops so wide that the
+                # measured-move target could rarely clear the R:R floor.
+                stop = st.swing_high - 0.15 * atr
                 risk = price - stop
                 if risk <= 0:
                     return PriceActionSignal("WAIT", "DEGENERATE_RISK", structure=st, atr=atr)
-                target = price + max(min_rr * risk, 1.0 * atr)
+                # MEASURED MOVE, not a multiple of the stop. Deriving the target
+                # from min_rr would make the R:R test circular — raising the floor
+                # would raise the target with it and the check could never bind.
+                # The projection is the height of the base that broke, which is a
+                # structural quantity the market supplied.
+                base_height = max(st.swing_high - st.swing_low, 0.5 * atr)
+                target = st.swing_high + base_height
                 rr = (target - price) / risk
                 if rr < min_rr:
                     return PriceActionSignal(
@@ -272,17 +289,19 @@ def evaluate(prices: List[float], atr: float, vix: Optional[float], now: dtime,
             return PriceActionSignal(
                 "REJECTED", f"FAILED_BREAKDOWN — reclaimed {st.swing_low:.0f}",
                 structure=st, breakout_state="FAILED", retest_state="FAILED", atr=atr)
-        if price >= st.swing_low - rtst:
+        touched = any(p >= st.swing_low - rtst for p in prices[-8:])
+        if touched:
             if REQUIRE_TREND_ALIGNMENT and daily_bias == "UPTREND":
                 return PriceActionSignal(
                     "WAIT", "COUNTER_STRUCTURE — break down against an UPTREND daily bias",
                     structure=st, breakout_state="BROKEN_DOWN", retest_state="HELD", atr=atr)
             if price <= st.swing_low - resume and price < prices[-2]:
-                stop = max(prices[-6:]) + 0.15 * atr
+                stop = st.swing_low + 0.15 * atr
                 risk = stop - price
                 if risk <= 0:
                     return PriceActionSignal("WAIT", "DEGENERATE_RISK", structure=st, atr=atr)
-                target = price - max(min_rr * risk, 1.0 * atr)
+                base_height = max(st.swing_high - st.swing_low, 0.5 * atr)
+                target = st.swing_low - base_height
                 rr = (price - target) / risk
                 if rr < min_rr:
                     return PriceActionSignal(

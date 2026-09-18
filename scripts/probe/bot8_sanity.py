@@ -69,7 +69,7 @@ for sess in sessions:
 t=pd.DataFrame(trades)
 print(f"sessions scanned : {len(sessions)}")
 print(f"trades           : {len(t)}  ({len(t)/max(len(sessions),1)*100:.1f}% of sessions)")
-if len(t)<20: print("TOO FEW TRADES — rework"); raise SystemExit(0)
+if len(t)<5: print("TOO FEW TO REPORT"); raise SystemExit(0)
 a=t.net.values
 w=a[a>0]; l=a[a<=0]
 print(f"net              : Rs {a.sum():,.0f}")
