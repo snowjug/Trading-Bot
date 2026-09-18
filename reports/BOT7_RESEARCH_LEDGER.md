@@ -154,12 +154,159 @@ Status values: `SPECIFIED` → `TESTED` → `REJECTED` / `SURVIVED`.
 
 ---
 
+### C5 — RESULT OF THE DESCRIPTIVE PHASE (recorded before C6 was specified)
+
+Measured on 849 ATM straddle observations across 142 expiry cycles (2024-01 →
+2026-09), within-cycle so the spot level cancels:
+
+| sessions to expiry | mean premium change |
+|---|---|
+| 4 | −8.98% |
+| 3 | −14.03% |
+| 2 | −17.35% |
+| 1 | −27.14% |
+| **0 (expiry day)** | **−88.81%** |
+
+The asymmetry is real and large. It is also textbook theta acceleration, which is
+**compensation for gamma risk**, not free money — the premium decays fastest
+exactly when a single adverse move can exceed the whole premium. Whether it is
+tradable is therefore an open question, not a conclusion, and it is specified
+below as its own pre-registered candidate.
+
+---
+
+### C6 — Expiry-day defined-risk iron fly (specified AFTER C5's measurement, BEFORE testing)
+- **Hypothesis:** the 0DTE ATM straddle's −88.81% mean decay exceeds what its
+  realised gamma risk costs, so a short at-the-money structure held into settlement
+  has positive expectancy.
+- **Mechanism:** variance risk premium concentrated into the final session, plus
+  expiry-day pinning around the highest-open-interest strike.
+- **Counter-hypothesis to be taken seriously:** the decay is exactly fair
+  compensation for gamma, so the structure wins often and loses big. C3 already
+  produced that signature (77.3% win rate, negative expectancy), as did Bot 1.
+  A high win rate will NOT be treated as evidence.
+- **Data:** the 5-minute option grid; on expiry day the near-weekly series IS the
+  0DTE contract.
+- **Structure:** short ATM call + short ATM put, long call at ATM+4 strikes and
+  long put at ATM−4 strikes. Defined risk, so it fits both capital scenarios.
+- **Entry:** 09:20 on expiry day, at that bar's traded prices, contracts fixed then.
+- **Exit:** 15:15, at that bar's traded prices for the same four contracts.
+- **Sizing:** one lot. Max loss = 200 points − credit.
+- **Expected cost:** side-aware statutory charges on four legs plus slippage.
+- **Validation plan:** OOS 70/30, 4-fold walk-forward, slippage sweep, Monte Carlo,
+  Bonferroni across ALL candidates, and an explicit check that expectancy — not win
+  rate — is positive.
+- **Status:** SPECIFIED
+
+---
+
 ## Multiple-testing accounting
 
-Candidates specified: **5**. Every one executed counts toward the Bonferroni
+Candidates specified: **6** (C6 added after C5's descriptive phase, before testing). Executed: **7** including C2's two declared perturbations. Every one executed counts toward the Bonferroni
 denominator whether it succeeds or fails. If a candidate's rule is respecified
 after seeing results, that counts as an ADDITIONAL test and is recorded as such.
 
 ## Results
 
-*(empty — to be filled only after each candidate is executed)*
+All seven executions are recorded. **No candidate survived.**
+
+| Candidate | Trades | Net | t | Bonferroni p | Folds + | Survives slippage | **Verdict** |
+|---|---|---|---|---|---|---|---|
+| C1 overnight gap | 311 | +₹22,385 | +0.270 | 1.000 | 2/4 | no (dies at 1 pt) | **REJECTED** |
+| C2 NR7 breakout | 231 | +₹35,408 | +0.612 | 1.000 | 3/4 | yes | **REJECTED** |
+| C2 NR5 *(perturbation)* | 300 | −₹12,357 | −0.180 | 1.000 | 3/4 | no | **REJECTED** |
+| C2 NR10 *(perturbation)* | 163 | −₹25,226 | −0.580 | 1.000 | 1/4 | no | **REJECTED** |
+| C3 VIX vertical | 44 | −620 pts | −1.323 | 1.000 | 1/4 | no | **REJECTED** |
+| C4 opening range | 1,493 | −₹206,697 | −1.361 | 1.000 | 1/4 | no | **REJECTED** |
+| C6 expiry iron fly *(corrected)* | 318 | −₹22,094 | −0.305 | 1.000 | 1/4 | no | **REJECTED** |
+
+### What each result actually showed
+
+**C1** — nominally profitable but statistically empty (t = +0.27), OOS sign
+disagrees (+₹251 in-sample vs −₹341 out), and it dies at 1 point per side of
+slippage. Consistent with no edge.
+
+**C2** — the most interesting failure. At the specified lookback of 7 it makes
++₹35,408 and survives slippage. Both declared perturbations turn it negative:
+**NR5 −₹12,357 and NR10 −₹25,226.** A real volatility-contraction effect would not
+invert between a 5- and a 10-session lookback. The perturbation test did exactly
+what it exists for, and the n=7 result is noise. Had only n=7 been run, this would
+have looked like a candidate.
+
+**C3** — a **77.3% win rate with negative expectancy**, the same signature Bot 1
+produced. The variance risk premium at these strikes does not cover the tail. Win
+rate was explicitly excluded as evidence in advance, which is why this was caught.
+
+**C4** — decisively negative over 1,493 trades and corroborates Bots 5 and 6:
+intraday breakout structures on NIFTY options do not pay for their own costs.
+
+**C6** — see below. Its first version was an artefact and is retained as the
+clearest methodological lesson in this ledger.
+
+---
+
+## THE C6 ARTEFACT — recorded in full, not deleted
+
+The first implementation of C6 priced the exit from the 5-minute grid at 15:15. It
+reported:
+
+> 218 trades, **+₹456,653**, 78.0% win rate, **t = +12.789**, Bonferroni p = 0.000,
+> **4/4** walk-forward folds positive, profitable at every slippage level,
+> **VERDICT: SURVIVED**
+
+That result was false. Holding a fixed strike from 09:20 to 15:15 requires that
+strike to still be inside the ATM±6 window at 15:15. On a large move it is not, so
+the session was silently skipped — and those are exactly the sessions a short
+straddle loses on:
+
+| | sessions | mean abs move | max | share exceeding the 200-pt wing |
+|---|---|---|---|---|
+| priced | 218 | **53.4 pts** | 140.7 | **0.0%** |
+| skipped | 101 | **201.3 pts** | 532.1 | **36.6%** |
+
+The giveaway was visible before the check: the worst trade was −₹3,891 against a
+₹13,000 structural maximum loss. A short straddle that never approaches its own max
+loss over 218 expiry days is not a strategy, it is a filter.
+
+**The fix was not to widen the window.** It is expiry day, so the position settles
+at intrinsic against the exchange's official settlement price and needs no exit
+quote at all. With that, 318 of 319 sessions price and only 1 is dropped:
+
+| | first (artefact) | corrected |
+|---|---|---|
+| trades | 218 | **318** |
+| net | +₹456,653 | **−₹22,094** |
+| win rate | 78.0% | 53.5% |
+| t | +12.789 | **−0.305** |
+| worst trade | −₹3,891 | **−₹8,890** |
+| folds positive | 4/4 | **1/4** |
+| verdict | SURVIVED | **REJECTED** |
+
+Gross was +₹21,551 against ₹43,645 of costs — the same pattern as Bot 6: a small
+gross edge that transaction costs more than consume.
+
+---
+
+## BOT 7 CONCLUSION: **NO VALIDATED EDGE**
+
+Seven executions, zero survivors. This is an acceptable result and no strategy was
+forced into existence to avoid it.
+
+Three findings generalise beyond Bot 7:
+
+1. **Costs dominate.** C6 and Bot 6 both had positive gross edges destroyed
+   entirely by statutory charges and spread. On NIFTY options at one lot, the cost
+   floor is roughly ₹75–₹140 per round trip, and none of the effects tested cleared
+   it.
+2. **A high win rate is not evidence.** C3 (77.3%), the C6 artefact (78.0%) and
+   Bot 1 (94.6%) were all non-positive in expectancy.
+3. **Silent skipping is the most dangerous bug in this codebase.** It produced a
+   t = +12.8 result out of nothing. Any simulation that drops a session must report
+   what it dropped and compare it against what it kept.
+
+## Capital viability
+
+Not applicable — no candidate survived to be sized. For the record, at both
+₹50,000 and ₹1,00,000 only defined-risk structures and single long options are
+tradable at all; naked short premium requires roughly ₹1.3L of SPAN margin per lot
+and is out of scope at both levels.

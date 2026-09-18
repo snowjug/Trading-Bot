@@ -1,107 +1,130 @@
 # AI MASTER STATUS
 
-**Updated:** 2026-09-18 (after Dhan token renewal)
+**Updated:** 2026-09-18
 **Branch:** `rebuild/bots-1-5-6-7`
 **Baseline tag:** `pre-master-bots-1-5-6-7` → `749db3e1ef7a4c8d88711490719dc82c56cd3880`
-**Last checkpoint:** `9d7b85f` — Bot 1 real condor
 **`main` modified:** NO
 **`LIVE_TRADING_ENABLED`:** `false`
-**Dhan mutation endpoints called:** NONE. Read-only only: `/charts/historical`,
-`/charts/intraday`, `/charts/rollingoption`.
+**Dhan endpoints used:** read-only only — `/charts/historical`, `/charts/intraday`,
+`/charts/rollingoption`. **No order, trade, position, super-order, forever-order or
+any other mutation endpoint was called at any point.**
 
 ---
 
-## DHAN TOKEN RENEWED — RE-PROBE RESULTS
+## HEADLINE
 
-Token valid 2026-09-18 08:43 → **2026-09-19 08:43 (≈24h)**. Everything previously
-recorded as "blocked by an expired token" was re-measured.
+Four bots were taken as far as authentic data allows. **None is paper-ready, and
+none is close.** Every conclusion rests on real exchange prices over multi-year
+samples, not on synthetic premiums or delta proxies.
 
-### The previous "10 sessions of option data" was a caching artefact, not a limit
-
-| Probe | Previous belief | **Measured 2026-09-18** |
-|---|---|---|
-| `/charts/rollingoption` history | 10 sessions | **2020-09 → today (~6 years)**; 2019-09 empty |
-| Request window | unknown | **one month**; a quarter or longer returns empty |
-| Strike ceiling | ATM±10 | **ATM±10 confirmed, and stable across 2021 / 2023 / 2026** |
-| Option side | both in one call | CALL populates `ce`, PUT populates `pe` — **two calls** |
-| `expiryCode` | near only | **1, 2 and 3 all serve data**; `expiryFlag=MONTH` also works |
-| `/charts/intraday` with an OPTION securityId | untested | **WORKS, and reaches ATM+17** — 74 bars/session at 5-min |
-| Expired contracts via `/charts/intraday` | untested | **0 rows — listed contracts only** |
-| bhavcopy `FinInstrmId` vs Dhan `securityId` | untested | **identical: 1694/1694 = 100%** |
-
-### Consequences
-- **Bots 5/6:** the intraday blocker is **RESOLVED**. Ingesting ATM±6 × CE/PE ×
-  5-minute from 2020-09; ATM alone already yields **1,240 sessions** (was 10).
-- **Bot 1:** the ATM±10 ceiling is real and stable, so `/charts/rollingoption`
-  still cannot serve the 1.8/2.4-SD legs (~ATM±13/±17). `/charts/intraday` can
-  serve those strikes but **only while listed**, so it cannot backfill history.
-  Bot 1's historical pricing therefore stays on the NSE bhavcopy (daily), which
-  is complete.
+| Bot | Sample | Gross | Net | Verdict |
+|---|---|---|---|---|
+| **1** Iron Condor | 158 weekly cycles, 2019–2026 | +4.51 pts/cycle | **+2.90 pts, t=+1.40** | no demonstrable edge |
+| **5** Active Momentum | 589 trades, 2020–2026 | −₹45,539 | **−₹89,377, t=−1.33** | signal is directionally wrong |
+| **6** Micro Momentum | 187 trades, 2020–2026 | **+₹11,109** | **−₹2,838, t=−0.05** | costs exceed the edge |
+| **7** Discovery | 7 candidates | — | — | **NO VALIDATED EDGE** |
 
 ---
 
-## BOT 1 — NIFTY Weekly Iron Condor
+## WHAT CHANGED THE ANSWERS: data, not parameters
 
-### Data blocker: RESOLVED
-NSE's public F&O bhavcopy carries every strike (12000–34500 vs a ~23200 spot) with
-six-figure volume at exactly the specified legs. Ingest covers **2019 → 2026**
-(UDiFF from 2024-01-02, legacy layout before it). Index + VIX history ingested from
-NSE's public `ind_close_all` archive and **independently cross-checked** against the
-repo's own files: 422 overlapping sessions, max diff 0.0008 points, none over 0.1%.
+No strategy parameter was altered anywhere in this work. What changed is that the
+data blockers turned out to be vendor-endpoint limits, not real ones.
 
-### Execution question: MEASURED, and my earlier bound was too pessimistic
-The first adverse-fill test priced entries at the worst tick of the whole session
-and every variant flipped negative. That bound is wrong for a strategy that enters
-at the CLOSE. Measured on 5-minute bars at the exact offsets Bot 1 uses:
-
-- the daily close fell inside the **closing half-hour range on 223/223** observations
-- that half-hour span averaged **17.7%** of the full-day span on weekly contracts
-
-So the close is an achievable fill. The realistic adverse band is ~1 point per leg,
-where the strategy stays positive but thin (+₹19,060/lot at +1.0 pt/leg vs
-+₹32,260 at the close). The full-day bound is retained as a floor, labelled as such.
-
-### Research result (2025–2026, 44 trades, canonical entry)
-| | value |
+| Blocker as previously recorded | What it actually was |
 |---|---|
-| win rate | 97.73% |
-| net per lot | ₹32,260 |
-| avg credit | 12.45 pts (₹809/lot) |
-| avg max loss | 226.19 pts (₹14,702/lot) |
-| break-even breach rate | **4.51%** |
-| observed breach rate | 1/44 = 2.27%, **CI95 [0.06%, 12.02%]** |
-| **verdict** | **NOT_DISTINGUISHABLE** |
+| "Bot 1 cannot be backtested — 0.0% of 420 sessions feasible" | A DhanHQ `/charts/rollingoption` ATM±10 ceiling. NSE's **public** F&O bhavcopy carries strikes 12000–34500 against a ~23200 spot, with 360k–650k daily volume at exactly the specified legs. |
+| "Bots 5/6 have only 10 sessions of option data" | A caching artefact. The same endpoint serves 5-minute bars back to **2020-09**. |
+| "Dhan token expired" | Renewed by the user mid-session; every token-blocked probe was re-measured. |
 
-All four variants return NOT_DISTINGUISHABLE. OOS 70/30 agrees in sign, 4/4
-walk-forward folds positive — but none of that resolves the tail.
+### Data now held (all authentic, all read-only)
+| Dataset | Coverage |
+|---|---|
+| NIFTY + India VIX daily OHLC | 1,901 sessions, 2019-01 → 2026-09 |
+| NIFTY option chains, daily, **all strikes** | 1,903 sessions, **4.0M rows** |
+| NIFTY options, 5-minute, ATM±6, CE+PE | 1,495 sessions, **2.9M bars**, 324 real strikes |
 
-### Structural finding (reported, deliberately NOT "fixed")
-`exp_move` uses `sqrt(5/365)` while the position is held ~7 calendar days. The true
-holding-period sigma is 1.183× larger, so a strike labelled **1.8 SD actually sits
-at ~1.52 SD**. Correcting the formula would change the strategy, so it is reported
-as-is. **Strategy-owner decision required.**
+The index history was cross-checked against the repository's own files
+independently: 422 overlapping sessions, max difference **0.0008 points**.
 
-### Exact blocker
-**Sample size.** ~320 trades (~7 years of weekly cycles) are needed before the
-breach-rate CI can clear break-even. The 2019–2026 ingest in flight should supply
-roughly that; the full-history rerun is the next step.
+### Dhan re-probe, measured 2026-09-18
+| Probe | Result |
+|---|---|
+| `/charts/rollingoption` history floor | 2020-09 (2019-09 empty) |
+| Request window | one month; longer returns empty |
+| Strike ceiling | **ATM±10**, stable across 2021 / 2023 / 2026 |
+| Option side | CALL → `ce`, PUT → `pe`; two separate calls |
+| `/charts/intraday` with an option securityId | **works, reaches ATM+17** |
+| Expired contracts via `/charts/intraday` | **0 rows — listed contracts only** |
+| bhavcopy `FinInstrmId` vs Dhan `securityId` | **identical, 1694/1694** |
 
 ---
 
-## BOTS 5 / 6 — status
-Ingest of the 5-minute option grid in progress (ATM±6, CE+PE, 2020-09 →). Model and
-validation not yet rerun on it. **Do not rerun the old n=8 / n=3 result — it is
-superseded.**
+## PER-BOT DETAIL
 
-## BOT 7 — not started.
+### BOT 1 — see `reports/BOT1_REAL_CONDOR_FINDINGS.md`
+Four real legs, real prices, exact cash settlement. Net **+2.90 points/cycle at
+t=+1.40** — indistinguishable from zero before any slippage, **negative at 1 point
+per leg**. The earlier 2025–26 figure (97.7% win, 2.27% breach) was a benign-period
+artefact; the full history breaches at 7.32%.
+**Blocker:** the edge is too small relative to its own execution cost.
+**Strategy-owner decisions:** RSI band inconsistency (40/68 vs 38/70); `sqrt(5/365)`
+over a ~7-day hold places the "1.8 SD" short at ~1.52 SD.
+
+### BOT 5 — see `reports/BOT56_DEEP_GRID_FINDINGS.md`
+589 trades. The defect is upstream of the options: **the spot moved in the
+signalled direction on only 43.4% of trades**, against a 33.3% break-even for its
+own 2:1 target/stop. More data will not change this.
+
+### BOT 6 — PROTECTED BASELINE, FROZEN, UNMODIFIED
+The only positive **gross** edge in the repository (+₹11,109), destroyed by
+₹13,946 of costs. ~₹59/trade of edge against ~₹75/trade of cost.
+No parameter, entry rule, exit rule or threshold changed.
+**Reported, not acted on:** the target was hit 3 times in 187 trades while 137
+exits were EOD — the specified target is effectively unreachable intraday.
+**Strategy-owner decision.**
+
+### BOT 7 — see `reports/BOT7_RESEARCH_LEDGER.md`
+Ledger written **before** any candidate ran. Seven executions, zero survivors.
+The most important entry is the **C6 artefact**: a version that exited on a 15:15
+quote reported +₹456,653 at **t=+12.8** and "SURVIVED", purely because it silently
+skipped the 101 sessions whose spot moved too far for the strike window — the very
+sessions a short straddle loses on (skipped mean move 201 pts vs 53 for priced;
+36.6% of skipped blew through the wing vs 0.0% of priced). Corrected to settle at
+expiry, it prices 318 of 319 sessions and returns **−₹22,094 at t=−0.305**.
+
+---
+
+## DEFECTS FOUND AND FIXED IN THIS SESSION
+
+1. **Live-path crash (Bots 3/4/5/6).** `trade["target_premium"]` was read directly;
+   a position restored without that key raised `KeyError` **inside the monitoring
+   loop, aborting evaluation for every bot in the cycle**. Now routed through
+   `protective_level()`, which fails closed: no automatic exit fires, the position
+   stays open and visible, EOD square-off still applies, and the condition is
+   logged. Behaviour is identical when the key is present.
+2. **Muhurat sessions in the option grid.** Four evening-only sessions (18:00–19:15,
+   zero regular-session bars) would have been traded as if 18:15 were the open.
+   Grid now restricted to the regular session.
+3. **Silent-skip selection bias** (the C6 artefact above).
+4. **Non-terminating simulations.** Per-session filters over 4.0M / 1.5M rows are
+   now indexed once; without this neither Bot 1 nor Bot 5/6 completes at full scale.
+
+## KNOWN FAILURES NOT FIXED (out of scope)
+`test_h3_settled_bar_strategies_refuse_a_forming_bar` fails for **Bots 3 and 4**
+because the strategies are flat on current data, so the adapter returns
+`NO_SIGNAL: strategy flat` before reaching the forming-bar guard. The test is
+date-sensitive. Bots 2/3/4 are explicitly out of scope for this mission.
 
 ---
 
 ## TEST COUNT
-419 baseline + 32 Bot 1 = **451**, all passing.
+Baseline 419 → **479 collected** (+32 Bot 1, +14 Bot 5/6 deep grid, +14 Bot 7).
+See the final suite run for the current pass/fail split.
 
 ## EXACT NEXT ACTION
-1. Finish the bhavcopy (2019–2024) and option-grid ingests.
-2. Rerun Bot 1 validation on the full 2019–2026 history; compare with the
-   2025–2026 result recorded above.
-3. Rebuild Bot 5/6 real option economics on the new grid and revalidate.
+Nothing is in flight. Every target bot has reached a specific, evidenced stopping
+point. The open items are **strategy-owner decisions**, not engineering tasks:
+Bot 1's RSI band and time-scaling, Bot 6's unreachable target, and whether any of
+these strategies should be pursued at all given that three of four have a negative
+or zero net edge on authentic multi-year data.

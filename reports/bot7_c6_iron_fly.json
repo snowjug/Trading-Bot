@@ -1,0 +1,119 @@
+{
+  "trades": 318,
+  "net": -22094.23000000001,
+  "expectancy": -69.47871069182393,
+  "win_rate": 53.459119496855344,
+  "tstat": -0.3054537471948586,
+  "multiple_testing": {
+    "variants_examined": 8,
+    "t_stat": -0.3055,
+    "p_raw": 0.760221,
+    "p_bonferroni": 1.0,
+    "survives_5pct_after_adjustment": false
+  },
+  "oos": {
+    "split_date": "2024-12-12",
+    "is": {
+      "n": 222,
+      "net": -53066.89,
+      "mean": -239.04004504504505,
+      "win_rate": 53.153153153153156
+    },
+    "oos": {
+      "n": 96,
+      "net": 30972.66,
+      "mean": 322.631875,
+      "win_rate": 54.166666666666664
+    },
+    "sign_agreement": false
+  },
+  "walk_forward": {
+    "folds": [
+      {
+        "fold": 1,
+        "n": 79,
+        "start": "2020-09-03",
+        "net": -410.250000000005,
+        "mean": -5.193037974683608,
+        "win_rate": 55.69620253164557
+      },
+      {
+        "fold": 2,
+        "n": 80,
+        "start": "2022-03-17",
+        "net": -44038.15,
+        "mean": -550.4768750000001,
+        "win_rate": 50.0
+      },
+      {
+        "fold": 3,
+        "n": 79,
+        "start": "2023-09-28",
+        "net": -7496.059999999996,
+        "mean": -94.88683544303792,
+        "win_rate": 53.16455696202531
+      },
+      {
+        "fold": 4,
+        "n": 80,
+        "start": "2025-04-03",
+        "net": 29850.229999999996,
+        "mean": 373.12787499999996,
+        "win_rate": 55.00000000000001
+      }
+    ],
+    "folds_positive": 1,
+    "folds_total": 4,
+    "consistent": false
+  },
+  "monte_carlo": {
+    "paths": 2000,
+    "final_pnl_mean": -22094.229999999985,
+    "final_pnl_p05": -22094.230000000025,
+    "final_pnl_p95": -22094.229999999938,
+    "max_drawdown_median": -85526.26999999999,
+    "max_drawdown_p05_worst": -125367.05849999998,
+    "prob_final_negative": 1.0
+  },
+  "slippage": [
+    {
+      "label": "+0 pt/leg",
+      "extra_cost_per_trade": 0.0,
+      "net": -22094.23000000001,
+      "mean": -69.47871069182393,
+      "win_rate": 53.459119496855344,
+      "still_profitable": false
+    },
+    {
+      "label": "+0.25 pt/leg",
+      "extra_cost_per_trade": 65.0,
+      "net": -42764.23000000001,
+      "mean": -134.47871069182392,
+      "win_rate": 53.144654088050316,
+      "still_profitable": false
+    },
+    {
+      "label": "+0.5 pt/leg",
+      "extra_cost_per_trade": 130.0,
+      "net": -63434.23000000001,
+      "mean": -199.47871069182392,
+      "win_rate": 53.144654088050316,
+      "still_profitable": false
+    },
+    {
+      "label": "+1.0 pt/leg",
+      "extra_cost_per_trade": 260.0,
+      "net": -104774.23,
+      "mean": -329.4787106918239,
+      "win_rate": 51.57232704402516,
+      "still_profitable": false
+    }
+  ],
+  "verdict": "REJECTED",
+  "rejection_reasons": [
+    "net negative",
+    "fails multiple-testing adjustment",
+    "only 1/4 folds positive",
+    "does not survive slippage"
+  ]
+}

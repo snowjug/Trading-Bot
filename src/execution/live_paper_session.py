@@ -38,6 +38,39 @@ logger = setup_logging("execution.live_session")
 REPORTS_DIR = Path("reports")
 
 
+
+def protective_level(trade: dict, key: str, bot: str, logger_fn=None) -> Optional[float]:
+    """
+    A position's target or stop premium, or None when it is not recorded.
+
+    WHY THIS EXISTS. These levels were read as `trade["target_premium"]` directly.
+    A position whose record lacks the key — one restored from a state file written
+    by an earlier build, or reconstructed after a crash — raised KeyError inside the
+    monitoring loop, which aborts evaluation for EVERY bot in that cycle, not just
+    the one holding the position. A missing protective level is exactly when a
+    position most needs to be watched.
+
+    Returning None makes the caller fail closed: the automatic target/stop exit does
+    not fire, the position stays open and visible, and the EOD square-off still
+    applies. It never invents a level, and it never silently treats "no level" as
+    "level not reached" without recording that it could not check.
+    """
+    v = trade.get(key)
+    if v is None:
+        if logger_fn:
+            logger_fn(f"{bot}: {key} missing on {trade.get('contract', 'position')} "
+                      f"- automatic exit on this level is UNAVAILABLE; position "
+                      f"remains open and subject to EOD square-off")
+        return None
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        if logger_fn:
+            logger_fn(f"{bot}: {key} is not numeric ({v!r}) - automatic exit UNAVAILABLE")
+        return None
+    return v if v > 0 else None
+
+
 class MultiBotLiveSession:
     """
     Orchestrates all algorithmic trading bots in live paper mode.
@@ -1882,7 +1915,9 @@ LIVE_TRADING_ENABLED: FALSE
                 t5["net_pnl"] = pnl5
                 s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])) + pnl5, 2)
 
-                if curr_prem >= t5["target_premium"]:
+                _tgt = protective_level(t5, "target_premium", "BOT 5", self.log_event)
+                _stp = protective_level(t5, "stop_premium", "BOT 5", self.log_event)
+                if _tgt is not None and curr_prem >= _tgt:
                     exit_fill = max(0.05, round(bid - 0.50, 2))
                     costs5_exit = IndianCostModel.calculate_roundtrip_costs(t5["entry_fill"], exit_fill, t5["qty"])
                     real_gross = round((exit_fill - t5["entry_fill"]) * t5["qty"], 2)
@@ -1904,7 +1939,7 @@ LIVE_TRADING_ENABLED: FALSE
                     s5["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s5.get("closed_trades", [])), 2)
                     self.log_event(f"BOT 5 TARGET HIT: {t5['contract']} @ Rs {exit_fill:.2f} | Profit: +Rs {real_net:,.2f}")
 
-                elif curr_prem <= t5["stop_premium"]:
+                elif _stp is not None and curr_prem <= _stp:
                     exit_fill = max(0.05, round(bid - 0.50, 2))
                     costs5_exit = IndianCostModel.calculate_roundtrip_costs(t5["entry_fill"], exit_fill, t5["qty"])
                     real_gross = round((exit_fill - t5["entry_fill"]) * t5["qty"], 2)
@@ -2102,7 +2137,9 @@ LIVE_TRADING_ENABLED: FALSE
                 t4["net_pnl"] = pnl4
                 s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2) + pnl4
 
-                if curr_prem >= t4["target_premium"]:
+                _tgt = protective_level(t4, "target_premium", "BOT 4", self.log_event)
+                _stp = protective_level(t4, "stop_premium", "BOT 4", self.log_event)
+                if _tgt is not None and curr_prem >= _tgt:
                     exit_fill = max(0.05, round(bid - 0.50, 2))
                     costs4_exit = IndianCostModel.calculate_roundtrip_costs(t4["entry_fill"], exit_fill, t4["qty"])
                     real_gross = round((exit_fill - t4["entry_fill"]) * t4["qty"], 2)
@@ -2124,7 +2161,7 @@ LIVE_TRADING_ENABLED: FALSE
                     s4["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s4.get("closed_trades", [])), 2)
                     self.log_event(f"BOT 4 1:3 TARGET HIT: {t4['contract']} @ Rs {exit_fill:.2f} | Net: +Rs {real_net:,.2f}")
 
-                elif curr_prem <= t4["stop_premium"]:
+                elif _stp is not None and curr_prem <= _stp:
                     exit_fill = max(0.05, round(bid - 0.50, 2))
                     costs4_exit = IndianCostModel.calculate_roundtrip_costs(t4["entry_fill"], exit_fill, t4["qty"])
                     real_gross = round((exit_fill - t4["entry_fill"]) * t4["qty"], 2)
@@ -2297,7 +2334,9 @@ LIVE_TRADING_ENABLED: FALSE
                 t3["net_pnl"] = pnl3
                 s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2) + pnl3
 
-                if curr_prem >= t3["target_premium"]:
+                _tgt = protective_level(t3, "target_premium", "BOT 3", self.log_event)
+                _stp = protective_level(t3, "stop_premium", "BOT 3", self.log_event)
+                if _tgt is not None and curr_prem >= _tgt:
                     exit_fill = max(0.05, round(bid - 0.50, 2))
                     costs3_exit = IndianCostModel.calculate_roundtrip_costs(t3["entry_fill"], exit_fill, t3["qty"])
                     real_gross = round((exit_fill - t3["entry_fill"]) * t3["qty"], 2)
@@ -2318,7 +2357,7 @@ LIVE_TRADING_ENABLED: FALSE
                     s3["status"] = "PROFIT_LOCKED"
                     s3["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s3.get("closed_trades", [])), 2)
                     self.log_event(f"BOT 3 GAMMA TARGET: Net Rs {real_net:+,.2f}")
-                elif curr_prem <= t3["stop_premium"]:
+                elif _stp is not None and curr_prem <= _stp:
                     exit_fill = max(0.05, round(bid - 0.50, 2))
                     costs3_exit = IndianCostModel.calculate_roundtrip_costs(t3["entry_fill"], exit_fill, t3["qty"])
                     real_gross = round((exit_fill - t3["entry_fill"]) * t3["qty"], 2)
@@ -2796,7 +2835,9 @@ LIVE_TRADING_ENABLED: FALSE
                 t6["net_pnl"] = pnl6
                 s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2) + pnl6
 
-                if curr_prem >= t6["target_premium"]:
+                _tgt = protective_level(t6, "target_premium", "BOT 6", self.log_event)
+                _stp = protective_level(t6, "stop_premium", "BOT 6", self.log_event)
+                if _tgt is not None and curr_prem >= _tgt:
                     exit_fill = max(0.05, round(bid - 0.50, 2))
                     costs6_exit = IndianCostModel.calculate_roundtrip_costs(t6["entry_fill"], exit_fill, t6["qty"])
                     real_gross = round((exit_fill - t6["entry_fill"]) * t6["qty"], 2)
@@ -2817,7 +2858,7 @@ LIVE_TRADING_ENABLED: FALSE
                     s6["status"] = "PROFIT_LOCKED_WAITING_NEXT_DAY"
                     s6["net_pnl"] = round(sum(c.get("net_pnl", 0.0) for c in s6.get("closed_trades", [])), 2)
                     self.log_event(f"BOT 6 TARGET REACHED: Realized Net Profit Rs {real_net:+,.2f}")
-                elif curr_prem <= t6["stop_premium"]:
+                elif _stp is not None and curr_prem <= _stp:
                     exit_fill = max(0.05, round(bid - 0.50, 2))
                     costs6_exit = IndianCostModel.calculate_roundtrip_costs(t6["entry_fill"], exit_fill, t6["qty"])
                     real_gross = round((exit_fill - t6["entry_fill"]) * t6["qty"], 2)

@@ -384,3 +384,176 @@ def summarise(trades: List[Trade], initial_capital: float = 100000.0) -> Dict[st
         "avg_entry_price": float(df["entry_price"].mean()),
         "execution_basis": EXECUTION_BASIS,
     }
+
+
+# ──────────────── C6: EXPIRY-DAY DEFINED-RISK IRON FLY ────────────────
+
+@dataclass
+class FlyTrade:
+    candidate: str
+    date: str
+    atm: float
+    wing_steps: int
+    short_call_entry: float
+    short_put_entry: float
+    long_call_entry: float
+    long_put_entry: float
+    short_call_exit: float
+    short_put_exit: float
+    long_call_exit: float
+    long_put_exit: float
+    entry_spot: float
+    exit_spot: float
+    credit_points: float
+    gross_pnl: float
+    costs: float
+    net_pnl: float
+    execution_basis: str = EXECUTION_BASIS
+
+
+def c6_expiry_iron_fly(bars: Dict[str, pd.DataFrame], expiry_days: List[Any],
+                       wing_steps: int = 4, strike_step: float = 50.0,
+                       entry_time: dtime = dtime(9, 20),
+                       exit_time: dtime = EOD_FLAT) -> List[FlyTrade]:
+    """
+    Ledger C6. Short ATM straddle with long wings `wing_steps` out, entered at 09:20
+    on expiry day and closed at 15:15. Defined risk, so it fits both capital
+    scenarios.
+
+    All four contracts are fixed at entry and the SAME four are priced at exit. A
+    session is skipped entirely if any leg is missing or unpriced at either end —
+    no leg is substituted and no price is carried forward.
+    """
+    by_day = index_by_session(bars)
+    out: List[FlyTrade] = []
+    for sess in expiry_days:
+        dg_ce, dg_pe = by_day["ce"].get(sess), by_day["pe"].get(sess)
+        if dg_ce is None or dg_pe is None or dg_ce.empty or dg_pe.empty:
+            continue
+        sp = spot_path(dg_ce)
+        ent = sp[sp["datetime"].dt.time >= entry_time]
+        ext = sp[sp["datetime"].dt.time >= exit_time]
+        if ent.empty or ext.empty:
+            continue
+        e_ts, x_ts = ent.iloc[0]["datetime"], ext.iloc[0]["datetime"]
+        if x_ts <= e_ts:
+            continue
+        spot0 = float(ent.iloc[0]["spot"])
+        atm = round(spot0 / strike_step) * strike_step
+        wants = {
+            "short_call": (dg_ce, atm), "short_put": (dg_pe, atm),
+            "long_call": (dg_ce, atm + wing_steps * strike_step),
+            "long_put": (dg_pe, atm - wing_steps * strike_step),
+        }
+        entry, exit_ = {}, {}
+        ok = True
+        for role, (g, k) in wants.items():
+            a = g[(g["strike"] == k) & (g["datetime"] == e_ts)]
+            b = g[(g["strike"] == k) & (g["datetime"] == x_ts)]
+            if a.empty or b.empty or float(a.iloc[0]["close"]) <= 0:
+                ok = False
+                break
+            entry[role] = float(a.iloc[0]["close"])
+            exit_[role] = float(b.iloc[0]["close"])
+        if not ok:
+            continue
+
+        credit = (entry["short_call"] + entry["short_put"]
+                  - entry["long_call"] - entry["long_put"])
+        gross = ((entry["short_call"] - exit_["short_call"])
+                 + (entry["short_put"] - exit_["short_put"])
+                 + (exit_["long_call"] - entry["long_call"])
+                 + (exit_["long_put"] - entry["long_put"])) * LOT
+        costs = sum(
+            condor_leg_costs("SELL" if r.startswith("short") else "BUY",
+                             entry[r], exit_[r], LOT)
+            for r in wants
+        )
+        out.append(FlyTrade(
+            candidate="C6_expiry_iron_fly", date=str(sess), atm=atm,
+            wing_steps=wing_steps,
+            short_call_entry=entry["short_call"], short_put_entry=entry["short_put"],
+            long_call_entry=entry["long_call"], long_put_entry=entry["long_put"],
+            short_call_exit=exit_["short_call"], short_put_exit=exit_["short_put"],
+            long_call_exit=exit_["long_call"], long_put_exit=exit_["long_put"],
+            entry_spot=spot0, exit_spot=float(ext.iloc[0]["spot"]),
+            credit_points=round(credit, 2), gross_pnl=round(gross, 2),
+            costs=round(costs, 2), net_pnl=round(gross - costs, 2),
+        ))
+    return out
+
+
+def c6_expiry_iron_fly_settled(
+    bars: Dict[str, pd.DataFrame], settlements: Dict[Any, float],
+    wing_steps: int = 4, strike_step: float = 50.0,
+    entry_time: dtime = dtime(9, 20),
+) -> List[FlyTrade]:
+    """
+    Ledger C6, corrected. Same structure, but the exit is EXACT CASH SETTLEMENT.
+
+    WHY THIS REPLACES THE 15:15-QUOTE VERSION. Pricing the exit from the 5-minute
+    grid required the entry strikes to still be inside the ATM+/-6 window at 15:15.
+    On a big move they are not, so the session was silently skipped — and those were
+    precisely the sessions a short straddle loses on. Measured: skipped sessions
+    averaged a 201-point move against 53 for priced ones, and 36.6% of them blew
+    through the wing while 0% of priced ones did. The "surviving" result was an
+    artefact of dropping every losing day.
+
+    It is expiry day, so the position does not need a quote to be closed: it settles
+    at intrinsic against the exchange's official settlement price. Every session with
+    an entry is therefore carried to its real outcome and none can be dropped for
+    having moved too far.
+    """
+    by_day = index_by_session(bars)
+    out: List[FlyTrade] = []
+    for sess, settle in sorted(settlements.items()):
+        dg_ce, dg_pe = by_day["ce"].get(sess), by_day["pe"].get(sess)
+        if dg_ce is None or dg_pe is None or dg_ce.empty or dg_pe.empty:
+            continue
+        sp = spot_path(dg_ce)
+        ent = sp[sp["datetime"].dt.time >= entry_time]
+        if ent.empty:
+            continue
+        e_ts = ent.iloc[0]["datetime"]
+        spot0 = float(ent.iloc[0]["spot"])
+        atm = round(spot0 / strike_step) * strike_step
+        wants = {
+            "short_call": (dg_ce, atm, "CE"), "short_put": (dg_pe, atm, "PE"),
+            "long_call": (dg_ce, atm + wing_steps * strike_step, "CE"),
+            "long_put": (dg_pe, atm - wing_steps * strike_step, "PE"),
+        }
+        entry, exit_, ok = {}, {}, True
+        for role, (g, k, typ) in wants.items():
+            a = g[(g["strike"] == k) & (g["datetime"] == e_ts)]
+            if a.empty or float(a.iloc[0]["close"]) <= 0:
+                ok = False
+                break
+            entry[role] = float(a.iloc[0]["close"])
+            exit_[role] = (max(0.0, settle - k) if typ == "CE" else max(0.0, k - settle))
+        if not ok:
+            continue
+
+        credit = (entry["short_call"] + entry["short_put"]
+                  - entry["long_call"] - entry["long_put"])
+        gross = ((entry["short_call"] - exit_["short_call"])
+                 + (entry["short_put"] - exit_["short_put"])
+                 + (exit_["long_call"] - entry["long_call"])
+                 + (exit_["long_put"] - entry["long_put"])) * LOT
+        costs = sum(
+            condor_leg_costs("SELL" if r.startswith("short") else "BUY",
+                             entry[r], exit_[r], LOT)
+            for r in wants
+        )
+        out.append(FlyTrade(
+            candidate="C6_expiry_iron_fly_settled", date=str(sess), atm=atm,
+            wing_steps=wing_steps,
+            short_call_entry=entry["short_call"], short_put_entry=entry["short_put"],
+            long_call_entry=entry["long_call"], long_put_entry=entry["long_put"],
+            short_call_exit=exit_["short_call"], short_put_exit=exit_["short_put"],
+            long_call_exit=exit_["long_call"], long_put_exit=exit_["long_put"],
+            entry_spot=spot0, exit_spot=settle,
+            credit_points=round(credit, 2), gross_pnl=round(gross, 2),
+            costs=round(costs, 2), net_pnl=round(gross - costs, 2),
+            execution_basis="ENTRY_TRADED_PRICE_EXIT_CASH_SETTLEMENT_NO_BIDASK",
+        ))
+    return out
