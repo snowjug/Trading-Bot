@@ -1,0 +1,531 @@
+{
+  "variants_examined": 4,
+  "deep_grid_sessions": 1495,
+  "deep_grid_span": [
+    "2020-09-01",
+    "2026-09-16"
+  ],
+  "lot_size_note": "NIFTY's lot size is not constant over 2020-2026 (75 -> 65, with both live during the transition). Per-lot rupee figures below use the CURRENT 65 and are therefore comparable across variants but not a historical account statement.",
+  "BOT5_CAUSAL_DEEP_GRID": {
+    "summary": {
+      "total_trades": 589,
+      "net_profit": -89377.28000000003,
+      "gross_profit": -45539.0,
+      "total_costs": 43838.27999999999,
+      "win_rate": 37.521222410865875,
+      "max_drawdown_pct": 451.26546991790235,
+      "avg_entry_price": 99.79966044142614,
+      "exit_reasons": {
+        "STOP": 280,
+        "EOD": 194,
+        "TARGET": 115
+      },
+      "execution_basis": "TRADED_PRICE_NO_BIDASK"
+    },
+    "sessions_covered": 589,
+    "expectancy_per_trade": -151.74410865874367,
+    "breakeven_loss_rate": 0.5929470694914131,
+    "sample_size_verdict": {
+      "n_trades": 589,
+      "observed_adverse": 368,
+      "adverse_rate": 0.6247877758913413,
+      "adverse_ci95": [
+        0.58429,
+        0.66403
+      ],
+      "breakeven_rate": 0.59295,
+      "verdict": "NOT_DISTINGUISHABLE",
+      "reason": "the break-even rate (0.593) lies inside the 95% interval [0.584, 0.664], so this sample cannot separate a winning structure from a losing one"
+    },
+    "oos": {
+      "split_date": "2024-08-26",
+      "is": {
+        "n": 412,
+        "net": -48218.22999999998,
+        "mean": -117.0345388349514,
+        "win_rate": 38.349514563106794
+      },
+      "oos": {
+        "n": 177,
+        "net": -41159.05,
+        "mean": -232.53700564971754,
+        "win_rate": 35.59322033898305
+      },
+      "sign_agreement": true
+    },
+    "walk_forward": {
+      "folds": [
+        {
+          "fold": 1,
+          "n": 147,
+          "start": "2020-09-03",
+          "net": 8475.7,
+          "mean": 57.6578231292517,
+          "win_rate": 40.816326530612244
+        },
+        {
+          "fold": 2,
+          "n": 147,
+          "start": "2022-01-04",
+          "net": -45210.41,
+          "mean": -307.55380952380955,
+          "win_rate": 36.054421768707485
+        },
+        {
+          "fold": 3,
+          "n": 147,
+          "start": "2023-06-14",
+          "net": -16357.890000000003,
+          "mean": -111.27816326530615,
+          "win_rate": 36.734693877551024
+        },
+        {
+          "fold": 4,
+          "n": 148,
+          "start": "2024-11-13",
+          "net": -36284.68000000001,
+          "mean": -245.1667567567568,
+          "win_rate": 36.486486486486484
+        }
+      ],
+      "folds_positive": 1,
+      "folds_total": 4,
+      "consistent": false
+    },
+    "monte_carlo": {
+      "paths": 2000,
+      "final_pnl_mean": -89377.28000000003,
+      "final_pnl_p05": -89377.28000000013,
+      "final_pnl_p95": -89377.27999999994,
+      "max_drawdown_median": -122142.12500000004,
+      "max_drawdown_p05_worst": -158543.14349999998,
+      "prob_final_negative": 1.0
+    },
+    "resample_control": {
+      "draws": 2000,
+      "actual": -89377.28000000003,
+      "control_mean": -92119.44410000001,
+      "control_sd": 65130.163589230644,
+      "actual_percentile": 52.849999999999994,
+      "prob_negative": 0.922,
+      "note": "sequencing control only; provides no evidence of entry-selection edge"
+    },
+    "tstat": -1.3332327954769563,
+    "multiple_testing": {
+      "variants_examined": 4,
+      "t_stat": -1.3332,
+      "p_raw": 0.182972,
+      "p_bonferroni": 0.731887,
+      "survives_5pct_after_adjustment": false
+    },
+    "lot_size_note": "NIFTY's lot size is not constant over 2020-2026 (75 -> 65, with both live during the transition). Per-lot rupee figures below use the CURRENT 65 and are therefore comparable across variants but not a historical account statement.",
+    "execution_basis": "TRADED_PRICE_NO_BIDASK",
+    "slippage_sensitivity": [
+      {
+        "label": "+0.0 pt/side",
+        "extra_cost_per_trade": 0.0,
+        "net": -89377.28000000003,
+        "mean": -151.74410865874367,
+        "win_rate": 37.521222410865875,
+        "still_profitable": false
+      },
+      {
+        "label": "+0.25 pt/side",
+        "extra_cost_per_trade": 32.5,
+        "net": -108519.78000000003,
+        "mean": -184.24410865874367,
+        "win_rate": 37.18166383701188,
+        "still_profitable": false
+      },
+      {
+        "label": "+0.5 pt/side",
+        "extra_cost_per_trade": 65.0,
+        "net": -127662.28000000003,
+        "mean": -216.74410865874367,
+        "win_rate": 35.993208828522924,
+        "still_profitable": false
+      },
+      {
+        "label": "+1.0 pt/side",
+        "extra_cost_per_trade": 130.0,
+        "net": -165947.28000000003,
+        "mean": -281.7441086587437,
+        "win_rate": 35.653650254668925,
+        "still_profitable": false
+      },
+      {
+        "label": "+2.0 pt/side",
+        "extra_cost_per_trade": 260.0,
+        "net": -242517.28000000003,
+        "mean": -411.7441086587437,
+        "win_rate": 34.29541595925297,
+        "still_profitable": false
+      }
+    ]
+  },
+  "BOT6_FROZEN_DEEP_GRID": {
+    "summary": {
+      "total_trades": 187,
+      "net_profit": -2837.560000000004,
+      "gross_profit": 11108.5,
+      "total_costs": 13946.059999999998,
+      "win_rate": 39.037433155080215,
+      "max_drawdown_pct": 158.95139899521826,
+      "avg_entry_price": 99.32754010695187,
+      "exit_reasons": {
+        "EOD": 136,
+        "STOP": 48,
+        "TARGET": 3
+      },
+      "execution_basis": "TRADED_PRICE_NO_BIDASK"
+    },
+    "sessions_covered": 187,
+    "expectancy_per_trade": -15.174117647058845,
+    "breakeven_loss_rate": 0.6071251058546488,
+    "sample_size_verdict": {
+      "n_trades": 187,
+      "observed_adverse": 114,
+      "adverse_rate": 0.6096256684491979,
+      "adverse_ci95": [
+        0.53574,
+        0.67997
+      ],
+      "breakeven_rate": 0.60713,
+      "verdict": "NOT_DISTINGUISHABLE",
+      "reason": "the break-even rate (0.607) lies inside the 95% interval [0.536, 0.680], so this sample cannot separate a winning structure from a losing one"
+    },
+    "oos": {
+      "split_date": "2024-11-12",
+      "is": {
+        "n": 130,
+        "net": -9045.179999999998,
+        "mean": -69.57830769230767,
+        "win_rate": 37.69230769230769
+      },
+      "oos": {
+        "n": 57,
+        "net": 6207.619999999996,
+        "mean": 108.90561403508765,
+        "win_rate": 42.10526315789473
+      },
+      "sign_agreement": false
+    },
+    "walk_forward": {
+      "folds": [
+        {
+          "fold": 1,
+          "n": 46,
+          "start": "2020-12-04",
+          "net": 7915.919999999998,
+          "mean": 172.0852173913043,
+          "win_rate": 45.65217391304348
+        },
+        {
+          "fold": 2,
+          "n": 47,
+          "start": "2023-02-01",
+          "net": -15652.6,
+          "mean": -333.0340425531915,
+          "win_rate": 34.04255319148936
+        },
+        {
+          "fold": 3,
+          "n": 47,
+          "start": "2024-02-16",
+          "net": 4453.750000000003,
+          "mean": 94.7606382978724,
+          "win_rate": 34.04255319148936
+        },
+        {
+          "fold": 4,
+          "n": 47,
+          "start": "2025-01-27",
+          "net": 445.3699999999963,
+          "mean": 9.475957446808431,
+          "win_rate": 42.5531914893617
+        }
+      ],
+      "folds_positive": 3,
+      "folds_total": 4,
+      "consistent": false
+    },
+    "monte_carlo": {
+      "paths": 2000,
+      "final_pnl_mean": -2837.5600000000018,
+      "final_pnl_p05": -2837.560000000024,
+      "final_pnl_p95": -2837.5599999999813,
+      "max_drawdown_median": -58240.08499999999,
+      "max_drawdown_p05_worst": -88270.93000000004,
+      "prob_final_negative": 1.0
+    },
+    "resample_control": {
+      "draws": 2000,
+      "actual": -2837.560000000004,
+      "control_mean": -1096.0476900000017,
+      "control_sd": 56779.64869304443,
+      "actual_percentile": 50.14999999999999,
+      "prob_negative": 0.5225,
+      "note": "sequencing control only; provides no evidence of entry-selection edge"
+    },
+    "tstat": -0.050625535339678666,
+    "multiple_testing": {
+      "variants_examined": 4,
+      "t_stat": -0.0506,
+      "p_raw": 0.959678,
+      "p_bonferroni": 1.0,
+      "survives_5pct_after_adjustment": false
+    },
+    "lot_size_note": "NIFTY's lot size is not constant over 2020-2026 (75 -> 65, with both live during the transition). Per-lot rupee figures below use the CURRENT 65 and are therefore comparable across variants but not a historical account statement.",
+    "execution_basis": "TRADED_PRICE_NO_BIDASK",
+    "slippage_sensitivity": [
+      {
+        "label": "+0.0 pt/side",
+        "extra_cost_per_trade": 0.0,
+        "net": -2837.560000000004,
+        "mean": -15.174117647058845,
+        "win_rate": 39.037433155080215,
+        "still_profitable": false
+      },
+      {
+        "label": "+0.25 pt/side",
+        "extra_cost_per_trade": 32.5,
+        "net": -8915.060000000005,
+        "mean": -47.67411764705885,
+        "win_rate": 37.967914438502675,
+        "still_profitable": false
+      },
+      {
+        "label": "+0.5 pt/side",
+        "extra_cost_per_trade": 65.0,
+        "net": -14992.560000000005,
+        "mean": -80.17411764705885,
+        "win_rate": 35.82887700534759,
+        "still_profitable": false
+      },
+      {
+        "label": "+1.0 pt/side",
+        "extra_cost_per_trade": 130.0,
+        "net": -27147.560000000012,
+        "mean": -145.1741176470589,
+        "win_rate": 35.294117647058826,
+        "still_profitable": false
+      },
+      {
+        "label": "+2.0 pt/side",
+        "extra_cost_per_trade": 260.0,
+        "net": -51457.560000000005,
+        "mean": -275.17411764705884,
+        "win_rate": 32.62032085561498,
+        "still_profitable": false
+      }
+    ]
+  },
+  "BOT5_LEGACY_10_SESSION_CACHE": {
+    "summary": {
+      "total_trades": 8,
+      "net_profit": -1292.3400000000001,
+      "gross_profit": -721.5,
+      "total_costs": 570.84,
+      "win_rate": 37.5,
+      "max_drawdown_pct": 21.162830281608525,
+      "avg_entry_price": 78.57499999999999,
+      "exit_reasons": {
+        "EOD": 4,
+        "STOP": 3,
+        "TARGET": 1
+      },
+      "execution_basis": "TRADED_PRICE_NO_BIDASK"
+    },
+    "sessions_covered": 8,
+    "expectancy_per_trade": -161.54250000000002,
+    "breakeven_loss_rate": 0.5503845725114257,
+    "sample_size_verdict": {
+      "n_trades": 8,
+      "observed_adverse": 5,
+      "adverse_rate": 0.625,
+      "adverse_ci95": [
+        0.24486,
+        0.91477
+      ],
+      "breakeven_rate": 0.55038,
+      "verdict": "NOT_DISTINGUISHABLE",
+      "reason": "the break-even rate (0.550) lies inside the 95% interval [0.245, 0.915], so this sample cannot separate a winning structure from a losing one"
+    },
+    "oos": {
+      "verdict": "INSUFFICIENT",
+      "n": 8
+    },
+    "walk_forward": {
+      "verdict": "INSUFFICIENT",
+      "n": 8,
+      "folds_requested": 4
+    },
+    "monte_carlo": {
+      "paths": 2000,
+      "final_pnl_mean": -1292.3400000000001,
+      "final_pnl_p05": -1292.3400000000006,
+      "final_pnl_p95": -1292.34,
+      "max_drawdown_median": -3128.7200000000003,
+      "max_drawdown_p05_worst": -4840.97,
+      "prob_final_negative": 1.0
+    },
+    "resample_control": {
+      "draws": 2000,
+      "actual": -1292.3400000000001,
+      "control_mean": -1308.8018850000003,
+      "control_sd": 3431.8806623015953,
+      "actual_percentile": 51.300000000000004,
+      "prob_negative": 0.646,
+      "note": "sequencing control only; provides no evidence of entry-selection edge"
+    },
+    "tstat": -0.36274569653516764,
+    "multiple_testing": {
+      "variants_examined": 4,
+      "t_stat": -0.3627,
+      "p_raw": 0.7275,
+      "p_bonferroni": 1.0,
+      "survives_5pct_after_adjustment": false
+    },
+    "lot_size_note": "NIFTY's lot size is not constant over 2020-2026 (75 -> 65, with both live during the transition). Per-lot rupee figures below use the CURRENT 65 and are therefore comparable across variants but not a historical account statement.",
+    "execution_basis": "TRADED_PRICE_NO_BIDASK",
+    "slippage_sensitivity": [
+      {
+        "label": "+0.0 pt/side",
+        "extra_cost_per_trade": 0.0,
+        "net": -1292.3400000000001,
+        "mean": -161.54250000000002,
+        "win_rate": 37.5,
+        "still_profitable": false
+      },
+      {
+        "label": "+0.25 pt/side",
+        "extra_cost_per_trade": 32.5,
+        "net": -1552.3400000000001,
+        "mean": -194.04250000000002,
+        "win_rate": 37.5,
+        "still_profitable": false
+      },
+      {
+        "label": "+0.5 pt/side",
+        "extra_cost_per_trade": 65.0,
+        "net": -1812.3400000000001,
+        "mean": -226.54250000000002,
+        "win_rate": 37.5,
+        "still_profitable": false
+      },
+      {
+        "label": "+1.0 pt/side",
+        "extra_cost_per_trade": 130.0,
+        "net": -2332.34,
+        "mean": -291.5425,
+        "win_rate": 37.5,
+        "still_profitable": false
+      },
+      {
+        "label": "+2.0 pt/side",
+        "extra_cost_per_trade": 260.0,
+        "net": -3372.3399999999997,
+        "mean": -421.54249999999996,
+        "win_rate": 37.5,
+        "still_profitable": false
+      }
+    ]
+  },
+  "BOT6_LEGACY_10_SESSION_CACHE": {
+    "summary": {
+      "total_trades": 3,
+      "net_profit": 3087.16,
+      "gross_profit": 3305.25,
+      "total_costs": 218.08999999999997,
+      "win_rate": 100.0,
+      "max_drawdown_pct": 0.0,
+      "avg_entry_price": 74.71666666666665,
+      "exit_reasons": {
+        "EOD": 3
+      },
+      "execution_basis": "TRADED_PRICE_NO_BIDASK"
+    },
+    "sessions_covered": 3,
+    "expectancy_per_trade": 1029.0533333333333,
+    "breakeven_loss_rate": null,
+    "sample_size_verdict": {
+      "verdict": "INDETERMINATE",
+      "reason": "no losing trades to estimate the tail",
+      "adverse_ci": {
+        "lo": 0.0,
+        "hi": 0.7075982261787133,
+        "point": 0.0
+      },
+      "breakeven_rate": null
+    },
+    "oos": {
+      "verdict": "INSUFFICIENT",
+      "n": 3
+    },
+    "walk_forward": {
+      "verdict": "INSUFFICIENT",
+      "n": 3,
+      "folds_requested": 4
+    },
+    "monte_carlo": {
+      "verdict": "INSUFFICIENT",
+      "n": 3
+    },
+    "resample_control": {
+      "verdict": "INSUFFICIENT",
+      "n": 3
+    },
+    "tstat": 1.817528810085292,
+    "multiple_testing": {
+      "variants_examined": 4,
+      "t_stat": 1.8175,
+      "p_raw": 0.21077,
+      "p_bonferroni": 0.843079,
+      "survives_5pct_after_adjustment": false
+    },
+    "lot_size_note": "NIFTY's lot size is not constant over 2020-2026 (75 -> 65, with both live during the transition). Per-lot rupee figures below use the CURRENT 65 and are therefore comparable across variants but not a historical account statement.",
+    "execution_basis": "TRADED_PRICE_NO_BIDASK",
+    "slippage_sensitivity": [
+      {
+        "label": "+0.0 pt/side",
+        "extra_cost_per_trade": 0.0,
+        "net": 3087.16,
+        "mean": 1029.0533333333333,
+        "win_rate": 100.0,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.25 pt/side",
+        "extra_cost_per_trade": 32.5,
+        "net": 2989.66,
+        "mean": 996.5533333333333,
+        "win_rate": 66.66666666666666,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.5 pt/side",
+        "extra_cost_per_trade": 65.0,
+        "net": 2892.16,
+        "mean": 964.0533333333333,
+        "win_rate": 66.66666666666666,
+        "still_profitable": true
+      },
+      {
+        "label": "+1.0 pt/side",
+        "extra_cost_per_trade": 130.0,
+        "net": 2697.16,
+        "mean": 899.0533333333333,
+        "win_rate": 66.66666666666666,
+        "still_profitable": true
+      },
+      {
+        "label": "+2.0 pt/side",
+        "extra_cost_per_trade": 260.0,
+        "net": 2307.16,
+        "mean": 769.0533333333333,
+        "win_rate": 66.66666666666666,
+        "still_profitable": true
+      }
+    ]
+  }
+}

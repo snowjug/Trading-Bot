@@ -62,6 +62,8 @@ ATM_DIR = "data/raw/dhan/rollingoption/symbol=NIFTY/interval=5m/strike=ATM"
 GRID_5M_DIR = "data/raw/dhan/option_grid_5m"
 EOD_FLAT = dtime(15, 15)          # both strategies specify an intraday MIS exit
 EXECUTION_BASIS = "TRADED_PRICE_NO_BIDASK"
+SESSION_OPEN = dtime(9, 15)       # NSE regular session
+SESSION_LAST_BAR = dtime(15, 35)  # 15:30 close; the feed stamps a final 15:35 bar
 
 
 @dataclass
@@ -167,10 +169,24 @@ def load_option_grid_5m(directory: str = GRID_5M_DIR) -> Optional[Dict[str, pd.D
                               "iv", "oi", "volume"]])
         if not frames:
             return None
-        out[side] = (pd.concat(frames)
-                     .drop_duplicates(subset=["datetime", "strike"])
-                     .sort_values(["datetime", "strike"])
-                     .reset_index(drop=True))
+        g = (pd.concat(frames)
+             .drop_duplicates(subset=["datetime", "strike"])
+             .sort_values(["datetime", "strike"])
+             .reset_index(drop=True))
+
+        # Restrict to the REGULAR session. The feed also carries Muhurat (Diwali)
+        # trading: four sessions (2021-11-04, 2022-10-24, 2023-11-12, 2024-11-01)
+        # that run ~18:00-19:15 and contain NO regular-session bars at all. Those
+        # bars are authentic, but every rule in these strategies is written around a
+        # 09:15 open and a 15:15 flat, so applying them to a one-hour ceremonial
+        # session produces a mechanical artefact — "entry at the first bar after
+        # 09:15" would pick 18:15 and "exit at the first bar after 15:15" would pick
+        # 18:20, a five-minute hold that the strategy never intended.
+        # This removes a session type the strategy does not trade; it does not
+        # remove losing days from a session type it does.
+        t = g["datetime"].dt.time
+        g = g[(t >= SESSION_OPEN) & (t <= SESSION_LAST_BAR)].reset_index(drop=True)
+        out[side] = g
     return out
 
 
@@ -210,6 +226,15 @@ def simulate_real_option_trades(
     d["atr_14"] = tr.rolling(14).mean()
 
     day_set = set(available_option_days(bars))
+
+    # Index the grid by session once. The naive form filters the whole frame inside
+    # the signal loop; at ~1.5M rows per side over hundreds of signal days that
+    # dominates runtime and the simulation does not finish. Grouping changes nothing
+    # about the data — it is the same rows, keyed for lookup.
+    by_day = {
+        side: {k: v for k, v in bars[side].groupby(bars[side]["datetime"].dt.date, sort=False)}
+        for side in ("ce", "pe")
+    }
     trades: List[RealOptionTrade] = []
     per_day: Dict[Any, int] = {}
 
@@ -231,9 +256,8 @@ def simulate_real_option_trades(
         side = "ce" if is_ce else "pe"
         level = prev["high"] if is_ce else prev["low"]
 
-        grid = bars[side]
-        day_grid = grid[grid["datetime"].dt.date == sess]
-        if day_grid.empty:
+        day_grid = by_day[side].get(sess)
+        if day_grid is None or day_grid.empty:
             continue
 
         # Spot path for the session (one row per timestamp; spot is common to all strikes).

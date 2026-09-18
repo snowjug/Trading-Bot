@@ -66,12 +66,27 @@ def test_grid_spans_a_real_strike_ladder(grid):
             assert col in grid[side].columns
 
 
-def test_grid_timestamps_are_session_times(grid):
-    """Bars must sit inside the trading session, proving the IST conversion held."""
+def test_grid_timestamps_are_regular_session_times(grid):
+    """
+    Bars must sit inside the REGULAR session.
+
+    This caught a real defect: the feed also carries Muhurat (Diwali) trading —
+    four evening-only sessions running 18:00-19:15 with no regular-session bars.
+    Left in, they would be traded as if 18:15 were the open.
+    """
     for side in ("ce", "pe"):
-        t = grid[side]["datetime"]
-        assert t.dt.time.min() >= pd.Timestamp("09:15").time()
-        assert t.dt.time.max() <= pd.Timestamp("15:40").time()
+        t = grid[side]["datetime"].dt.time
+        assert t.min() >= pd.Timestamp("09:15").time()
+        assert t.max() <= pd.Timestamp("15:35").time(),             "evening/Muhurat bars must not reach the simulator"
+
+
+def test_muhurat_sessions_are_excluded(grid):
+    """The four known ceremonial sessions must not appear at all."""
+    muhurat = {pd.Timestamp(d).date() for d in
+               ("2021-11-04", "2022-10-24", "2023-11-12", "2024-11-01")}
+    for side in ("ce", "pe"):
+        present = set(grid[side]["datetime"].dt.date) & muhurat
+        assert not present, f"{side}: Muhurat sessions leaked in: {sorted(present)}"
 
 
 def test_grid_has_no_duplicate_contract_bars(grid):
