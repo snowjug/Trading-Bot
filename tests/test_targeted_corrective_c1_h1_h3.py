@@ -211,9 +211,15 @@ def test_h1_bullish_signal_produces_no_unsupported_record(tmp_path):
 
 # ───────────────────────── H3: FORMING vs SETTLED BAR ─────────────────────────
 
+# The forming bar must be dated TODAY. `is_session_bar_settled` correctly treats a
+# bar from any previous day as settled, so a hardcoded date silently converts this
+# fixture into a settled bar the moment the calendar moves past it — which is what
+# happened, and it made the two H3 tests below stop testing anything.
+_FIXTURE_DAY = date.today()
 FORMING = {"open": 23212.05, "high": 23363.55, "low": 23197.0, "close": 23270.6,
-           "volume": 2.4e8, "source": "T", "market_timestamp": "2026-09-17T11:00:00"}
-SETTLED = {**FORMING, "market_timestamp": "2026-09-17T15:30:00"}
+           "volume": 2.4e8, "source": "T",
+           "market_timestamp": f"{_FIXTURE_DAY.isoformat()}T11:00:00"}
+SETTLED = {**FORMING, "market_timestamp": f"{_FIXTURE_DAY.isoformat()}T15:30:00"}
 
 
 def test_h3_settled_detection_rejects_a_forming_bar():
@@ -245,7 +251,7 @@ def test_h3_settled_bar_strategies_refuse_a_forming_bar(bot):
     """
     adapter = LiveStrategyAdapter()
     sig = adapter.evaluate(bot, session_bar=FORMING, today_vix=13.2,
-                           trading_day=date(2026, 9, 17))
+                           trading_day=_FIXTURE_DAY)
     assert sig.direction == 0
     assert sig.reason.startswith("FORMING_BAR_UNSUPPORTED")
 
