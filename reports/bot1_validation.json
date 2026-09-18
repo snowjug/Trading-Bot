@@ -1,0 +1,905 @@
+{
+  "variants_examined": 4,
+  "coverage": {
+    "underlying_sessions": 420,
+    "bhavcopy_sessions": 423,
+    "first": "2025-01-01",
+    "last": "2026-09-16"
+  },
+  "AS_SPECIFIED": {
+    "summary": {
+      "total_trades": 44,
+      "net_pnl_per_lot": 32259.980000000003,
+      "gross_pnl_per_lot": 37812.25,
+      "total_costs_per_lot": 5552.27,
+      "win_rate": 97.72727272727273,
+      "breach_rate": 2.272727272727273,
+      "avg_credit_points": 12.446590909090908,
+      "avg_max_loss_points": 226.1897727272727,
+      "avg_win": 759.6783720930233,
+      "avg_loss": -406.19,
+      "profit_factor": 80.42091139614466,
+      "max_drawdown_rupees_per_lot": 406.1899999999987,
+      "expectancy_per_trade": 733.1813636363637,
+      "execution_basis": "EXCHANGE_CLOSE_ENTRY_SETTLEMENT_EXIT_NO_BIDASK",
+      "margin_basis": "SPAN_UNVERIFIED_PER_LOT_ECONOMICS_REPORTED"
+    },
+    "structural": {
+      "realised_move_over_expected_move": {
+        "mean": 0.710092805646397,
+        "p50": 0.572282849149027,
+        "p90": 1.3721741011316024,
+        "max": 1.8263653939101014
+      },
+      "short_strike_distance_in_expected_moves": {
+        "mean": 1.804260885642947,
+        "min": 1.7356865666638437
+      },
+      "time_scaling_note": "expected move uses sqrt(5/365) while the position is held ~7 calendar days; the true holding-period sigma is 1.183x larger, so a strike labelled 1.8 SD sits at about 1.52 SD of the actual holding-period distribution",
+      "effective_sd_of_short_strike": 1.5213
+    },
+    "breakeven_structural": 0.04510664126984128,
+    "breakeven_empirical": 0.6515987484326485,
+    "sample_size_verdict": {
+      "n_trades": 44,
+      "observed_adverse": 1,
+      "adverse_rate": 0.022727272727272728,
+      "adverse_ci95": [
+        0.00058,
+        0.12024
+      ],
+      "breakeven_rate": 0.04511,
+      "verdict": "NOT_DISTINGUISHABLE",
+      "reason": "the 95% upper bound on the adverse rate (0.120) exceeds the break-even rate (0.045), so this sample cannot rule out a losing structure"
+    },
+    "trades_needed_for_conclusive_ci": 320,
+    "oos": {
+      "split_date": "2026-05-05",
+      "is": {
+        "n": 30,
+        "net": 24472.08,
+        "mean": 815.7360000000001,
+        "win_rate": 100.0
+      },
+      "oos": {
+        "n": 14,
+        "net": 7787.9,
+        "mean": 556.2785714285714,
+        "win_rate": 92.85714285714286
+      },
+      "sign_agreement": true
+    },
+    "walk_forward": {
+      "folds": [
+        {
+          "fold": 1,
+          "n": 11,
+          "start": "2025-02-06",
+          "net": 11965.890000000003,
+          "mean": 1087.808181818182,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 2,
+          "n": 11,
+          "start": "2025-07-10",
+          "net": 7222.22,
+          "mean": 656.5654545454546,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 3,
+          "n": 11,
+          "start": "2025-12-02",
+          "net": 7857.5199999999995,
+          "mean": 714.3199999999999,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 4,
+          "n": 11,
+          "start": "2026-06-16",
+          "net": 5214.35,
+          "mean": 474.0318181818182,
+          "win_rate": 90.9090909090909
+        }
+      ],
+      "folds_positive": 4,
+      "folds_total": 4,
+      "consistent": true
+    },
+    "monte_carlo": {
+      "paths": 2000,
+      "final_pnl_mean": 32259.979999999992,
+      "final_pnl_p05": 32259.979999999992,
+      "final_pnl_p95": 32259.980000000007,
+      "max_drawdown_median": -406.1899999999987,
+      "max_drawdown_p05_worst": -406.1900000000005,
+      "prob_final_negative": 0.0
+    },
+    "resample_control": {
+      "draws": 2000,
+      "actual": 32259.980000000003,
+      "control_mean": 32274.96969,
+      "control_sd": 2429.8903270182523,
+      "actual_percentile": 50.0,
+      "prob_negative": 0.0,
+      "note": "sequencing control only; provides no evidence of entry-selection edge"
+    },
+    "regime_vix": [
+      {
+        "vix_range": "[0, 12)",
+        "n": 18,
+        "net": 9130.45,
+        "mean": 507.24722222222226,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[12, 14)",
+        "n": 14,
+        "net": 9722.969999999998,
+        "mean": 694.497857142857,
+        "win_rate": 92.85714285714286
+      },
+      {
+        "vix_range": "[14, 16)",
+        "n": 5,
+        "net": 5451.63,
+        "mean": 1090.326,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[16, 18)",
+        "n": 5,
+        "net": 5490.64,
+        "mean": 1098.1280000000002,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[18, 20)",
+        "n": 2,
+        "net": 2464.29,
+        "mean": 1232.145,
+        "win_rate": 100.0
+      }
+    ],
+    "tstat": 13.284683788126651,
+    "multiple_testing": {
+      "variants_examined": 4,
+      "t_stat": 13.2847,
+      "p_raw": 0.0,
+      "p_bonferroni": 0.0,
+      "survives_5pct_after_adjustment": true
+    },
+    "rejects": {
+      "REGIME_INPUT_UNAVAILABLE": 1,
+      "REGIME_FILTER_BLOCKED": 121,
+      "NOT_THE_CANONICAL_HOLD_WINDOW": 93,
+      "EXPIRY_ALREADY_TRADED": 161
+    },
+    "slippage_sensitivity": [
+      {
+        "label": "+0.0 pt/leg",
+        "extra_cost_per_trade": 0.0,
+        "net": 32259.980000000003,
+        "mean": 733.1813636363637,
+        "win_rate": 97.72727272727273,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.25 pt/leg",
+        "extra_cost_per_trade": 75.0,
+        "net": 28959.980000000003,
+        "mean": 658.1813636363637,
+        "win_rate": 97.72727272727273,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.5 pt/leg",
+        "extra_cost_per_trade": 150.0,
+        "net": 25659.980000000003,
+        "mean": 583.1813636363637,
+        "win_rate": 97.72727272727273,
+        "still_profitable": true
+      },
+      {
+        "label": "+1.0 pt/leg",
+        "extra_cost_per_trade": 300.0,
+        "net": 19059.980000000003,
+        "mean": 433.1813636363637,
+        "win_rate": 93.18181818181817,
+        "still_profitable": true
+      },
+      {
+        "label": "+2.0 pt/leg",
+        "extra_cost_per_trade": 600.0,
+        "net": 5859.98,
+        "mean": 133.1813636363636,
+        "win_rate": 61.36363636363637,
+        "still_profitable": true
+      }
+    ],
+    "adverse_fill": {
+      "trades_repriced": 44,
+      "trades_unpriceable": 0,
+      "net_at_close_fills": 32259.98,
+      "net_at_worst_traded_fills": -31558.53,
+      "mean_credit_at_close": 12.446590909090908,
+      "mean_credit_at_worst": -8.444318181818183,
+      "win_rate": 13.636363636363635,
+      "still_profitable": false
+    }
+  },
+  "CAUSAL_LAG1": {
+    "summary": {
+      "total_trades": 46,
+      "net_pnl_per_lot": 37353.619999999995,
+      "gross_pnl_per_lot": 43172.0,
+      "total_costs_per_lot": 5818.38,
+      "win_rate": 100.0,
+      "breach_rate": 0.0,
+      "avg_credit_points": 13.265217391304349,
+      "avg_max_loss_points": 230.21304347826086,
+      "avg_win": 812.0352173913043,
+      "avg_loss": 0.0,
+      "profit_factor": null,
+      "max_drawdown_rupees_per_lot": 0.0,
+      "expectancy_per_trade": 812.0352173913043,
+      "execution_basis": "EXCHANGE_CLOSE_ENTRY_SETTLEMENT_EXIT_NO_BIDASK",
+      "margin_basis": "SPAN_UNVERIFIED_PER_LOT_ECONOMICS_REPORTED"
+    },
+    "structural": {
+      "realised_move_over_expected_move": {
+        "mean": 0.729304838679033,
+        "p50": 0.5638620004798374,
+        "p90": 1.4279657381998074,
+        "max": 1.8238090641440223
+      },
+      "short_strike_distance_in_expected_moves": {
+        "mean": 1.795469755153148,
+        "min": 1.7272875603059734
+      },
+      "time_scaling_note": "expected move uses sqrt(5/365) while the position is held ~7 calendar days; the true holding-period sigma is 1.183x larger, so a strike labelled 1.8 SD sits at about 1.52 SD of the actual holding-period distribution",
+      "effective_sd_of_short_strike": 1.5213
+    },
+    "breakeven_structural": 0.0475555,
+    "breakeven_empirical": null,
+    "sample_size_verdict": {
+      "n_trades": 46,
+      "observed_adverse": 0,
+      "adverse_rate": 0.0,
+      "adverse_ci95": [
+        0.0,
+        0.07706
+      ],
+      "breakeven_rate": 0.04756,
+      "verdict": "NOT_DISTINGUISHABLE",
+      "reason": "the 95% upper bound on the adverse rate (0.077) exceeds the break-even rate (0.048), so this sample cannot rule out a losing structure"
+    },
+    "trades_needed_for_conclusive_ci": 80,
+    "oos": {
+      "split_date": "2026-05-12",
+      "is": {
+        "n": 32,
+        "net": 28305.88,
+        "mean": 884.55875,
+        "win_rate": 100.0
+      },
+      "oos": {
+        "n": 14,
+        "net": 9047.74,
+        "mean": 646.2671428571429,
+        "win_rate": 100.0
+      },
+      "sign_agreement": true
+    },
+    "walk_forward": {
+      "folds": [
+        {
+          "fold": 1,
+          "n": 11,
+          "start": "2025-02-06",
+          "net": 13116.99,
+          "mean": 1192.4536363636364,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 2,
+          "n": 12,
+          "start": "2025-07-03",
+          "net": 8290.390000000001,
+          "mean": 690.8658333333334,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 3,
+          "n": 11,
+          "start": "2025-12-02",
+          "net": 9076.76,
+          "mean": 825.16,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 4,
+          "n": 12,
+          "start": "2026-06-02",
+          "net": 6869.48,
+          "mean": 572.4566666666666,
+          "win_rate": 100.0
+        }
+      ],
+      "folds_positive": 4,
+      "folds_total": 4,
+      "consistent": true
+    },
+    "monte_carlo": {
+      "paths": 2000,
+      "final_pnl_mean": 37353.62,
+      "final_pnl_p05": 37353.61999999999,
+      "final_pnl_p95": 37353.62000000001,
+      "max_drawdown_median": 0.0,
+      "max_drawdown_p05_worst": 0.0,
+      "prob_final_negative": 0.0
+    },
+    "resample_control": {
+      "draws": 2000,
+      "actual": 37353.619999999995,
+      "control_mean": 37379.60896,
+      "control_sd": 3002.395900816303,
+      "actual_percentile": 50.14999999999999,
+      "prob_negative": 0.0,
+      "note": "sequencing control only; provides no evidence of entry-selection edge"
+    },
+    "regime_vix": [
+      {
+        "vix_range": "[0, 12)",
+        "n": 18,
+        "net": 10262.28,
+        "mean": 570.1266666666667,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[12, 14)",
+        "n": 13,
+        "net": 8749.819999999998,
+        "mean": 673.0630769230768,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[14, 16)",
+        "n": 4,
+        "net": 4454.34,
+        "mean": 1113.585,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[16, 18)",
+        "n": 4,
+        "net": 4530.67,
+        "mean": 1132.6675,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[18, 20)",
+        "n": 7,
+        "net": 9356.51,
+        "mean": 1336.6442857142858,
+        "win_rate": 100.0
+      }
+    ],
+    "tstat": 12.170262525592186,
+    "multiple_testing": {
+      "variants_examined": 4,
+      "t_stat": 12.1703,
+      "p_raw": 0.0,
+      "p_bonferroni": 0.0,
+      "survives_5pct_after_adjustment": true
+    },
+    "rejects": {
+      "REGIME_INPUT_UNAVAILABLE": 1,
+      "REGIME_FILTER_BLOCKED": 120,
+      "NOT_THE_CANONICAL_HOLD_WINDOW": 83,
+      "EXPIRY_ALREADY_TRADED": 169
+    },
+    "slippage_sensitivity": [
+      {
+        "label": "+0.0 pt/leg",
+        "extra_cost_per_trade": 0.0,
+        "net": 37353.619999999995,
+        "mean": 812.0352173913043,
+        "win_rate": 100.0,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.25 pt/leg",
+        "extra_cost_per_trade": 75.0,
+        "net": 33903.619999999995,
+        "mean": 737.0352173913043,
+        "win_rate": 100.0,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.5 pt/leg",
+        "extra_cost_per_trade": 150.0,
+        "net": 30453.620000000003,
+        "mean": 662.0352173913044,
+        "win_rate": 100.0,
+        "still_profitable": true
+      },
+      {
+        "label": "+1.0 pt/leg",
+        "extra_cost_per_trade": 300.0,
+        "net": 23553.620000000003,
+        "mean": 512.0352173913044,
+        "win_rate": 95.65217391304348,
+        "still_profitable": true
+      },
+      {
+        "label": "+2.0 pt/leg",
+        "extra_cost_per_trade": 600.0,
+        "net": 9753.62,
+        "mean": 212.03521739130437,
+        "win_rate": 56.52173913043478,
+        "still_profitable": true
+      }
+    ],
+    "adverse_fill": {
+      "trades_repriced": 46,
+      "trades_unpriceable": 0,
+      "net_at_close_fills": 37353.62,
+      "net_at_worst_traded_fills": -25531.0,
+      "mean_credit_at_close": 13.265217391304349,
+      "mean_credit_at_worst": -6.068478260869563,
+      "win_rate": 15.217391304347828,
+      "still_profitable": false
+    }
+  },
+  "CALENDAR_DTE_WINDOW_3_9": {
+    "summary": {
+      "total_trades": 72,
+      "net_pnl_per_lot": 24108.97,
+      "gross_pnl_per_lot": 33200.25,
+      "total_costs_per_lot": 9091.28,
+      "win_rate": 94.44444444444444,
+      "breach_rate": 5.555555555555555,
+      "avg_credit_points": 11.67361111111111,
+      "avg_max_loss_points": 229.99305555555554,
+      "avg_win": 705.2579411764706,
+      "avg_loss": -5962.142499999999,
+      "profit_factor": 2.010918893669516,
+      "max_drawdown_rupees_per_lot": 15183.61,
+      "expectancy_per_trade": 334.8468055555556,
+      "execution_basis": "EXCHANGE_CLOSE_ENTRY_SETTLEMENT_EXIT_NO_BIDASK",
+      "margin_basis": "SPAN_UNVERIFIED_PER_LOT_ECONOMICS_REPORTED"
+    },
+    "structural": {
+      "realised_move_over_expected_move": {
+        "mean": 0.7715976374647622,
+        "p50": 0.6780543452395411,
+        "p90": 1.4594568774765517,
+        "max": 2.299304518833253
+      },
+      "short_strike_distance_in_expected_moves": {
+        "mean": 1.802401966487405,
+        "min": 1.71736834297272
+      },
+      "time_scaling_note": "expected move uses sqrt(5/365) while the position is held ~7 calendar days; the true holding-period sigma is 1.183x larger, so a strike labelled 1.8 SD sits at about 1.52 SD of the actual holding-period distribution",
+      "effective_sd_of_short_strike": 1.5213
+    },
+    "breakeven_structural": 0.04133809961685823,
+    "breakeven_empirical": 0.10577704870116171,
+    "sample_size_verdict": {
+      "n_trades": 72,
+      "observed_adverse": 4,
+      "adverse_rate": 0.05555555555555555,
+      "adverse_ci95": [
+        0.01534,
+        0.13618
+      ],
+      "breakeven_rate": 0.04134,
+      "verdict": "NOT_DISTINGUISHABLE",
+      "reason": "the 95% upper bound on the adverse rate (0.136) exceeds the break-even rate (0.041), so this sample cannot rule out a losing structure"
+    },
+    "trades_needed_for_conclusive_ci": null,
+    "oos": {
+      "split_date": "2026-04-08",
+      "is": {
+        "n": 50,
+        "net": 9878.970000000003,
+        "mean": 197.57940000000005,
+        "win_rate": 94.0
+      },
+      "oos": {
+        "n": 22,
+        "net": 14230.0,
+        "mean": 646.8181818181819,
+        "win_rate": 95.45454545454545
+      },
+      "sign_agreement": true
+    },
+    "walk_forward": {
+      "folds": [
+        {
+          "fold": 1,
+          "n": 18,
+          "start": "2025-02-06",
+          "net": -183.82999999999856,
+          "mean": -10.212777777777697,
+          "win_rate": 88.88888888888889
+        },
+        {
+          "fold": 2,
+          "n": 18,
+          "start": "2025-07-17",
+          "net": 1603.82,
+          "mean": 89.10111111111111,
+          "win_rate": 94.44444444444444
+        },
+        {
+          "fold": 3,
+          "n": 18,
+          "start": "2025-11-18",
+          "net": 12802.429999999998,
+          "mean": 711.2461111111111,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 4,
+          "n": 18,
+          "start": "2026-05-05",
+          "net": 9886.55,
+          "mean": 549.2527777777777,
+          "win_rate": 94.44444444444444
+        }
+      ],
+      "folds_positive": 3,
+      "folds_total": 4,
+      "consistent": false
+    },
+    "monte_carlo": {
+      "paths": 2000,
+      "final_pnl_mean": 24108.97,
+      "final_pnl_p05": 24108.96999999999,
+      "final_pnl_p95": 24108.97000000001,
+      "max_drawdown_median": -14094.06,
+      "max_drawdown_p05_worst": -19912.675,
+      "prob_final_negative": 0.0
+    },
+    "resample_control": {
+      "draws": 2000,
+      "actual": 24108.97,
+      "control_mean": 23757.089520000005,
+      "control_sd": 16925.99690428385,
+      "actual_percentile": 46.550000000000004,
+      "prob_negative": 0.0875,
+      "note": "sequencing control only; provides no evidence of entry-selection edge"
+    },
+    "regime_vix": [
+      {
+        "vix_range": "[0, 12)",
+        "n": 26,
+        "net": 4767.700000000001,
+        "mean": 183.37307692307695,
+        "win_rate": 96.15384615384616
+      },
+      {
+        "vix_range": "[12, 14)",
+        "n": 24,
+        "net": -2767.430000000002,
+        "mean": -115.30958333333342,
+        "win_rate": 87.5
+      },
+      {
+        "vix_range": "[14, 16)",
+        "n": 8,
+        "net": 7889.35,
+        "mean": 986.16875,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[16, 18)",
+        "n": 7,
+        "net": 7062.170000000001,
+        "mean": 1008.8814285714287,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[18, 20)",
+        "n": 7,
+        "net": 7157.179999999999,
+        "mean": 1022.4542857142857,
+        "win_rate": 100.0
+      }
+    ],
+    "tstat": 1.4232354043183677,
+    "multiple_testing": {
+      "variants_examined": 4,
+      "t_stat": 1.4232,
+      "p_raw": 0.159047,
+      "p_bonferroni": 0.63619,
+      "survives_5pct_after_adjustment": false
+    },
+    "rejects": {
+      "REGIME_INPUT_UNAVAILABLE": 1,
+      "REGIME_FILTER_BLOCKED": 121,
+      "DTE_OUTSIDE_WEEKLY_CYCLE": 9,
+      "EXPIRY_ALREADY_TRADED": 217
+    },
+    "slippage_sensitivity": [
+      {
+        "label": "+0.0 pt/leg",
+        "extra_cost_per_trade": 0.0,
+        "net": 24108.97,
+        "mean": 334.8468055555556,
+        "win_rate": 94.44444444444444,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.25 pt/leg",
+        "extra_cost_per_trade": 75.0,
+        "net": 18708.97,
+        "mean": 259.8468055555556,
+        "win_rate": 93.05555555555556,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.5 pt/leg",
+        "extra_cost_per_trade": 150.0,
+        "net": 13308.970000000001,
+        "mean": 184.84680555555556,
+        "win_rate": 91.66666666666666,
+        "still_profitable": true
+      },
+      {
+        "label": "+1.0 pt/leg",
+        "extra_cost_per_trade": 300.0,
+        "net": 2508.9700000000003,
+        "mean": 34.84680555555556,
+        "win_rate": 79.16666666666666,
+        "still_profitable": true
+      },
+      {
+        "label": "+2.0 pt/leg",
+        "extra_cost_per_trade": 600.0,
+        "net": -19091.03,
+        "mean": -265.1531944444444,
+        "win_rate": 54.166666666666664,
+        "still_profitable": false
+      }
+    ],
+    "adverse_fill": {
+      "trades_repriced": 72,
+      "trades_unpriceable": 0,
+      "net_at_close_fills": 24108.97,
+      "net_at_worst_traded_fills": -72220.39,
+      "mean_credit_at_close": 11.67361111111111,
+      "mean_credit_at_worst": -7.474305555555556,
+      "win_rate": 11.11111111111111,
+      "still_profitable": false
+    }
+  },
+  "RSI_BAND_38_70_AS_IN_SIMULATOR": {
+    "summary": {
+      "total_trades": 48,
+      "net_pnl_per_lot": 35948.67,
+      "gross_pnl_per_lot": 42005.5,
+      "total_costs_per_lot": 6056.83,
+      "win_rate": 97.91666666666666,
+      "breach_rate": 2.083333333333333,
+      "avg_credit_points": 12.677083333333334,
+      "avg_max_loss_points": 227.94791666666666,
+      "avg_win": 773.507659574468,
+      "avg_loss": -406.19,
+      "profit_factor": 89.50210492626601,
+      "max_drawdown_rupees_per_lot": 406.1900000000023,
+      "expectancy_per_trade": 748.930625,
+      "execution_basis": "EXCHANGE_CLOSE_ENTRY_SETTLEMENT_EXIT_NO_BIDASK",
+      "margin_basis": "SPAN_UNVERIFIED_PER_LOT_ECONOMICS_REPORTED"
+    },
+    "structural": {
+      "realised_move_over_expected_move": {
+        "mean": 0.7077145194310838,
+        "p50": 0.5695977730782389,
+        "p90": 1.418240799332268,
+        "max": 1.8263653939101014
+      },
+      "short_strike_distance_in_expected_moves": {
+        "mean": 1.8045484238905243,
+        "min": 1.7356865666638437
+      },
+      "time_scaling_note": "expected move uses sqrt(5/365) while the position is held ~7 calendar days; the true holding-period sigma is 1.183x larger, so a strike labelled 1.8 SD sits at about 1.52 SD of the actual holding-period distribution",
+      "effective_sd_of_short_strike": 1.5213
+    },
+    "breakeven_structural": 0.045691971139971144,
+    "breakeven_empirical": 0.655682965289159,
+    "sample_size_verdict": {
+      "n_trades": 48,
+      "observed_adverse": 1,
+      "adverse_rate": 0.020833333333333332,
+      "adverse_ci95": [
+        0.00053,
+        0.1107
+      ],
+      "breakeven_rate": 0.04569,
+      "verdict": "NOT_DISTINGUISHABLE",
+      "reason": "the 95% upper bound on the adverse rate (0.111) exceeds the break-even rate (0.046), so this sample cannot rule out a losing structure"
+    },
+    "trades_needed_for_conclusive_ci": 260,
+    "oos": {
+      "split_date": "2026-05-12",
+      "is": {
+        "n": 33,
+        "net": 26879.379999999997,
+        "mean": 814.5266666666666,
+        "win_rate": 100.0
+      },
+      "oos": {
+        "n": 15,
+        "net": 9069.289999999999,
+        "mean": 604.6193333333333,
+        "win_rate": 93.33333333333333
+      },
+      "sign_agreement": true
+    },
+    "walk_forward": {
+      "folds": [
+        {
+          "fold": 1,
+          "n": 12,
+          "start": "2025-02-06",
+          "net": 12805.52,
+          "mean": 1067.1266666666668,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 2,
+          "n": 12,
+          "start": "2025-07-10",
+          "net": 7912.249999999999,
+          "mean": 659.3541666666666,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 3,
+          "n": 12,
+          "start": "2025-12-02",
+          "net": 9122.99,
+          "mean": 760.2491666666666,
+          "win_rate": 100.0
+        },
+        {
+          "fold": 4,
+          "n": 12,
+          "start": "2026-06-09",
+          "net": 6107.91,
+          "mean": 508.9925,
+          "win_rate": 91.66666666666666
+        }
+      ],
+      "folds_positive": 4,
+      "folds_total": 4,
+      "consistent": true
+    },
+    "monte_carlo": {
+      "paths": 2000,
+      "final_pnl_mean": 35948.67,
+      "final_pnl_p05": 35948.66999999999,
+      "final_pnl_p95": 35948.67000000001,
+      "max_drawdown_median": -406.1899999999996,
+      "max_drawdown_p05_worst": -406.1900000000023,
+      "prob_final_negative": 0.0
+    },
+    "resample_control": {
+      "draws": 2000,
+      "actual": 35948.67,
+      "control_mean": 35948.350210000004,
+      "control_sd": 2477.982650023536,
+      "actual_percentile": 48.949999999999996,
+      "prob_negative": 0.0,
+      "note": "sequencing control only; provides no evidence of entry-selection edge"
+    },
+    "regime_vix": [
+      {
+        "vix_range": "[0, 12)",
+        "n": 19,
+        "net": 9820.480000000001,
+        "mean": 516.8673684210527,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[12, 14)",
+        "n": 15,
+        "net": 10562.6,
+        "mean": 704.1733333333334,
+        "win_rate": 93.33333333333333
+      },
+      {
+        "vix_range": "[14, 16)",
+        "n": 6,
+        "net": 6345.1900000000005,
+        "mean": 1057.5316666666668,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[16, 18)",
+        "n": 5,
+        "net": 5490.64,
+        "mean": 1098.1280000000002,
+        "win_rate": 100.0
+      },
+      {
+        "vix_range": "[18, 20)",
+        "n": 3,
+        "net": 3729.76,
+        "mean": 1243.2533333333333,
+        "win_rate": 100.0
+      }
+    ],
+    "tstat": 14.434465539785768,
+    "multiple_testing": {
+      "variants_examined": 4,
+      "t_stat": 14.4345,
+      "p_raw": 0.0,
+      "p_bonferroni": 0.0,
+      "survives_5pct_after_adjustment": true
+    },
+    "rejects": {
+      "REGIME_INPUT_UNAVAILABLE": 1,
+      "REGIME_FILTER_BLOCKED": 99,
+      "NOT_THE_CANONICAL_HOLD_WINDOW": 93,
+      "EXPIRY_ALREADY_TRADED": 179
+    },
+    "slippage_sensitivity": [
+      {
+        "label": "+0.0 pt/leg",
+        "extra_cost_per_trade": 0.0,
+        "net": 35948.67,
+        "mean": 748.930625,
+        "win_rate": 97.91666666666666,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.25 pt/leg",
+        "extra_cost_per_trade": 75.0,
+        "net": 32348.67,
+        "mean": 673.930625,
+        "win_rate": 97.91666666666666,
+        "still_profitable": true
+      },
+      {
+        "label": "+0.5 pt/leg",
+        "extra_cost_per_trade": 150.0,
+        "net": 28748.67,
+        "mean": 598.930625,
+        "win_rate": 97.91666666666666,
+        "still_profitable": true
+      },
+      {
+        "label": "+1.0 pt/leg",
+        "extra_cost_per_trade": 300.0,
+        "net": 21548.670000000002,
+        "mean": 448.930625,
+        "win_rate": 93.75,
+        "still_profitable": true
+      },
+      {
+        "label": "+2.0 pt/leg",
+        "extra_cost_per_trade": 600.0,
+        "net": 7148.67,
+        "mean": 148.930625,
+        "win_rate": 64.58333333333334,
+        "still_profitable": true
+      }
+    ],
+    "adverse_fill": {
+      "trades_repriced": 48,
+      "trades_unpriceable": 0,
+      "net_at_close_fills": 35948.67,
+      "net_at_worst_traded_fills": -35573.08,
+      "mean_credit_at_close": 12.677083333333334,
+      "mean_credit_at_worst": -8.784374999999999,
+      "win_rate": 12.5,
+      "still_profitable": false
+    }
+  }
+}
