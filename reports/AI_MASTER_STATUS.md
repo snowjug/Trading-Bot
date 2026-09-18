@@ -118,9 +118,25 @@ date-sensitive. Bots 2/3/4 are explicitly out of scope for this mission.
 
 ---
 
-## TEST COUNT
-Baseline 419 → **479 collected** (+32 Bot 1, +14 Bot 5/6 deep grid, +14 Bot 7).
-See the final suite run for the current pass/fail split.
+## TEST COUNT — full suite, 2026-09-18
+
+**478 collected: 476 passed, 2 failed** (14m 27s).
+
+| | baseline `749db3e` | now |
+|---|---|---|
+| collected | 418 | **478** (+60) |
+| failing | **4** | **2** |
+
+The 2 that remain are `test_h3_settled_bar_strategies_refuse_a_forming_bar` for
+**Bots 3 and 4**. Both **fail identically on the untouched baseline** (verified by
+checking out `749db3e`), so they are pre-existing, not a regression. They are
+date-sensitive: the strategies are flat on current data, so the adapter returns
+`NO_SIGNAL: strategy flat` before reaching the forming-bar guard the test asserts
+on. Bots 2/3/4 are explicitly out of scope for this mission, so they are reported
+rather than changed.
+
+The other 2 baseline failures — `test_c1_bot6_blocked_by_max_positions[1]` and
+`[-1]` — were the `target_premium` crash and are now **fixed**.
 
 ## EXACT NEXT ACTION
 Nothing is in flight. Every target bot has reached a specific, evidenced stopping
