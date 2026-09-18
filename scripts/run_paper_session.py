@@ -43,13 +43,33 @@ MARKET_OPEN, MARKET_CLOSE = dtime(9, 15), dtime(15, 30)
 HARD_FLAT = dtime(15, 20)          # square off before the close, on live quotes
 EVAL_STALE_SEC = 180.0
 
-BOTS = {
+ALL_BOTS = {
     "BOT1": "Strategy 1: Apex VRP Engine",
     "BOT2": "Strategy 2: Zen Curvature Overnight",
     "BOT6": "Strategy 6: Micro Momentum Sniper",
     "BOT7": "Strategy 7: Intraday Displacement",
     "BOT8": "Strategy 8: Price Action / Market Structure",
 }
+
+# Retired on measurement, not on opinion. Both failed two consecutive frozen
+# holdouts; see reports/FINAL_6_MONTH_MONEY_STUDY.md. Their code is retained
+# unchanged so the measurements stay reproducible — they are simply not evaluated.
+RETIRED_BOTS = {
+    "BOT6": "net -Rs 2,431 over the 3-month holdout and -Rs 14,587 over the "
+            "6-month holdout (19 trades, 47.4% win, t=-1.34); worst bot in the system",
+    "BOT8": "0 trades in 65 sessions and 0 trades in 125 sessions; the rules have "
+            "never produced a measurable entry",
+}
+
+# Enabled by default = everything that has not been retired. Setting
+# PAPER_BOTS to a comma-separated list overrides this, including re-enabling a
+# retired bot deliberately for a measurement run.
+_override = os.environ.get("PAPER_BOTS", "").strip()
+if _override:
+    _want = {b.strip().upper() for b in _override.split(",") if b.strip()}
+    BOTS = {k: v for k, v in ALL_BOTS.items() if k in _want}
+else:
+    BOTS = {k: v for k, v in ALL_BOTS.items() if k not in RETIRED_BOTS}
 
 
 class SessionState:

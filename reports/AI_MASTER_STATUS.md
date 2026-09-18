@@ -182,3 +182,66 @@ on the holdout but its **median trade is negative on both DEV (−₹560) and VA
 Reproduce with `scripts/research/condor_regime_check.py`.
 
 **Test suite: 530 passed.**
+
+---
+
+## UPDATE 2026-09-18 (later) — 6-MONTH MONEY STUDY, ROGUE STRATEGY SEARCH
+
+Full report: `reports/FINAL_6_MONTH_MONEY_STUDY.md`.
+
+Holdout 2026-03-18 -> 2026-09-18 (125 sessions). Splits: DEV 1,001 / VAL 371 /
+HOLDOUT 125. Search: **31 distinct concepts, ~100 implementations, 5 rounds**,
+including external sources (Gao/Han/Li/Zhou intraday momentum; public NIFTY ORB
+and VWAP-pullback write-ups). **No candidate was promoted.**
+
+### Money result (frozen five-bot system, equal sleeves, whole lots)
+
+| Account | Net | Return | Max DD | Profitable days |
+|---|---|---|---|---|
+| Rs 20,000 | **nothing executable** | — | — | — |
+| Rs 50,000 | **-Rs 14,587** | **-29.17%** | 42.73% | 7.2% of sessions |
+| Rs 1,00,000 | **-Rs 17,956** | **-17.96%** | 40.81% | 19.2% of sessions |
+
+Per lot on the holdout: BOT1 +10,565 (0/17 breaches), BOT2 +20,466 (2/17),
+BOT6 **-14,587**, BOT7 +653 (n=7), BOT8 **0 trades**.
+
+### What was learned
+
+1. **25 of 31 concepts were gross-negative on DEV** — the directional intraday
+   signal is absent, not merely expensive.
+2. **NIFTY intraday volatility compressed structurally.** Sessions with a 0.35%
+   opening range: 10.1% (2022) -> 2.4% (2023) -> ~2% since. DEV 6.8% / VAL 2.4% /
+   HOLDOUT 1.6%. A round trip costs ~Rs 74 on ~Rs 7,000 of premium (1.05%).
+3. **Market Intraday Momentum (JFE 2018) does not transfer**: -Rs 123,679,
+   t=-4.59, gross-negative. Reported as measured.
+4. The one DEV effect (wide-opening-range ORB, 25 of 29 variants positive, two
+   monotone axes) **failed validation**: every variant with a usable sample went
+   negative; the two that stayed positive fired 9 times in 371 sessions.
+5. **Two artifacts of my own making were caught before shipping**, both worth
+   large fake profits:
+   - a 4-step wing beating a 3-step wing (+Rs 179,017 vs -Rs 46,213) with
+     *identical short strikes* — the exit bar was being chosen by data
+     availability;
+   - a zero-DTE condor at +Rs 141,174 (t=8.07) whose stale-mark filter deleted 68
+     of 211 expiry sessions, the refused ones averaging **1.525% prior-day range
+     against 0.843%** for the taken ones. Settling at expiry instead of marking
+     gives the honest number: **-Rs 47,803, 50.5% breach, t=-1.18**.
+
+### Deliverables
+
+- `src/research/lab2.py` (level-based engine, R:R is a property of the setup)
+- `src/research/concepts.py` (31 concepts), `src/research/intraday_premium.py`,
+  `src/research/dte0_condor.py`
+- `scripts/research/`: dev_sweep, dev_sweep2, dev_sweep3, validate2, dev_premium,
+  dte0_study, holdout_6m, money_result_6m
+- `tests/test_research_lab2.py` — 19 regression tests targeting lookahead and
+  silent selection specifically
+- README performance claims replaced with measured results; dashboard
+  `/api/historical` extended with capital deployed, return on deployed, win rate,
+  expectancy, profit factor, drawdown, day distribution
+
+### Standing conclusion
+
+Across two studies and ~130 tested implementations, **no strategy in this
+repository has a validated edge**. BOT6 and BOT8 should be retired. BOT1 and BOT2
+are profitable only in zero-breach regimes. `LIVE_TRADING_ENABLED` remains false.

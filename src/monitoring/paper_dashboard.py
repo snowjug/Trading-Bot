@@ -29,7 +29,11 @@ logger = setup_logging("monitoring.paper_dashboard")
 app = FastAPI(title="Paper Session — Operational Dashboard", version="1.0.0")
 
 SESSION_ROOT = Path("data/paper_session")
+# The DISPLAY universe, not the active set. BOT6 and BOT8 are retired in
+# scripts/run_paper_session.py and are no longer evaluated, but their stored
+# trades must still render in the historical view, so they stay listed here.
 BOTS = ["BOT1", "BOT2", "BOT6", "BOT7", "BOT8"]
+RETIRED = {"BOT6", "BOT8"}
 STALE_AFTER_SEC = 120.0
 
 HEARTBEAT_RE = re.compile(r"^\[(\d{2}:\d{2}:\d{2})\] CYCLE (\d+)")
@@ -255,11 +259,43 @@ def api_historical(start: Optional[str] = None, end: Optional[str] = None,
             "max_drawdown": round(abs(dd), 2),
         })
 
-    equity, run = [], 0.0
+    equity, run, peak, ddmax = [], 0.0, 0.0, 0.0
     for s in sessions:
         if s.get("status") == "OK":
             run += s.get("net_pnl") or 0.0
+            peak = max(peak, run)
+            ddmax = max(ddmax, peak - run)
             equity.append({"date": s["date"], "equity": round(run, 2)})
+
+    # Analytics over the filtered range. Every figure comes from stored trades;
+    # a quantity the ledger does not carry is reported as null, never inferred.
+    ok = [s for s in sessions if s.get("status") == "OK"]
+    dayp = [s.get("net_pnl") or 0.0 for s in ok]
+    allp = [t.get("realized_pnl") or 0.0 for t in trades]
+    wins = [x for x in allp if x > 0]
+    losses = [x for x in allp if x <= 0]
+    deployed = sum(abs(t.get("meta", {}).get("capital_at_risk") or 0.0) for t in trades)
+    streak = mx = 0
+    for x in dayp:
+        if x < 0:
+            streak += 1; mx = max(mx, streak)
+        elif x > 0:
+            streak = 0
+
+    def pct_days(thr: float):
+        """Share of traded days at or beyond a threshold, as a % of account.
+        Requires PAPER_ACCOUNT_CAPITAL; without it the question is unanswerable."""
+        acct = os.environ.get("PAPER_ACCOUNT_CAPITAL")
+        if not acct:
+            return None
+        try:
+            a = float(acct)
+        except ValueError:
+            return None
+        if a <= 0 or not dayp:
+            return None
+        return round(sum(1 for x in dayp if x / a * 100 >= thr) / len(dayp) * 100, 1)
+
     return JSONResponse({
         "available": bool(days), "filter": {"start": start, "end": end, "bot": bot},
         "sessions": sessions, "equity_curve": equity, "trades": trades,
@@ -267,7 +303,23 @@ def api_historical(start: Optional[str] = None, end: Optional[str] = None,
             "sessions": len(sessions),
             "trades": sum(s.get("trades") or 0 for s in sessions),
             "net_pnl": round(sum(s.get("net_pnl") or 0 for s in sessions), 2),
+            "gross_pnl": round(sum(s.get("gross_pnl") or 0 for s in sessions), 2),
             "costs": round(sum(s.get("costs") or 0 for s in sessions), 2),
+            "capital_deployed": round(deployed, 2) if deployed else None,
+            "return_on_deployed_pct": (round(sum(allp) / deployed * 100, 2)
+                                       if deployed else None),
+            "win_rate": round(len(wins) / len(allp) * 100, 1) if allp else None,
+            "expectancy": round(sum(allp) / len(allp), 2) if allp else None,
+            "profit_factor": (round(sum(wins) / abs(sum(losses)), 3)
+                              if losses and sum(losses) != 0 else None),
+            "max_drawdown": round(ddmax, 2),
+            "profitable_days": sum(1 for x in dayp if x > 0),
+            "losing_days": sum(1 for x in dayp if x < 0),
+            "max_losing_day_streak": mx,
+            "best_day": round(max(dayp), 2) if dayp else None,
+            "worst_day": round(min(dayp), 2) if dayp else None,
+            "pct_days_ge_1": pct_days(1.0),
+            "pct_days_ge_2": pct_days(2.0),
         },
     })
 

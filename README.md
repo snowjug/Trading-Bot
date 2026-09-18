@@ -1,27 +1,39 @@
 # ⚡ Apex Quant — Autonomous Indian Algorithmic Trading & Research Engine
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-85%2F85%20passing-brightgreen.svg)](tests/)
-[![Audit Status](https://img.shields.io/badge/audit-METHODOLOGY__HARDENED-success.svg)](reports/FINAL_RESEARCH_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-530%2F530%20passing-brightgreen.svg)](tests/)
+[![Status](https://img.shields.io/badge/status-RESEARCH%20%7C%20NO%20VALIDATED%20EDGE-critical.svg)](reports/FINAL_6_MONTH_MONEY_STUDY.md)
 [![Market](https://img.shields.io/badge/market-NSE%20%7C%20NIFTY%2050%20%7C%20BANK%20NIFTY-orange.svg)](https://www.nseindia.com/)
 [![Broker](https://img.shields.io/badge/broker-DhanHQ%20v2%20REST%20API-purple.svg)](https://dhanhq.co/)
 [![Capital Tiers](https://img.shields.io/badge/capital-₹10%2C000%20to%20₹1%2C00%2C000%2B-blueviolet.svg)](#-the-5-production-trading-strategies)
 [![Safety Gate](https://img.shields.io/badge/safety-LIVE__TRADING__ENABLED%3DFalse-red.svg)](src/config.py)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-An institutional-grade, regime-aware, event-driven quantitative algorithmic trading platform designed specifically for the **National Stock Exchange of India (NSE)**. 
+A paper-trading and quantitative-research platform for NSE index options (NIFTY / BANK NIFTY), built on
+DhanHQ read-only market data with full Indian statutory friction (STT, GST, NSE turnover fees, SEBI charges,
+stamp duty, slippage, ₹20 brokerage caps).
 
-Engineered to operate seamlessly across both **High-Margin F&O Portfolios (₹1,00,000+)** and **Micro-Capital Retail Accounts (₹10,000)**, incorporating full Indian statutory tax friction (**STT, GST, NSE turnover fees, SEBI charges, stamp duty, realistic slippage, and ₹20 brokerage caps**).
+> ## ⚠️ Current status: no strategy has a validated edge
+>
+> Two successive out-of-sample studies found **no strategy that clears a development → validation → holdout
+> gate**. The most recent — [`reports/FINAL_6_MONTH_MONEY_STUDY.md`](reports/FINAL_6_MONTH_MONEY_STUDY.md) —
+> searched 31 distinct concepts across ~100 implementations and promoted none.
+>
+> Over the six-month holdout (2026-03-18 → 2026-09-18) the frozen five-bot system returned
+> **−29.17% on ₹50,000** and **−17.96% on ₹1,00,000**, and **was not executable at all on ₹20,000**.
+>
+> `LIVE_TRADING_ENABLED = false`. This repository is **not** ready for real money, and nothing here should be
+> read as a claim that it is.
 
 ---
 
 1. [Quantitative Audit & Methodological Hardening](#-quantitative-audit--methodological-hardening)
 2. [System Architecture](#-system-architecture)
-3. [The 5 Production Trading Strategies](#-the-5-production-trading-strategies)
+3. [The 5 Bots — Measured Results](#-the-5-bots--measured-results)
 4. [Deep Dive: Strategy Mechanics & Setups](#-deep-dive-strategy-mechanics--setups)
-5. [The ₹10,000 Micro-Capital Playbook](#-the-10000-micro-capital-playbook)
-6. [Backtest Compounding vs Fixed 1-Lot Reality](#-backtest-compounding-vs-fixed-1-lot-reality)
-7. [Year-by-Year Verified Profit Matrix (2015–2026)](#-year-by-year-verified-profit-matrix-20152026)
+5. [Micro-Capital Reality](#-micro-capital-reality)
+6. [Position Sizing](#-position-sizing)
+7. [On the performance tables previously published here](#-on-the-performance-tables-previously-published-here)
 8. [Comprehensive Indian Statutory Cost Engine](#-comprehensive-indian-statutory-cost-engine)
 9. [Live Multi-Bot Paper Trading Engine](#-live-multi-bot-paper-trading-engine)
 10. [Repository Structure](#-repository-structure)
@@ -97,24 +109,49 @@ All audit reports, test suites, and empirical proofs are published in [`reports/
 
 ---
 
-## 🚀 The 5 Production Trading Strategies
+## 🚀 The 5 Bots — Measured Results
 
-All strategies have been backtested over **11.7 years of continuous NSE tick data (2015–2026)** with complete Indian statutory friction and slippage deducted.
+Measured once on a frozen six-month holdout, **2026-03-18 → 2026-09-18** (125 sessions, 17 weekly cycles),
+per lot, under a conservative execution model: each side pays `max(1 tick, 0.30% of premium)` of half-spread
+plus 2 ticks of slippage, on top of statutory charges.
 
-| # | Strategy Name | Primary Asset | Capital Tier | Frequency | Win Rate | Net CAGR | 11.7-Yr Return | Max Drawdown |
-|---|---|---|---|---|---|---|---|---|
-| **1** | **Apex VRP Engine** | NIFTY 50 & BANK NIFTY | ₹1,00,000+ | Weekly | **74.8%** | **+46.1%** | **38.4x** (₹1L $\rightarrow$ ₹38.4L) | -8.4% |
-| **2** | **Zen Curvature Overnight** | NIFTY 50 Index Options | ₹1,00,000 | Daily (3:20 PM) | **79.8%** | **+92.1%** | **63.1x** (₹1L $\rightarrow$ ₹63.1L) | -12.1% |
-| **3** | **Confluence Gamma Scalper** | NIFTY 50 ATM Options | **₹10,000** | ~11/year | **66.7%** | **+23.1%** | **11.4x** (₹10k $\rightarrow$ ₹1.14L) | -14.2% |
-| **4** | **Golden Trend Runner** | NIFTY 50 Weekly Options | **₹10,000** | ~7/year | **94.9%** | **+28.1%** | **18.0x** (₹10k $\rightarrow$ ₹1.80L) | -8.1% |
-| **5** | **Velocity-5 Momentum Scalper** | NIFTY & BANK NIFTY ATM | **₹10,000** | **3.99/wk** | **56.4%** | **+52.4%** | **138.2x** (₹10k $\rightarrow$ ₹13.8L) | -19.6% |
+| # | Bot | Family | Trades | Win% | **Net / lot** | Max DD | t | One lot needs | Verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| **1** | Apex VRP | weekly iron condor | 17 | 100% | **+₹10,565** | ₹0 | 7.67 | ₹12,706 | **rejected — regime artifact** |
+| **2** | Zen Curvature | weekly vertical | 17 | 100% | **+₹20,466** | ₹0 | 8.27 | ₹38,415 | **rejected — regime artifact; not executable ≤₹50k** |
+| **6** | Micro Momentum | intraday long option | 19 | 47.4% | **−₹14,587** | ₹21,365 | −1.34 | ₹11,491 | **loss — retire** |
+| **7** | Displacement | intraday long option | 7 | 57.1% | **+₹653** | ₹3,403 | 0.11 | ₹15,735 | not established (7 trades) |
+| **8** | Price Action | intraday structure | **0** | — | **₹0** | ₹0 | — | — | **no signal — 0 trades in 125 sessions** |
+
+**Bots 1 and 2 show 100% win rates because the holdout contained no breaches** (0/17 and 2/17), not because
+they have an edge. Re-measuring Bot 1's identical geometry in points over **259 cycles (2019–2026)** gives
+**+0.15 points per cycle at t = 0.06** — six of eight years lose money, and the only two profitable years are
+the only two with a 0.0% breach rate. Net of costs its full-sample expectancy is **−₹113 per cycle**.
+
+### Capital scenarios (whole lots, ≤60% of account at risk in one position)
+
+| Account | Net P&L | Return | Max DD | Profitable days | % days ≥ +1% | % days ≥ +2% |
+|---|---|---|---|---|---|---|
+| **₹20,000** | **nothing executable** | — | — | — | — | — |
+| **₹50,000** | **−₹14,587** | **−29.17%** | 42.73% | 7.2% of sessions (47.4% of traded) | 5.6% | 4.0% |
+| **₹1,00,000** | **−₹17,956** | **−17.96%** | 40.81% | 19.2% of sessions (66.7% of traded) | 7.2% | 4.8% |
+
+### Why nothing survived
+
+NIFTY intraday volatility compressed sharply from 2023. The share of sessions whose 09:15–09:29 range reaches
+0.35% of spot fell from **10.1% in 2022 to ~2% from 2023 onward**, and a single option round trip costs about
+**₹74 on ~₹7,000 of premium (1.05%)**. When the index stops moving, that toll stops being payable — and any
+strategy conditioned on high intraday volatility simply stops trading.
 
 ---
 
 ## 🔍 Deep Dive: Strategy Mechanics & Setups
 
+> The mechanics below describe what each bot **does**. Where a subsection previously asserted a performance
+> figure, it now carries the measured result instead. None of these strategies has a validated edge.
+
 ### 1. Apex VRP Engine (`src/strategies/master_derivatives_portfolio.py`)
-- **Philosophy**: Exploits the **Volatility Risk Premium (VRP)** — the mathematical reality that implied volatility (IV) systematically overprices realized volatility (RV) 83% of the time.
+- **Premise**: that implied volatility overprices realised volatility often enough to pay for the risk. **Measured over 259 cycles (2019-2026) this premise does not hold here**: +0.15 points per cycle at t = 0.06, with six of eight years losing.
 - **Construction**: 
   - Sells 1.8-standard deviation NIFTY weekly Out-of-the-Money (OTM) Iron Condors.
   - Paired with 3.2x leveraged BANK NIFTY trend-following futures.
@@ -126,7 +163,7 @@ All strategies have been backtested over **11.7 years of continuous NSE tick dat
 - **Construction**: 
   - Deploys asymmetric credit spreads entered precisely at **03:20 PM IST**.
   - Closes at **09:20 AM IST** next morning, capturing the overnight theta bleed and volatility mean reversion.
-- **Target Metrics**: 79.8% win rate with an exceptionally smooth equity curve.
+- **Measured**: 17 holdout cycles, 100% win rate — but with only 2 breaches in 17, which measures the regime, not the strategy. One lot needs ₹38,415, so it is not executable at ₹20,000 or ₹50,000.
 
 ### 3. Confluence Gamma Scalper (`src/strategies/confluence_scalper.py`)
 - **Philosophy**: Pure high-probability options buying designed specifically for small accounts.
@@ -141,7 +178,7 @@ All strategies have been backtested over **11.7 years of continuous NSE tick dat
   - Identifies strong institutional trends where 20 EMA > 50 EMA.
   - Waits for a price pullback into the **Value Zone (between 20 EMA and VWAP)** accompanied by a volume dry-up.
   - Enters on confirmation candle with an asymmetric **1:3 Reward-to-Risk ratio** (Target: +50%, Stop Loss: -15%).
-  - Win Rate: **94.9%** with negligible drawdowns.
+  - **Measured**: the intraday long-option families this belongs to were gross-negative on 25 of 31 tested concepts; no variant survived validation.
 
 ### 5. Velocity-5 Active Momentum Scalper (`src/strategies/active_momentum_scalper.py`)
 - **Philosophy**: Active options buying for traders requiring frequent action (**3 to 5 trades per week**) while maintaining positive mathematical expectancy.
@@ -149,61 +186,59 @@ All strategies have been backtested over **11.7 years of continuous NSE tick dat
   - Monitors both **NIFTY 50** and **BANK NIFTY** intraday charts.
   - Detects multi-candle volatility squeezes breaking above/below 5-day rolling ATR bands.
   - Takes 1 lot ATM call/put with a 2:1 RR target.
-  - Successfully absorbed **₹1,08,720 in statutory broker friction** over 11.7 years while generating **₹13.7 Lakhs** net profit.
+  - **Measured**: −₹14,587 per lot over the six-month holdout (19 trades, 47.4% win rate, t = −1.34). Retire.
 
 ---
 
-## 🎯 The ₹10,000 Micro-Capital Playbook
+## 🎯 Micro-Capital Reality
 
-In the Indian retail market, **95% of micro-capital option buyers lose their capital within 90 days** (as documented by SEBI study findings). This bot mathematically neutralizes all three fatal failure modes:
+The system enforces three risk controls that address well-known retail failure modes. These are **implemented
+and verified in code**; they are not claims about profitability.
 
-| Fatal Retail Flaw | Typical Retail Behavior | Apex Quant Automated Solution |
-|---|---|---|
-| **1. The Overnight Theta Bleed Trap** | Holding bought options overnight hoping for a gap-up; option loses -40% to -80% by 09:15 AM due to time decay. | **Mandatory 03:15 PM MIS Square-Off**. The bot never holds bought options overnight. Overnight theta bleed = **₹0.00**. |
-| **2. The High-Turnover Friction Trap** | Trading 25+ times a month on a ₹10k account, paying ₹1,200/mo in fees (12% of entire capital bled to broker/taxes). | **Asymmetric Expectancy (+0.69 R)**. Every trade requires a minimum 2:1 or 1:3 RR. Strategy 5 generates ₹1.28 for every ₹1.00 risked after all taxes. |
-| **3. Giving Back Morning Profits** | Making ₹1,500 by 10:30 AM, then overtrading during low-volume afternoon chop and ending the day at -₹2,000. | **Hard-Coded Daily Profit Lock**. Once the daily target is hit, the bot locks the position and immediately shuts down triggers for the rest of the day. |
+| Failure mode | Control in this repository |
+|---|---|
+| Overnight theta bleed on bought options | Mandatory intraday square-off. No bought option is held overnight. |
+| High-turnover friction on a small account | One qualifying entry per bot per session by default; extra attempts were measured and found to **dilute** results. |
+| Giving back intraday profits | Daily profit lock and a fail-closed kill switch that is never auto-reset. |
 
----
+**What the measurements say about small accounts, however, is blunt:**
 
-## ⚖️ Backtest Compounding vs Fixed 1-Lot Reality
-
-To maintain institutional transparency, we distinguish between theoretical backtest compounding and practical real-world execution:
-
-### 1. The Compounding Math (Reinvestment Engine)
-- If profits are systematically reinvested into larger lot sizes (compounding), a starting capital of **₹10,000** in Strategy 5 scaled to **₹13.8 Lakhs** over 11.7 years.
-
-### 2. The Uncompounded Fixed 1-Lot Reality Check
-- If you run **1 single lot fixed** without increasing position sizes, with ₹70 round-trip broker friction + ₹25 slippage per trade:
-  - **Strategy 5 (Velocity-5 Scalper)**: Average **~₹9,300 net profit / month** (~₹1.12 Lakhs / year on a ₹10,000 account).
-  - **Strategy 2 (Zen Curvature Spread)**: Average **~₹18,500 net profit / month** on a ₹1,00,000 margin account.
-  - **Portfolio Combination**: Generates steady, consistent cash flow with protected capital and zero catastrophic drawdown events.
+- **₹20,000 cannot run this system.** One lot needs ₹11,491 (Bot 6), ₹12,706 (Bot 1), ₹15,735 (Bot 7) or
+  ₹38,415 (Bot 2). Committing the entire account to the only bot that fits returned **−72.93%** over the
+  six-month holdout.
+- **₹50,000** could only execute Bot 6, the system's worst performer: **−29.17%**.
+- A single option round trip costs about **₹74 on ~₹7,000 of premium — 1.05%**. On a small account that
+  friction, not strategy selection, is the dominant term.
 
 ---
 
-## 📊 Year-by-Year Verified Profit Matrix (2015–2026)
+## ⚖️ Position Sizing
 
-*Simulated on 11.7 years of continuous historical data from a single ₹10,000 initial allocation per strategy, with ₹45 round-trip statutory deductions and slippage applied to every trade:*
+Whole lots only (lot size 65); fractional lots are never simulated. A strategy whose one-lot requirement
+exceeds the account's allocation is reported **NOT EXECUTABLE** rather than sized down.
 
-```
-========================================================================================
-YEAR         VELOCITY-5 (3-5/WK)      GOLDEN TREND (1:3 RR)      CONFLUENCE SCALPER
-========================================================================================
-2015         +Rs  50,783 (55.7% WR)   +Rs   5,672 (100.0% WR)    -Rs   1,560 (25.0% WR)
-2016         +Rs  67,587 (56.9% WR)   +Rs  10,409 (100.0% WR)    +Rs  16,580 (88.2% WR)
-2017         +Rs  32,196 (51.7% WR)   +Rs   6,724 (100.0% WR)    +Rs   8,387 (68.8% WR)
-2018         +Rs  88,331 (58.6% WR)   +Rs   7,956 (100.0% WR)    +Rs  10,996 (100.0% WR)
-2019         +Rs  41,546 (46.9% WR)   +Rs  16,448 (100.0% WR)    +Rs     765 (57.1% WR)
-2020 (COVID) +Rs 263,949 (62.6% WR)   +Rs  15,953 (100.0% WR)    +Rs   9,051 (54.5% WR)
-2021         +Rs 166,675 (57.3% WR)   +Rs  26,645 (100.0% WR)    +Rs   6,378 (54.5% WR)
-2022         +Rs 218,280 (60.0% WR)   +Rs  11,037 (100.0% WR)    +Rs  14,398 (63.6% WR)
-2023         +Rs 128,938 (59.2% WR)   +Rs  18,186 ( 83.3% WR)    +Rs  26,268 (76.5% WR)
-2024         +Rs  40,319 (45.3% WR)   +Rs  18,809 ( 88.9% WR)    +Rs  10,871 (60.0% WR)
-2025         +Rs 115,843 (59.6% WR)   +Rs  14,700 ( 87.5% WR)    +Rs   2,470 (50.0% WR)
-2026 YTD     +Rs 157,480 (64.6% WR)   +Rs  17,911 (100.0% WR)    -Rs     616 (33.3% WR)
-========================================================================================
-TOTAL NET    +Rs 13,71,926.37         +Rs 1,70,448.05            +Rs 1,03,989.76
-========================================================================================
-```
+Capital at risk is measured as:
+
+- **bought option** — the premium actually outlaid;
+- **defined-risk spread** — (wing width − credit) × lot, which is the structural maximum loss.
+
+Broker SPAN/exposure margin is **UNKNOWN**: it is not obtainable through any read-only endpoint, and it is
+never estimated. Account balance and notional value are never used as the capital denominator.
+
+No compounding is assumed anywhere in the current studies. Every figure in
+[`reports/FINAL_6_MONTH_MONEY_STUDY.md`](reports/FINAL_6_MONTH_MONEY_STUDY.md) is fixed-lot.
+
+---
+
+## 📊 On the performance tables previously published here
+
+Earlier revisions of this README carried a year-by-year profit matrix (2015–2026) reporting figures such as
++₹13.7 lakh from a ₹10,000 allocation, win rates near 95%, and multi-decade CAGRs. **Those figures are not
+reproducible under the current methodology and have been removed.** They predate the point-in-time causality
+audit, the conservative execution model, and the development/validation/holdout discipline now used.
+
+The measured results are in [The 5 Bots](#-the-5-bots--measured-results) above and in
+[`reports/FINAL_6_MONTH_MONEY_STUDY.md`](reports/FINAL_6_MONTH_MONEY_STUDY.md).
 
 ---
 
@@ -322,7 +357,7 @@ LIVE_TRADING_ENABLED=False    # Keep False for paper trading!
 ### 3. Run the Test Suite
 ```bash
 python -m pytest tests/ -v
-# Output: 67 passed in ~7.2s
+# Output: 530 passed
 ```
 
 ### 4. Run Backtests
@@ -376,6 +411,99 @@ To run all tests:
 ```bash
 python -m pytest tests/
 ```
+
+---
+
+## 🔬 Research Method, Data and Limitations
+
+### Splits (fixed before any candidate was written)
+
+| Split | Range | Sessions |
+|---|---|---|
+| Development | 2020-09-01 → 2024-09-17 | 1,001 |
+| Validation | 2024-09-18 → 2026-03-17 | 371 |
+| **Holdout (frozen)** | **2026-03-18 → 2026-09-18** | **125** |
+
+A candidate is promoted only if it is net positive on development **and** validation, has at least 20
+validation trades, and is still positive at 2× cost. Changing a strategy after seeing holdout results makes it
+a new version that restarts validation.
+
+### Data
+
+| Dataset | Coverage |
+|---|---|
+| NIFTY 5-min option grid (ATM±6, CE+PE, with high/low/IV/OI/volume) | 1,497 sessions, 2020-09 → 2026-09, 2.93M bars, 324 strikes |
+| NIFTY + India VIX daily OHLC | 2019-01 → 2026-09 |
+| NSE F&O bhavcopy (all strikes, settlement, expiry calendar) | 2019 → 2026, 4.0M rows |
+| Derived session → days-to-expiry map | all 1,497 sessions, from the bhavcopy expiry calendar |
+
+Dhan is used **read-only** for market data. No order, position, or other mutation endpoint is ever called.
+
+### Execution model
+
+No historical bid/ask exists in this repository, so a traded price is not treated as an achievable fill. Each
+side pays `max(1 tick, 0.30% of premium)` of half-spread plus 2 ticks of slippage, then statutory charges.
+Observed live NIFTY ATM spread on 2026-09-18 was ~0.22% of mid, so this is roughly 1.4× that per side.
+Sensitivity is run at 1.0× / 1.5× / 2.0×.
+
+### No lookahead
+
+A signal at bar *i* sees session bars 0..*i* and daily rows strictly before that session. Exits resolve at bar
+close; the dataset carries one spot per timestamp, so there is no intrabar path to peek at and no ambiguity
+about whether a stop or a target was touched first.
+
+### External references used
+
+| Source | What was taken | Result |
+|---|---|---|
+| Gao, Han, Li & Zhou, "Market intraday momentum", *Journal of Financial Economics* 2018 (SSRN 2440866) | the sign rule (first half-hour return predicts last half-hour return), its volatility/volume conditioning, timed exit | **−₹123,679, t = −4.59, gross-negative** — does not transfer to NIFTY options |
+| Public NIFTY/BankNifty opening-range-breakout write-ups | OR window, stop at the opposite side, fixed-R target, square-off, "large-range sessions do better" | conditioning effect real on development, **failed validation** |
+| Published VWAP-pullback continuation framing | anchor side, pullback entry, stop through the anchor, 1.5–2R | −₹78,458, t = −2.45 |
+
+Only rules were taken from external sources. No performance claim from any source is reproduced as fact.
+
+### Known limitations
+
+- **No validated edge.** This is the headline limitation; see the status note at the top.
+- The 5-minute option grid spans ATM±6 strikes, so structures needing wider strikes are unavailable exactly on
+  high-volatility sessions. Two artifacts caused by this were found and reported rather than shipped — see the
+  honesty ledger in the money study.
+- The grid carries no expiry column; days-to-expiry is derived from the bhavcopy calendar.
+- **Broker SPAN/exposure margin is UNKNOWN** and is never estimated. Capital at risk is premium outlaid for a
+  long option, or (width − credit) × lot for a defined-risk spread.
+- Bot 8 has produced **zero trades** across two consecutive holdouts.
+- Lot size is fixed at 65; no fractional lots anywhere.
+
+### Retired / not recommended
+
+| Bot | Reason |
+|---|---|
+| Bot 6 (Micro Momentum) | **RETIRED** — negative in both the 3-month and 6-month holdouts; worst bot in the system |
+| Bot 8 (Price Action) | **RETIRED** — zero entries in 65 then 125 sessions; rules too restrictive to be measurable |
+| Bots 1 & 2 | still active, but profitable only in zero-breach regimes; full-sample expectancy ≈ 0 to negative |
+
+Bots 6 and 8 are no longer evaluated by `scripts/run_paper_session.py`. Their code is retained unchanged so the
+measurements stay reproducible. Set `PAPER_BOTS=BOT6,BOT8` to re-enable them deliberately for a measurement
+run. **Active bots: 1, 2, 7.**
+
+---
+
+## 📈 Dashboard
+
+```bash
+python run_paper_dashboard.py
+```
+
+Serves an operational view at `http://127.0.0.1:8000`:
+
+- `/api/state` — live per-bot state, market snapshot, portfolio totals
+- `/api/historical?start=&end=&bot=` — stored sessions, equity curve, trade ledger, and analytics
+  (capital deployed, return on deployed, win rate, expectancy, profit factor, max drawdown, profitable/losing
+  days, longest losing-day streak, best/worst day)
+
+`% days ≥ +1%` and `≥ +2%` require `PAPER_ACCOUNT_CAPITAL` to be set; without it the endpoint returns `null`
+for them rather than assuming an account size. Every figure comes from stored trades — a quantity the ledger
+does not carry is reported as `null`, never inferred.
 
 ---
 
