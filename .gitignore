@@ -77,3 +77,4 @@ scratch/
 # Scrip master cache
 data/dhan_scrip_master_*.csv
 data/raw/**/.consolidated_*.parquet
+data/paper_session/

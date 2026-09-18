@@ -158,13 +158,20 @@ def next_weekly_expiry(underlying: str = "NIFTY", today: Optional[date] = None) 
 
 
 def fetch_index(client) -> Dict[str, Any]:
-    """Live NIFTY and India VIX. Read-only."""
-    q = client.fetch_marketfeed_quote([NIFTY_SID, VIX_SID], exchange_segment="IDX_I")
-    n, v = q.get(str(NIFTY_SID), {}), q.get(str(VIX_SID), {})
+    """
+    Live NIFTY and India VIX. Read-only.
+
+    Uses /marketfeed/ltp rather than /marketfeed/quote. The index is only needed as
+    a PRICE — there is no book to trade against and no depth to inspect — so asking
+    the depth endpoint for it spent the rate-limit budget that the option legs
+    actually need. Under sustained polling the quote endpoint began returning 429
+    and whole cycles were skipped; the light endpoint removes that contention.
+    """
+    ltp = client.fetch_marketfeed_ltp([NIFTY_SID, VIX_SID], exchange_segment="IDX_I")
     return {
-        "spot": float(n.get("ltp") or 0) or None,
-        "vix": float(v.get("ltp") or 0) or None,
-        "quote_timestamp": n.get("market_timestamp") or n.get("received_at"),
+        "spot": float(ltp.get(str(NIFTY_SID)) or 0) or None,
+        "vix": float(ltp.get(str(VIX_SID)) or 0) or None,
+        "quote_timestamp": None,          # the LTP feed carries no exchange stamp
     }
 
 
@@ -285,6 +292,22 @@ def main() -> int:
     Config.assert_no_live_trading()
     logger.info(f"SAFETY: LIVE_TRADING_ENABLED={Config.LIVE_TRADING_ENABLED} — paper only")
 
+    # Single-instance lock. Two runners sharing one ledger file interleave their
+    # writes and each overwrites the other's positions, which would silently corrupt
+    # the only record of what was traded. O_EXCL makes the second process refuse to
+    # start rather than quietly join in.
+    lock_path = Path("data/paper_session") / "session.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, f"{os.getpid()} {datetime.now().isoformat()}".encode())
+        os.close(fd)
+    except FileExistsError:
+        held = lock_path.read_text(encoding="utf-8", errors="replace").strip()
+        logger.error(f"another paper session holds {lock_path} ({held}). "
+                     f"Refusing to start a second runner on the same ledger.")
+        return 2
+
     client = get_dhan_client()
     broker = PaperBroker()
     risk = RiskEngine(initial_capital=args.capital, max_simultaneous_positions=4,
@@ -332,6 +355,8 @@ def main() -> int:
                 continue
             if not idx["spot"] or not idx["vix"]:
                 broker.record_error("SESSION", "index quote incomplete — cycle skipped")
+                print(f"[{now.strftime('%H:%M:%S')}] CYCLE {cycle}  DHAN: NO DATA — "
+                      f"cycle skipped, no bot evaluated")
                 time.sleep(args.interval)
                 continue
             sess.update(idx["spot"], idx["vix"], idx["quote_timestamp"])
@@ -430,6 +455,10 @@ def main() -> int:
             time.sleep(args.interval)
 
     finally:
+        try:
+            lock_path.unlink(missing_ok=True)
+        except Exception:                                      # noqa: BLE001
+            pass
         # ── square off on live quotes; never on an invented price ──
         remaining = list(broker.open_positions["PAPER"])
         if remaining:
