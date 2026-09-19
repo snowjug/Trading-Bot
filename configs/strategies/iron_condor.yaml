@@ -1,0 +1,15 @@
+strategy: "IRON_CONDOR"
+underlying: "NIFTY"
+expiry_type: "WEEKLY"
+entry_time: "09:20"
+exit_time: "15:20"
+short_distance: 100.0
+wing_width: 100.0
+take_profit_pct: 0.40
+stop_loss_pct: 0.75
+max_positions: 1
+capital_risk_pct: 0.15
+margin_required_per_lot: 28000.0
+vix_filter_max: 0.0
+strike_step: 50.0
+default_lot_size: 50

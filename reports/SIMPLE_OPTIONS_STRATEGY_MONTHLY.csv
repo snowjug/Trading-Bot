@@ -1,0 +1,5 @@
+strategy,total_months,profitable_months,losing_months,win_month_pct,best_month,worst_month,median_month
+ATM_STRADDLE,81,29,52,35.8,155830.58,-573803.79,-15960.75
+OTM_STRANGLE,81,33,48,40.7,98462.0,-536186.02,-10575.69
+IRON_FLY,79,27,52,34.2,58754.99,-252327.64,-4500.07
+IRON_CONDOR,75,29,46,38.7,146036.22,-302916.47,-1443.17

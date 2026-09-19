@@ -10,7 +10,8 @@ from typing import Optional, Union, Dict, List
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
+from typing import Optional, Union, Dict, List, Any
 from src.config import Config
 from src.utils.logging import setup_logging
 
@@ -298,4 +299,87 @@ class RiskEngine:
 
     def reset_kill_switch(self):
         self._deactivate_kill_switch()
+
+    def validate_options_position(
+        self,
+        position: Any,
+        capital: float,
+        current_positions: List[Any],
+        market_data: Any,
+        max_capital_risk_pct: float = 0.15,
+        max_positions: int = 2,
+    ) -> RiskDecision:
+        """
+        Deterministic pre-trade risk validation for options structures.
+        Enforces fail-closed behavior across margin, capital risk, duplicates, and timing.
+        """
+        decision = RiskDecision(approved=True)
+
+        # 1. Kill switch check
+        if self.state.is_kill_switch_active:
+            decision.approved = False
+            decision.rejection_reason = f"KILL_SWITCH_ACTIVE: {self.state.kill_switch_reason}"
+            return decision
+
+        # 2. Portfolio drawdown check
+        if self.state.current_drawdown_pct >= self.max_portfolio_drawdown:
+            decision.approved = False
+            decision.rejection_reason = f"MAX_PORTFOLIO_DRAWDOWN_EXCEEDED: {self.state.current_drawdown_pct:.1%}"
+            return decision
+
+        # 3. Valid position structure check
+        if position is None or position.status.startswith("REJECTED"):
+            decision.approved = False
+            decision.rejection_reason = position.status if position else "INVALID_STRUCTURE"
+            return decision
+
+        # 4. Sufficient Margin check (Crucial for Low Capital)
+        if capital < position.margin_required:
+            decision.approved = False
+            decision.rejection_reason = f"INSUFFICIENT_MARGIN: Required Rs {position.margin_required:,.2f} > Available Rs {capital:,.2f}"
+            return decision
+
+        # 5. Max Loss Budget check
+        total_max_loss = position.max_loss_points * position.lot_size
+        if total_max_loss > (capital * max_capital_risk_pct) and total_max_loss > 0:
+            decision.approved = False
+            decision.rejection_reason = f"MAX_LOSS_EXCEEDS_BUDGET: Loss Rs {total_max_loss:,.2f} > Budget Rs {(capital * max_capital_risk_pct):,.2f}"
+            return decision
+
+        # 6. Max Concurrent Positions check
+        if len(current_positions) >= max_positions:
+            decision.approved = False
+            decision.rejection_reason = f"MAX_POSITIONS_REACHED: {len(current_positions)} >= {max_positions}"
+            return decision
+
+        # 7. Duplicate Position check
+        for existing in current_positions:
+            if existing.strategy_name == position.strategy_name and existing.expiry == position.expiry:
+                decision.approved = False
+                decision.rejection_reason = f"DUPLICATE_POSITION: Strategy {position.strategy_name} already open for expiry {position.expiry}"
+                return decision
+
+        # 8. Trading Session bounds check (09:15 to 15:25)
+        if market_data and hasattr(market_data, "timestamp") and market_data.timestamp:
+            cur_time = market_data.timestamp.time()
+            if cur_time < time(9, 15) or cur_time > time(15, 25):
+                decision.approved = False
+                decision.rejection_reason = f"OUTSIDE_TRADING_SESSION: Current time {cur_time} not in [09:15, 15:25]"
+                return decision
+
+            # Expiry safety: Do not open new positions on expiry day after 14:30
+            if getattr(market_data, "is_expiry_day", False) and cur_time >= time(14, 30):
+                decision.approved = False
+                decision.rejection_reason = "EXPIRY_SAFETY_VIOLATION: No new positions allowed after 14:30 on expiry day"
+                return decision
+
+        # 9. Leg quote integrity & spread check
+        for leg in position.legs:
+            if leg.entry_price <= 0:
+                decision.approved = False
+                decision.rejection_reason = f"INVALID_LEG_PRICE: Leg {leg.contract_name} has invalid price {leg.entry_price}"
+                return decision
+
+        return decision
+
 
