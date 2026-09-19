@@ -1,0 +1,37 @@
+{
+  "name": "EXPIRY_0DTE_DECAY",
+  "family": "EXPIRY",
+  "instrument": "NIFTY_OPT",
+  "instrument_class": "MULTI_LEG_OPTION",
+  "timeframe": "5m",
+  "source": "Zero-DTE Intraday Theta Decay",
+  "economic_mechanism": "Pure terminal decay capture during expiry afternoon (12:30 -> 15:10)",
+  "entry_rules": {
+    "dte": 0,
+    "entry_time": "12:30",
+    "structure": "ATM_SHORT_STRADDLE"
+  },
+  "stop_rules": {
+    "type": "PREMIUM_STOP_PCT",
+    "pct": 0.3
+  },
+  "exit_rules": {
+    "type": "EOD_OR_SETTLEMENT",
+    "eod_time": "15:10"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "EXCHANGE_SPAN_MARGIN",
+    "minimum_account": 150000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

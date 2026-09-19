@@ -1,0 +1,36 @@
+{
+  "name": "MOM_CS_FUTSTK_60D",
+  "family": "MOMENTUM",
+  "instrument": "STOCK_FUT_PANEL",
+  "instrument_class": "STOCK_FUTURE",
+  "timeframe": "1d",
+  "source": "Quarterly Cross-Sectional Equity Momentum",
+  "economic_mechanism": "Earnings drift and institutional accumulation persistence over 3 months",
+  "entry_rules": {
+    "ranking_lookback": 60,
+    "long_portfolio": "top_quintile_by_return",
+    "short_portfolio": "bottom_quintile_by_return",
+    "rebalance_frequency": "monthly_expiry_roll"
+  },
+  "stop_rules": {
+    "type": "SCHEDULED_REBALANCE"
+  },
+  "exit_rules": {
+    "type": "SCHEDULED_REBALANCE"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "PORTFOLIO_SPAN",
+    "minimum_account": 500000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

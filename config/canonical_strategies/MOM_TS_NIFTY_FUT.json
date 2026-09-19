@@ -1,0 +1,35 @@
+{
+  "name": "MOM_TS_NIFTY_FUT",
+  "family": "MOMENTUM",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "Moskowitz, Ooi, Pedersen (JFE 2012) Time Series Momentum",
+  "economic_mechanism": "12-month sign predictability in macro index futures",
+  "entry_rules": {
+    "long_trigger": "ret_252d > 0",
+    "short_trigger": "ret_252d < 0",
+    "rebalance": "monthly_close"
+  },
+  "stop_rules": {
+    "type": "MONTHLY_REBALANCE"
+  },
+  "exit_rules": {
+    "type": "MONTHLY_REBALANCE"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

@@ -78,6 +78,8 @@ scratch/
 data/dhan_scrip_master_*.csv
 data/raw/**/.consolidated_*.parquet
 data/paper_session/
+data/paper/
+tmp/
 
 # Large REBUILDABLE research caches (one command each, see reports/ACTIVE_RESEARCH_STATE.md):
 #   grid5m_{ce,pe}     -> stitched from data/raw/dhan/option_grid_5m, ~95MB
@@ -88,6 +90,8 @@ data/derived/grid5m_*.parquet
 data/derived/equity_panel.parquet
 data/derived/overnight_raw.parquet
 data/derived/overnight_put.parquet
+data/derived/futstk_*.parquet
+data/derived/bn_*.parquet
 
 # Raw NSE F&O bhavcopy zips — byte-for-byte provenance cache, re-downloadable from
 # nsearchives.nseindia.com; sha256 of every file is recorded in

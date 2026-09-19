@@ -1,0 +1,59 @@
+{
+  "name": "OPT_IRON_FLY_0DTE",
+  "family": "OPTIONS_SPREAD",
+  "instrument": "NIFTY_OPT",
+  "instrument_class": "MULTI_LEG_OPTION",
+  "timeframe": "5m",
+  "source": "0DTE Iron Butterfly Benchmark",
+  "economic_mechanism": "ATM straddle decay with symmetric OTM wing protection on expiry day",
+  "entry_rules": {
+    "dte": 0,
+    "entry_time": "09:20",
+    "legs": [
+      {
+        "role": "long_put",
+        "strike": "ATM_MINUS_200",
+        "side": "BUY"
+      },
+      {
+        "role": "short_put",
+        "strike": "ATM",
+        "side": "SELL"
+      },
+      {
+        "role": "short_call",
+        "strike": "ATM",
+        "side": "SELL"
+      },
+      {
+        "role": "long_call",
+        "strike": "ATM_PLUS_200",
+        "side": "BUY"
+      }
+    ]
+  },
+  "stop_rules": {
+    "type": "WING_WIDTH_BOUNDED"
+  },
+  "exit_rules": {
+    "type": "EXPIRY_SETTLEMENT_OR_1510",
+    "time": "15:10"
+  },
+  "target_rules": {
+    "type": "FULL_NET_CREDIT"
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "DEFINED_MAX_LOSS",
+    "minimum_account": 25000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

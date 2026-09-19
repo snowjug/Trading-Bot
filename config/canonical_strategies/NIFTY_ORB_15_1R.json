@@ -1,0 +1,45 @@
+{
+  "name": "NIFTY_ORB_15_1R",
+  "family": "PRICE_ACTION",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "5m",
+  "source": "Toby Crabel / Classical Opening Range Breakout",
+  "economic_mechanism": "Price discovery momentum in initial 15-minute range expansion",
+  "entry_rules": {
+    "or_start": "09:15",
+    "or_end": "09:30",
+    "long_trigger": "close > or_high",
+    "short_trigger": "close < or_low",
+    "entry_window": [
+      "09:30",
+      "14:30"
+    ],
+    "max_attempts_per_day": 1
+  },
+  "stop_rules": {
+    "type": "OPPOSITE_OR_LEVEL"
+  },
+  "exit_rules": {
+    "type": "EOD_OR_STOP_OR_TARGET",
+    "eod_time": "15:10"
+  },
+  "target_rules": {
+    "type": "FIXED_R",
+    "multiple": 1.0
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 150000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

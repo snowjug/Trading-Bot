@@ -1,0 +1,36 @@
+{
+  "name": "PCR_TREND_CONFIRMATION",
+  "family": "PCR_OI",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "NSE Option Chain Open Interest Dynamics",
+  "economic_mechanism": "Institutional put underwriting trend confirmation (High PCR precedes continuation)",
+  "entry_rules": {
+    "long_trigger": "pcr_oi > 1.10 and close > ema_20",
+    "short_trigger": "pcr_oi < 0.80 and close < ema_20",
+    "evaluation": "daily_close"
+  },
+  "stop_rules": {
+    "type": "ATR_MULTIPLE",
+    "multiple": 1.5
+  },
+  "exit_rules": {
+    "type": "PCR_CROSS_OR_TRAILING"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

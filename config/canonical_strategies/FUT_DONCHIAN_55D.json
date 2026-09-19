@@ -1,0 +1,36 @@
+{
+  "name": "FUT_DONCHIAN_55D",
+  "family": "TREND_FOLLOWING",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "Richard Donchian / Turtle Trading System 2",
+  "economic_mechanism": "Longer-period channel breakout resistant to intermediate whipsaws",
+  "entry_rules": {
+    "long_trigger": "close > max(high, 55)",
+    "short_trigger": "close < min(low, 55)",
+    "evaluation": "daily_close"
+  },
+  "stop_rules": {
+    "type": "OPPOSITE_CHANNEL_20D"
+  },
+  "exit_rules": {
+    "type": "CHANNEL_EXIT",
+    "lookback": 20
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

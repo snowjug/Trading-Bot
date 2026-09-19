@@ -12,7 +12,7 @@ Handles rate-limiting, authentication, resilient retries, and high-fidelity mark
 import time
 import threading
 from datetime import datetime, date
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, Tuple
 import pandas as pd
 import requests
 
@@ -55,6 +55,11 @@ class DhanAPIClient:
         self._last_request_time: float = 0.0
         self._last_family_request: Dict[str, float] = {}
         self._request_lock = threading.Lock()
+
+        # HTTP status tracking
+        self.last_status_code: Optional[int] = None
+        self.last_error_message: Optional[str] = None
+        self.last_response: Optional[requests.Response] = None
 
     # DhanHQ throttles the marketfeed family at roughly one request per second,
     # far tighter than the chart endpoints. A single global interval therefore
@@ -111,22 +116,49 @@ class DhanAPIClient:
             self._apply_rate_limit(endpoint=endpoint)
             try:
                 resp = self._session.post(url, json=payload, timeout=self.timeout)
+                self.last_status_code = resp.status_code
+                self.last_response = resp
                 if resp.status_code == 200:
+                    self.last_error_message = None
                     return resp
                 elif resp.status_code in (429, 805):
+                    self.last_error_message = f"Rate limit HTTP {resp.status_code}"
                     backoff = (attempt + 1) * 1.5
                     logger.warning(f"Dhan rate limit on {endpoint} (HTTP {resp.status_code}). Backing off {backoff:.1f}s...")
                     time.sleep(backoff)
                     continue
                 else:
-                    logger.debug(f"Dhan {endpoint} returned status {resp.status_code}: {resp.text[:200]}")
+                    self.last_error_message = f"HTTP {resp.status_code}: {resp.text[:200]}"
+                    if resp.status_code in (401, 403):
+                        logger.error(
+                            f"Dhan AUTHENTICATION/AUTHORIZATION FAILURE on {endpoint} "
+                            f"(HTTP {resp.status_code}): {resp.text[:200]}. Check DHAN_ACCESS_TOKEN."
+                        )
+                    else:
+                        logger.warning(f"Dhan {endpoint} returned status {resp.status_code}: {resp.text[:200]}")
                     return resp
             except requests.exceptions.RequestException as e:
-                logger.debug(f"Dhan {endpoint} connection error (attempt {attempt+1}/{max_retries}): {e}")
+                self.last_status_code = None
+                self.last_error_message = f"Connection error: {e}"
+                logger.warning(f"Dhan {endpoint} connection error (attempt {attempt+1}/{max_retries}): {e}")
                 time.sleep(1.0)
 
-        logger.warning(f"Dhan {endpoint} failed after {max_retries} attempts.")
+        self.last_error_message = f"Dhan {endpoint} failed after {max_retries} attempts."
+        logger.warning(self.last_error_message)
         return None
+
+    def post_raw(self, endpoint: str, payload: dict) -> Tuple[int, Any]:
+        """
+        Executes a POST request and returns (status_code, parsed_json_or_text).
+        Never swallows the HTTP status code.
+        """
+        resp = self._post(endpoint, payload)
+        if resp is None:
+            return (-1, self.last_error_message or "Request failed")
+        try:
+            return (resp.status_code, resp.json())
+        except ValueError:
+            return (resp.status_code, resp.text[:300])
 
     # ─── 1. MARKETFEED QUOTES & 5-LEVEL DEPTH ───
 

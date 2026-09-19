@@ -1,0 +1,39 @@
+{
+  "name": "FUT_BOLLINGER_REVERSION_2SD",
+  "family": "MEAN_REVERSION",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "John Bollinger Bands Baseline",
+  "economic_mechanism": "Statistical mean reversion from 2-standard-deviation price boundaries",
+  "entry_rules": {
+    "long_trigger": "close <= sma_20 - 2.0 * std_20",
+    "short_trigger": "close >= sma_20 + 2.0 * std_20",
+    "evaluation": "daily_close"
+  },
+  "stop_rules": {
+    "type": "ATR_MULTIPLE",
+    "multiple": 2.0
+  },
+  "exit_rules": {
+    "type": "TARGET_OR_MAX_HOLDING_DAYS",
+    "max_days": 5
+  },
+  "target_rules": {
+    "type": "SMA_20_MIDLINE"
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

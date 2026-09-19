@@ -55,49 +55,41 @@ Expect `200`. Until then all intraday work is NIFTY-only, and that is
 
 ## EXACT NEXT TASK
 
-### Step 1 — confirm the ingest finished cleanly
-```bash
-python -c "import pandas as pd;d=pd.read_csv('data/catalog/fo_full_ingest_ledger.csv',dtype={'day':str});print(d['status'].str.split(':').str[0].value_counts());print('days',d['day'].nunique())"
-ls data/catalog/fo_full_ingest_failures.csv 2>/dev/null && echo "FAILURES EXIST - re-run the ingester, it resumes"
-```
-Re-run `python scripts/ingest_nse_fo_full.py` to pick up any failed day; it is
-idempotent and resumes from the ledger.
+Cycle 1 is closed. Full findings and the truth table: `reports/CLEAN_ROOM_CYCLE1_FINDINGS.md`.
 
-### Step 2 — cross-check the derived lot size against the published one
-The decisive test of the derivation in `MASTER_RESEARCH_STATUS.md` §Defect 6:
-compute `VAL_INLAKH × 1e5 / (CONTRACTS × ClsPric)` for 2024+ **legacy-style** rows if
-any exist, and separately confirm the UDiFF `NewBrdLotQty` values (NIFTY 25/50/65/75,
-BANKNIFTY 15/25/30/35) match the implied values on overlapping months. If they match,
-adopt a per-(symbol, month) lot calendar in `data/catalog/lot_size_calendar.csv` and
-**rupee results become available for 2019–2023 for the first time**. If they do not
-match, keep points-only and record why.
+The Dhan token in `.env` expires **2026-09-20 10:00:13**. Check it first; if it has
+lapsed, see the blocker section above.
 
-### Step 3 — build the continuous futures series
-`src/research/futures_panel.py` (does not exist yet):
-- near-month NIFTY and BANKNIFTY, rolled on the **authentic expiry** from the
-  bhavcopy, roll rule written into the module docstring
-- carry both the un-rolled per-contract series and the rolled series; never splice
-  silently
-- record basis = future − spot, and the roll gap explicitly
-- daily OHLC, settlement, OI, volume, authentic lot
+### Highest-value untested work, in order
 
-### Step 4 — re-ask the overnight question in futures
-This is the highest-value single test in the cycle. The previous cycle's closing
-conclusion was that the ~15 point/night drift is real but unconvertible because a
-near-ATM option pays ~12 points of theta. Futures have **no theta** and ~2 crossings.
-Daily close→close is testable immediately; close→open needs intraday (blocked).
-Cost reference to beat: futures STT is 0.02% on the sell side ≈ 4.6 points at
-NIFTY 23,000, plus brokerage — so ~6 points round trip against ~15 points of drift.
-**Margin is ~₹1.3–1.8 lakh per lot, so report executability honestly at ₹20k/₹50k/₹1L
-rather than quietly assuming it fits.**
+1. **FINNIFTY / MIDCPNIFTY / SENSEX 5-minute grids.** Dhan serves them (floors
+   2021-08, 2022-01, 2023-05, all ATM±10 with iv/oi/spot at 100%). Acquire with
+   `python scripts/ingest_dhan_grid_multi.py --underlyings FINNIFTY,MIDCPNIFTY --max-offset 6`.
+   Before spending search budget on any of them, run the **range/premium ratio test**
+   first — it is one cheap measurement and it is what ruled BANKNIFTY out
+   (§5 of the findings). A ratio below NIFTY's 1.49× means option buying there is
+   harder than a space already closed.
+2. **Expiry-settled premium selling on underlyings whose weeklies still exist.**
+   The BANKNIFTY weekly result (+66.85 pts, t=+2.20, positive every year) was killed
+   by NSE abolishing the expiry cycle, not by the statistics. NIFTY and SENSEX still
+   have weeklies. Whether the same structure works there is open, and the method
+   needs no exit price at all, which is why it is the cleanest test available.
+   Watch the tail: the BANKNIFTY version's worst cycle was 10.1× the mean credit.
+3. **Futures basis, calendar spreads, and NIFTY-vs-BANKNIFTY relative value.** The
+   basis is now measured and behaves like clean carry (11 pts at ≤3 DTE to 85 at
+   30–60). A spread has lower variance than either leg, so a smaller edge can clear
+   costs — but it pays friction on both legs, so start by computing the break-even.
+4. **BSE bhavcopy (SENSEX 3,156 and BANKEX 1,000 listed contracts).** Different
+   archive host; entirely untested.
+5. **Stock options (OPTSTK, 210 underlyings).** ~36,000 rows/session; skipped on
+   budget, not on availability.
 
-### Step 5 — then, in order
-1. Futures basis / calendar spread / NIFTY-vs-BANKNIFTY relative value.
-2. The four new index-option underlyings on the daily horizon.
-3. Stock-futures cross-section (avoids the 0.20% delivery STT that killed equities).
-4. Freeze → `reports/HOLDOUT_FREEZE.md` → **one** holdout run.
+### Do this first, before any of the above
 
----
+Fix `src/data/dhan_client._post`: it returns `None` on an HTTP error and logs at
+debug, so a caller cannot distinguish 401 from empty data. That is exactly how an
+expired token first read as "Dhan has no BANKNIFTY data". Every coverage probe is
+untrustworthy until the status code reaches the call site.
 
 ## DO NOT REDO
 
@@ -108,7 +100,13 @@ rather than quietly assuming it fits.**
 - Weekly short strangle settled at expiry (Durgia)
 - 0-DTE condor
 - Long and short 1-day volatility, including "cheap vol" conditioning
-- Daily equity cross-section on the current universe
+- Daily equity cross-section on the current universe (and note the reversal effect in
+  it was **survivorship**, not a cost problem — it vanishes on 280 survivorship-free
+  F&O names: mom3 h=1 goes from t=−3.51 to t=−0.32)
+- Futures overnight and intraday, NIFTY and BANKNIFTY (the index's overnight gap is
+  69% basis reset; net −3.44 and −7.83 points after cost)
+- BANKNIFTY weekly short strangle / iron condor (instrument abolished Nov 2024)
+- BANKNIFTY intraday option buying (range/premium 1.15× vs NIFTY 1.49×)
 
 Details and exact reasons: `reports/ACTIVE_RESEARCH_STATE.md`,
 `reports/FINAL_ONE_YEAR_MONEY_STUDY.md`, `research/MASTER_RESEARCH_STATUS.md`.

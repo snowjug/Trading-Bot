@@ -1,0 +1,48 @@
+{
+  "name": "OPT_DEBIT_CALL_SPREAD_BREAKOUT",
+  "family": "OPTIONS_SPREAD",
+  "instrument": "NIFTY_OPT",
+  "instrument_class": "MULTI_LEG_OPTION",
+  "timeframe": "5m",
+  "source": "Directional Vertical Debit Spread",
+  "economic_mechanism": "Capped upside participation with theta-mitigated long call financing",
+  "entry_rules": {
+    "trigger": "NIFTY_ORB_15_LONG_BREAKOUT",
+    "legs": [
+      {
+        "role": "long_call",
+        "strike": "ATM",
+        "side": "BUY"
+      },
+      {
+        "role": "short_call",
+        "strike": "ATM_PLUS_200",
+        "side": "SELL"
+      }
+    ]
+  },
+  "stop_rules": {
+    "type": "NET_DEBIT_OUTLAY"
+  },
+  "exit_rules": {
+    "type": "EOD_OR_TARGET",
+    "eod_time": "15:10"
+  },
+  "target_rules": {
+    "type": "WING_WIDTH_MINUS_DEBIT"
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "NET_DEBIT_OUTLAY",
+    "minimum_account": 20000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

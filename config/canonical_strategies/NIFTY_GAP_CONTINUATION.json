@@ -1,0 +1,40 @@
+{
+  "name": "NIFTY_GAP_CONTINUATION",
+  "family": "PRICE_ACTION",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "5m",
+  "source": "Opening Gap Continuation / Breakaway Gap",
+  "economic_mechanism": "Order flow continuation following institutional opening gap drive",
+  "entry_rules": {
+    "gap_condition": "abs(open_0915 - prev_close) >= 0.5 * daily_atr",
+    "long_continuation": "open_0915 > prev_close and close_0930 > high_0915_0930_open",
+    "short_continuation": "open_0915 < prev_close and close_0930 < low_0915_0930_open",
+    "entry_time": "09:30"
+  },
+  "stop_rules": {
+    "type": "OPPOSITE_15M_OR_EXTREME"
+  },
+  "exit_rules": {
+    "type": "TARGET_OR_STOP_OR_EOD",
+    "eod_time": "15:10"
+  },
+  "target_rules": {
+    "type": "FIXED_R",
+    "multiple": 1.5
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 150000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

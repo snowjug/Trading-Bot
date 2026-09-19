@@ -1,0 +1,35 @@
+{
+  "name": "OVERNIGHT_FUT_DRIFT",
+  "family": "OVERNIGHT",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "Cliff, Cooper, Gulen (2008) Overnight Anomaly",
+  "economic_mechanism": "Close-to-open global macro drift in near-month tradable index futures",
+  "entry_rules": {
+    "entry_time": "15:25",
+    "side": "BUY"
+  },
+  "stop_rules": {
+    "type": "NEXT_OPEN_EXIT"
+  },
+  "exit_rules": {
+    "type": "NEXT_SESSION_OPEN",
+    "exit_time": "09:15"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

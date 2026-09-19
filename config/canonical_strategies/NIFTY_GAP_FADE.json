@@ -1,0 +1,40 @@
+{
+  "name": "NIFTY_GAP_FADE",
+  "family": "PRICE_ACTION",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "5m",
+  "source": "Opening Gap Reversion Literature",
+  "economic_mechanism": "Overnight inventory rebalancing fading excessive retail opening imbalances",
+  "entry_rules": {
+    "gap_condition": "abs(open_0915 - prev_close) >= 0.5 * daily_atr",
+    "long_fade": "open_0915 < prev_close and close_0920 > open_0915",
+    "short_fade": "open_0915 > prev_close and close_0920 < open_0915",
+    "entry_time": "09:20"
+  },
+  "stop_rules": {
+    "type": "ATR_MULTIPLE",
+    "multiple": 0.5
+  },
+  "exit_rules": {
+    "type": "TARGET_OR_STOP_OR_EOD",
+    "eod_time": "15:10"
+  },
+  "target_rules": {
+    "type": "PREVIOUS_CLOSE"
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 150000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

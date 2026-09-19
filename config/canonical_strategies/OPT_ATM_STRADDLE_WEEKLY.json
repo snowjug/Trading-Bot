@@ -1,0 +1,47 @@
+{
+  "name": "OPT_ATM_STRADDLE_WEEKLY",
+  "family": "OPTIONS_SPREAD",
+  "instrument": "NIFTY_OPT",
+  "instrument_class": "MULTI_LEG_OPTION",
+  "timeframe": "1d",
+  "source": "Weekly Straddle Variance Risk Premium",
+  "economic_mechanism": "Multi-day implied volatility premium over realized index variance",
+  "entry_rules": {
+    "dte_target": 5,
+    "entry_day": "FRIDAY_OR_MONDAY",
+    "legs": [
+      {
+        "role": "short_call",
+        "strike": "ATM",
+        "side": "SELL"
+      },
+      {
+        "role": "short_put",
+        "strike": "ATM",
+        "side": "SELL"
+      }
+    ]
+  },
+  "stop_rules": {
+    "type": "COMBINED_PREMIUM_STOP_PCT",
+    "pct": 0.5
+  },
+  "exit_rules": {
+    "type": "EXPIRY_SETTLEMENT"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "EXCHANGE_SPAN_MARGIN",
+    "minimum_account": 180000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

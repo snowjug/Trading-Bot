@@ -1,0 +1,35 @@
+{
+  "name": "FUT_MA_CROSS_20_50",
+  "family": "TREND_FOLLOWING",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "Classical Dual Moving Average Crossover",
+  "economic_mechanism": "Persistent intermediate-term macro capital flow trend capture",
+  "entry_rules": {
+    "long_trigger": "ema_20 crosses_above ema_50",
+    "short_trigger": "ema_20 crosses_below ema_50",
+    "evaluation": "daily_close"
+  },
+  "stop_rules": {
+    "type": "REVERSE_CROSSOVER"
+  },
+  "exit_rules": {
+    "type": "ON_REVERSE_SIGNAL"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

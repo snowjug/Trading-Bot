@@ -1,0 +1,42 @@
+{
+  "name": "NIFTY_VWAP_MEAN_REVERSION",
+  "family": "PRICE_ACTION",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "5m",
+  "source": "VWAP Standard Deviation Bands",
+  "economic_mechanism": "Elastic mean reversion to volume-weighted fair value after extreme intraday stretch",
+  "entry_rules": {
+    "long_trigger": "close <= vwap - 2.0 * vwap_std",
+    "short_trigger": "close >= vwap + 2.0 * vwap_std",
+    "entry_window": [
+      "10:00",
+      "14:00"
+    ]
+  },
+  "stop_rules": {
+    "type": "ATR_MULTIPLE",
+    "multiple": 1.0
+  },
+  "exit_rules": {
+    "type": "TARGET_OR_STOP_OR_EOD",
+    "eod_time": "15:10"
+  },
+  "target_rules": {
+    "type": "VWAP_MIDLINE"
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 150000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

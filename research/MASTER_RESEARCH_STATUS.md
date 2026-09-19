@@ -2,7 +2,8 @@
 
 **Updated:** 2026-09-19 · **Branch:** `main` · **Base SHA:** `ce3c4d3`
 **`LIVE_TRADING_ENABLED`:** `false` (verified at runtime)
-**Cycle:** CLEAN-ROOM CYCLE 1 — **PHASE 2 of 12 (data acquisition), IN PROGRESS**
+**Cycle:** CLEAN-ROOM CYCLE 1 — **PHASES 1–7 COMPLETE, NOTHING PROMOTED**
+Full findings: `reports/CLEAN_ROOM_CYCLE1_FINDINGS.md` (truth table in §1)
 
 ---
 
@@ -11,12 +12,12 @@
 | # | Phase | Status |
 |---|---|---|
 | 1 | Repository audit | **DONE** → `research/CLEAN_ROOM_AUDIT.md` |
-| 2 | Dhan / market-data audit and acquisition | **IN PROGRESS** — NSE ingest running; Dhan blocked on an expired token |
+| 2 | Dhan / market-data audit and acquisition | **DONE** — 1,904/1,905 sessions; token renewed mid-session; BANKNIFTY grid acquired |
 | 3 | External research and hypotheses | **DONE for this pass** → `research/EXTERNAL_SOURCES.md` |
 | 4 | Research-engine regression testing | **DONE** → `tests/test_research_integrity.py`, 31 passed / 1 skipped |
-| 5 | Core strategy-family discovery on DEV | NOT STARTED |
-| 6 | Validation | NOT STARTED |
-| 7 | Falsification | NOT STARTED |
+| 5 | Core strategy-family discovery on DEV | **DONE** — futures overnight/intraday, stock-futures cross-section (19 features × 6 horizons), BANKNIFTY expiry-settled premium |
+| 6 | Validation | **DONE** — no candidate reached a gate; the one that came closest is unrunnable (its expiry cycle was abolished) |
+| 7 | Falsification | **DONE** — concentration, regime, tail, cost stress, roll-artefact and margin checks all applied |
 | 8 | Freeze candidate set | NOT STARTED |
 | 9 | FINAL HOLDOUT (one run) | NOT STARTED |
 | 10 | Capital study | NOT STARTED |
@@ -128,6 +129,11 @@ NIFTY option store did not retain `TtlTrfVal`.
 | **Futures overnight (close→next open), NIFTY** | authentic bhavcopy prints, 1,809 same-contract pairs | +0.0302% / t=+1.57 (n=1,339) | −0.0006% / t=−0.02 (n=236) | **−0.0440% / t=−1.08, win 46.2%** (n=234) | **REJECTED** — +2.27 pts gross vs **5.71 pts** cost ⇒ **net −3.44 pts**; minus the best 10 nights of 1,809 the total goes negative |
 | **Futures overnight, BANKNIFTY** | same, 1,808 pairs | +0.0334% / t=+1.42 | +0.0134% / t=+0.46 | **−0.0398% / t=−0.93** | **REJECTED** — +5.06 pts gross vs **12.90 pts** cost ⇒ **net −7.83 pts** |
 | **Futures intraday (open→close)** | same | +0.0069% / t=+0.33 (NIFTY), +0.0038% / t=+0.13 (BN) | — | — | **REJECTED** — flat. The index's "negative intraday" is also an artefact |
+| Futures intraday (open→close) | authentic | +0.0069% / +0.0038%, t=+0.33 / +0.13 | — | — | **REJECTED** — flat |
+| **Stock-futures ΔOI cross-section** | authentic, survivorship-free | LS **−0.0941%/day, t=−4.88**, monotone, not a roll artefact | not reached | not reached | **REJECTED** — gone by day 3; 0.094% against 0.272% pair cost |
+| **Stock-futures short-term reversal** | same | mom3 h=1 **t=−0.32** (equity was −3.51) | — | — | **REJECTED** — the prior equity result was survivorship |
+| **BANKNIFTY weekly short strangle, expiry-settled** | authentic | **+66.85 pts, t=+2.20**, 295 cycles, positive every year, survives 2× cost | 19 cycles of a structurally different instrument | not reached | **REJECTED** — NSE abolished BANKNIFTY weeklies in Nov 2024; 20 of 295 cycles carry 79% of profit; naked margin ₹215,581; the defined-risk version that fits ₹20k dies at 1.5× cost |
+| BANKNIFTY intraday option buying | authentic | not run | — | — | **NOT PURSUED** — range/premium 1.15× vs NIFTY's 1.49×, i.e. 23% worse than a closed space |
 | Futures basis / calendar / cross-index | — | — | — | — | UNTESTED |
 | **BANKNIFTY / FINNIFTY / MIDCPNIFTY / NIFTYNXT50 options** | — | — | — | — | **UNTESTED — data arriving** |
 | **Stock-futures cross-section** | — | — | — | — | **UNTESTED — data arriving** |

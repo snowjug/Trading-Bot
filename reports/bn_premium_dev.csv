@@ -1,0 +1,7 @@
+variant,n,exp_pts,t,breach_pct,worst,skips
+strangle_1.0,295,69.88,2.15,65.8,-3472.3,{'NO_ENTRY_PRICE': 2}
+strangle_1.5,295,66.85,2.2,45.4,-3492.5,{'NO_ENTRY_PRICE': 2}
+strangle_2.0,295,58.16,2.09,33.6,-3401.5,{'NO_ENTRY_PRICE': 2}
+strangle_2.5,295,47.08,1.82,23.7,-3399.7,{'NO_ENTRY_PRICE': 2}
+strangle_3.0,295,38.64,1.61,20.0,-3318.7,{'NO_ENTRY_PRICE': 2}
+strangle_4.0,293,24.85,1.16,11.3,-3160.1,{'NO_ENTRY_PRICE': 4}

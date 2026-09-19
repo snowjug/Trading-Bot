@@ -5,6 +5,13 @@ continues from `EXACT NEXT ACTION`. Nothing under `ALREADY TESTED` is to be re-r
 
 **Opened:** 2026-09-18 · **Closed:** 2026-09-19 · **Branch:** `main`
 **`LIVE_TRADING_ENABLED`:** `false`
+**SUPERSEDED 2026-09-19 by CLEAN-ROOM CYCLE 1.** Read
+`reports/CLEAN_ROOM_CYCLE1_FINDINGS.md` and `research/NEXT_SESSION.md` first. Three
+findings below were corrected by that cycle: futures data DOES exist in this
+repository's own source (it was dropped at intake), BOT1/BOT2's published numbers came
+from a reimplementation that differs from the live bots, and the equity reversal effect
+was survivorship rather than a cost problem.
+
 **Status: RUN COMPLETE — OUTCOME B.** Search budget for this run exhausted, no
 candidate promoted, every result preserved. Full report:
 `reports/FINAL_ONE_YEAR_MONEY_STUDY.md`.

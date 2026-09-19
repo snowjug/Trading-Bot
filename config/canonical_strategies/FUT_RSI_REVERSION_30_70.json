@@ -1,0 +1,40 @@
+{
+  "name": "FUT_RSI_REVERSION_30_70",
+  "family": "MEAN_REVERSION",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "J. Welles Wilder RSI Classical Extremes",
+  "economic_mechanism": "Over-extended momentum exhaustion reversion toward mean",
+  "entry_rules": {
+    "long_trigger": "rsi_14 < 30.0",
+    "short_trigger": "rsi_14 > 70.0",
+    "evaluation": "daily_close"
+  },
+  "stop_rules": {
+    "type": "ATR_MULTIPLE",
+    "multiple": 2.0
+  },
+  "exit_rules": {
+    "type": "TARGET_OR_MAX_HOLDING_DAYS",
+    "max_days": 5
+  },
+  "target_rules": {
+    "type": "RSI_MIDLINE",
+    "level": 50.0
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

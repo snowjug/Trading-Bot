@@ -1,0 +1,34 @@
+{
+  "name": "VOL_VRP_SHORT",
+  "family": "OPTIONS_VOLATILITY",
+  "instrument": "NIFTY_OPT",
+  "instrument_class": "MULTI_LEG_OPTION",
+  "timeframe": "1d",
+  "source": "Variance Risk Premium Literature (Carr & Wu 2009)",
+  "economic_mechanism": "Systematically selling option implied variance when IV significantly exceeds RV(20)",
+  "entry_rules": {
+    "condition": "india_vix / realized_vol_20d >= 1.25",
+    "structure": "IRON_CONDOR_WEEKLY"
+  },
+  "stop_rules": {
+    "type": "WING_WIDTH_BOUNDED"
+  },
+  "exit_rules": {
+    "type": "EXPIRY_SETTLEMENT"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "DEFINED_MAX_LOSS",
+    "minimum_account": 25000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

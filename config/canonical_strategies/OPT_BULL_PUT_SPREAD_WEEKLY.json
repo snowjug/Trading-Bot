@@ -1,0 +1,47 @@
+{
+  "name": "OPT_BULL_PUT_SPREAD_WEEKLY",
+  "family": "OPTIONS_SPREAD",
+  "instrument": "NIFTY_OPT",
+  "instrument_class": "MULTI_LEG_OPTION",
+  "timeframe": "1d",
+  "source": "Defined Risk Credit Spread Benchmark",
+  "economic_mechanism": "Selling downside variance with explicit long put tail protection",
+  "entry_rules": {
+    "dte_target": 5,
+    "legs": [
+      {
+        "role": "short_put",
+        "strike": "ATM_MINUS_100",
+        "side": "SELL"
+      },
+      {
+        "role": "long_put",
+        "strike": "ATM_MINUS_300",
+        "side": "BUY"
+      }
+    ]
+  },
+  "stop_rules": {
+    "type": "DEFINED_WING_WIDTH"
+  },
+  "exit_rules": {
+    "type": "EXPIRY_SETTLEMENT"
+  },
+  "target_rules": {
+    "type": "MAX_PROFIT_CREDIT"
+  },
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "DEFINED_MAX_LOSS",
+    "minimum_account": 25000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

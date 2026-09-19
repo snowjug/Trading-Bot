@@ -1,0 +1,39 @@
+{
+  "name": "NIFTY_VWAP_TREND",
+  "family": "PRICE_ACTION",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "5m",
+  "source": "Volume Weighted Average Price Institutional Benchmark",
+  "economic_mechanism": "Institutional momentum when spot holds above/below session volume-weighted price",
+  "entry_rules": {
+    "long_trigger": "crosses_above(close, vwap) and close > open",
+    "short_trigger": "crosses_below(close, vwap) and close < open",
+    "entry_window": [
+      "09:45",
+      "14:30"
+    ]
+  },
+  "stop_rules": {
+    "type": "TRAILING_VWAP_CROSS"
+  },
+  "exit_rules": {
+    "type": "EOD_AT_MARKET",
+    "eod_time": "15:10"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 150000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

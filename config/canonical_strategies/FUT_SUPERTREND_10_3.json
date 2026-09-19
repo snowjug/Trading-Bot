@@ -1,0 +1,35 @@
+{
+  "name": "FUT_SUPERTREND_10_3",
+  "family": "TREND_FOLLOWING",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "Olivier Seban Supertrend Baseline",
+  "economic_mechanism": "Adaptive volatility-banded trend continuation",
+  "entry_rules": {
+    "long_trigger": "close crosses_above supertrend(10, 3)",
+    "short_trigger": "close crosses_below supertrend(10, 3)",
+    "evaluation": "daily_close"
+  },
+  "stop_rules": {
+    "type": "TRAILING_SUPERTREND"
+  },
+  "exit_rules": {
+    "type": "ON_REVERSE_SIGNAL"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}

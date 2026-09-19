@@ -1,0 +1,35 @@
+{
+  "name": "FUT_MA_CROSS_50_200",
+  "family": "TREND_FOLLOWING",
+  "instrument": "NIFTY_FUT",
+  "instrument_class": "INDEX_FUTURE",
+  "timeframe": "1d",
+  "source": "Golden Cross / Death Cross Benchmark",
+  "economic_mechanism": "Long-term multi-month secular regime following",
+  "entry_rules": {
+    "long_trigger": "sma_50 crosses_above sma_200",
+    "short_trigger": "sma_50 crosses_below sma_200",
+    "evaluation": "daily_close"
+  },
+  "stop_rules": {
+    "type": "REVERSE_CROSSOVER"
+  },
+  "exit_rules": {
+    "type": "ON_REVERSE_SIGNAL"
+  },
+  "target_rules": null,
+  "position_sizing": {
+    "unit": "LOTS",
+    "lots": 1,
+    "max_risk_pct_account": 0.6
+  },
+  "capital_requirement": {
+    "rule": "SPAN_MARGIN",
+    "minimum_account": 160000.0
+  },
+  "execution_assumptions": {
+    "order_type": "MARKET_OR_LIMIT_AT_CLOSE",
+    "slippage_model": "HALF_SPREAD_PLUS_TICKS",
+    "cost_model": "INDIAN_STATUTORY_POST_OCT_2024"
+  }
+}
