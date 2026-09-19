@@ -92,6 +92,7 @@ data/derived/overnight_raw.parquet
 data/derived/overnight_put.parquet
 data/derived/futstk_*.parquet
 data/derived/bn_*.parquet
+data/derived/zdte_*.parquet
 
 # Raw NSE F&O bhavcopy zips — byte-for-byte provenance cache, re-downloadable from
 # nsearchives.nseindia.com; sha256 of every file is recorded in

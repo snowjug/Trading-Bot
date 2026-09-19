@@ -1,0 +1,4 @@
+candidate_id,candidate_name,capital_tested,risk_pct,cagr_5th_pct,cagr_25th_pct,cagr_50th_pct_median,cagr_75th_pct,cagr_95th_pct,dd_5th_pct,dd_25th_pct,dd_50th_pct_median,dd_75th_pct,dd_95th_pct,prob_dd_gt_20pct,prob_dd_gt_25pct,prob_dd_gt_30pct,prob_dd_gt_35pct,prob_dd_gt_50pct
+Candidate 1,"Causal 10D Breakout OTM Debit Spread (W150, Off50)",100000.0,0.05,-2.54,14.36,29.38,47.98,82.72,13.86,23.92,35.09,47.74,65.47,84.0,72.56,61.19,50.18,21.54
+Candidate 2,"Causal 10D Breakout ATM Debit Spread (W200, Off0)",100000.0,0.05,-7.3,9.69,23.06,38.7,67.09,13.67,23.29,33.29,46.6,71.34,83.28,70.49,57.88,46.57,20.22
+Candidate 3,"Causal 10D Breakout ATM Debit Spread (W250, Off0)",100000.0,0.05,-18.94,7.93,22.09,39.8,72.14,13.86,24.75,35.95,51.39,92.4,84.85,74.44,63.04,52.1,26.68

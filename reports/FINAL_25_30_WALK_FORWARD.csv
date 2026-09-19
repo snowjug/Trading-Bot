@@ -1,0 +1,16 @@
+candidate_id,candidate_name,period_label,start_date,end_date,trades,win_rate_pct,avg_win_inr,avg_loss_inr,payoff_ratio,profit_factor,net_pnl_inr
+Candidate 1,"Causal 10D Breakout OTM Debit Spread (W150, Off50)",Train 2021-2022,2021-09-19,2022-12-31,38,39.5,4380.66,-2160.51,2.03,1.322,16018.18
+Candidate 1,"Causal 10D Breakout OTM Debit Spread (W150, Off50)",Test 2023,2023-01-01,2023-12-31,32,40.6,4404.02,-2412.98,1.83,1.249,11405.58
+Candidate 1,"Causal 10D Breakout OTM Debit Spread (W150, Off50)",Test 2024,2024-01-01,2024-12-31,33,33.3,2322.24,-1643.79,1.41,0.706,-10618.8
+Candidate 1,"Causal 10D Breakout OTM Debit Spread (W150, Off50)",Test 2025,2025-01-01,2025-12-31,32,37.5,6310.26,-3577.36,1.76,1.058,4175.97
+Candidate 1,"Causal 10D Breakout OTM Debit Spread (W150, Off50)",Test 2026,2026-01-01,2026-09-18,23,56.5,5071.9,-2403.23,2.11,2.744,41902.45
+Candidate 2,"Causal 10D Breakout ATM Debit Spread (W200, Off0)",Train 2021-2022,2021-09-19,2022-12-31,36,41.7,5307.05,-3040.91,1.75,1.247,15746.64
+Candidate 2,"Causal 10D Breakout ATM Debit Spread (W200, Off0)",Test 2023,2023-01-01,2023-12-31,32,40.6,5628.43,-3163.69,1.78,1.217,13059.47
+Candidate 2,"Causal 10D Breakout ATM Debit Spread (W200, Off0)",Test 2024,2024-01-01,2024-12-31,33,45.5,2540.54,-2350.69,1.08,0.901,-4204.3
+Candidate 2,"Causal 10D Breakout ATM Debit Spread (W200, Off0)",Test 2025,2025-01-01,2025-12-31,33,36.4,8205.65,-5005.13,1.64,0.937,-6640.03
+Candidate 2,"Causal 10D Breakout ATM Debit Spread (W200, Off0)",Test 2026,2026-01-01,2026-09-18,23,60.9,6304.08,-4156.3,1.52,2.359,50850.36
+Candidate 3,"Causal 10D Breakout ATM Debit Spread (W250, Off0)",Train 2021-2022,2021-09-19,2022-12-31,37,40.5,7539.1,-3499.98,2.15,1.469,36086.87
+Candidate 3,"Causal 10D Breakout ATM Debit Spread (W250, Off0)",Test 2023,2023-01-01,2023-12-31,32,40.6,6437.3,-3700.93,1.74,1.19,13367.18
+Candidate 3,"Causal 10D Breakout ATM Debit Spread (W250, Off0)",Test 2024,2024-01-01,2024-12-31,33,36.4,3539.85,-2525.64,1.4,0.801,-10560.22
+Candidate 3,"Causal 10D Breakout ATM Debit Spread (W250, Off0)",Test 2025,2025-01-01,2025-12-31,33,36.4,9011.49,-6433.81,1.4,0.8,-26972.17
+Candidate 3,"Causal 10D Breakout ATM Debit Spread (W250, Off0)",Test 2026,2026-01-01,2026-09-18,23,52.2,8570.87,-4437.9,1.93,2.107,54033.56
