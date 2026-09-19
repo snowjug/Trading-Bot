@@ -1,0 +1,10 @@
+metric,value,notes
+EXPECTED_TRADING_SESSIONS_5Y,1235,NSE daily index sessions
+AVAILABLE_BHAVCOPY_SESSIONS_5Y,1235,Authentic exchange daily bhavcopies
+MISSING_BHAVCOPY_SESSIONS_5Y,0,Zero missing sessions
+EXPECTED_WEEKLY_EXPIRIES_5Y,268,Official weekly expiries
+EXECUTED_CYCLES_C1,139,Passed all rules and executed authentically
+SKIPPED_VIX_GE_20,136,VIX filter rejections
+SKIPPED_RSI_OUT_OF_BAND,204,RSI filter rejections
+SKIPPED_NOT_5D_ENTRY,272,5-day holding period rule
+DATA_LIMITED_CONTRACT_UNTRADED,0,Zero unpriced contracts in 5Y period
