@@ -1,0 +1,152 @@
+{
+  "run": "FINAL_ONE_YEAR_MONEY_STUDY",
+  "opened": "2026-09-18",
+  "closed": "2026-09-19",
+  "branch": "main",
+  "outcome": "B \u2014 search budget for this run exhausted, no candidate promoted",
+  "live_trading_enabled": false,
+  "splits": {
+    "dev_end": "2024-09-17",
+    "val": [
+      "2024-09-18",
+      "2025-09-17"
+    ],
+    "holdout": [
+      "2025-09-18",
+      "2026-09-18"
+    ],
+    "holdout_sessions": 248
+  },
+  "promoted": [],
+  "money_result": {
+    "20000": {
+      "net": null,
+      "note": "nothing executable under equal sleeves; BOT8 alone +Rs 311 / +1.56%"
+    },
+    "50000": {
+      "net": 311.43,
+      "return_pct": 0.62,
+      "max_dd_pct": 0.0,
+      "profitable_days_pct": 0.4,
+      "pct_days_ge_1": 0.0,
+      "pct_days_ge_2": 0.0,
+      "allocation": {
+        "BOT8": 1
+      }
+    },
+    "100000": {
+      "net": 15788.58,
+      "return_pct": 15.79,
+      "max_dd_pct": 0.0,
+      "profitable_days_pct": 11.7,
+      "pct_days_ge_1": 0.4,
+      "pct_days_ge_2": 0.0,
+      "allocation": {
+        "BOT8": 2,
+        "BOT1": 1
+      }
+    }
+  },
+  "standing_facts": {
+    "dev_overnight_drift_pct": 0.135,
+    "dev_overnight_t": 7.02,
+    "dev_overnight_winrate": 68.6,
+    "dev_intraday_drift_pct": -0.0677,
+    "dev_intraday_t": -2.71,
+    "tradable_overnight_at_0915_pct": 0.0907,
+    "tradable_overnight_t": 5.06,
+    "tradable_overnight_points": 15.97,
+    "atm_overnight_theta_points": 12,
+    "atm_delta": 0.5,
+    "pcr_gt_1p1_drift_points": 31.65,
+    "pcr_gt_1p1_t": 6.21,
+    "pcr_gt_1p1_n": 195,
+    "option_roundtrip_friction_points_2leg": 3.3,
+    "equity_roundtrip_cost_pct": 0.23,
+    "equity_stt_pct_roundtrip": 0.2,
+    "best_equity_xs_alpha_pct_per_day": 0.085,
+    "naked_short_margin_per_lot_inr": 169481,
+    "bot1_breakeven_winrate_pct": 96.43,
+    "bot1_measured_breach_rate_pct": 8.5,
+    "bot1_full_history_pts_per_cycle": 0.15,
+    "bot1_full_history_t": 0.06
+  },
+  "rejected_families": [
+    {
+      "family": "overnight long call",
+      "impl": 6,
+      "reason": "delta 0.5 x 15 pts loses to ~12 pts theta; deep ITM stale-priced t=-17.26"
+    },
+    {
+      "family": "overnight put spread narrow",
+      "impl": 18,
+      "reason": "best t=1.24"
+    },
+    {
+      "family": "overnight put spread wide",
+      "impl": 24,
+      "reason": "non-monotone width surface; ex-2020/21 t=1.27; dies at 2x cost"
+    },
+    {
+      "family": "overnight naked short put",
+      "impl": 2,
+      "reason": "most stable (t=2.45) but Rs 169,481 margin \u2014 outside all capital levels"
+    },
+    {
+      "family": "overnight synthetic long future",
+      "impl": 1,
+      "reason": "ex-2020/21 exactly 0.00"
+    },
+    {
+      "family": "overnight bull call spread",
+      "impl": 4,
+      "reason": "-0.79 to -2.78 pts"
+    },
+    {
+      "family": "overnight conditioned on chain state",
+      "impl": 48,
+      "reason": "VAL t=0.68-1.26 vs 2.0 gate, n=28; negative on holdout"
+    },
+    {
+      "family": "equity cross-section",
+      "impl": 80,
+      "reason": "real reversal effect but alpha 0.085%/day < 0.20% STT"
+    },
+    {
+      "family": "long straddle incl. cheap-vol filters",
+      "impl": 10,
+      "reason": "-18.05 pts/day t=-9.09; VRP filter makes it worse"
+    },
+    {
+      "family": "short straddle incl. rich-vol filters",
+      "impl": 9,
+      "reason": "+13.07 collapses to -0.38 once all 34 unpriced nights are priced"
+    }
+  ],
+  "retired_bots": {
+    "BOT1": "zero-breach artefact; 28/28 on holdout, +0.15 pts/cycle t=0.06 over 259 cycles",
+    "BOT2": "same profile, 28/28 on holdout, zero losing cycles",
+    "BOT6": "-61.87% on holdout at Rs 1L, 81.31% max DD",
+    "BOT7": "-34.78% on holdout, 41.52% max DD",
+    "BOT8": "1 trade in 248 sessions"
+  },
+  "contamination_disclosed": [
+    "prior 6-month study validated on 2024-09-18..2026-03-17, overlapping the first 6 months of this holdout; nothing from it promoted",
+    "calendar-2025/2026 index-level overnight drift rows were displayed before the holdout run; disclosed in FINAL_ONE_YEAR_MONEY_STUDY.md section 3.4"
+  ],
+  "next_actions": [
+    "acquire NIFTY/BANKNIFTY futures history \u2014 the only untested instrument that converts the measured drift at a credible spread",
+    "acquire a survivorship-free equity universe before any cross-sectional claim",
+    "or accept that measured edges are below retail friction and stop"
+  ],
+  "artifacts": [
+    "chain_hypotheses_dev.csv",
+    "chain_screen_dev.csv",
+    "equity_screen_dev.csv",
+    "money_result_1y.json",
+    "overnight_dev.csv",
+    "overnight_dev_conditional.csv",
+    "overnight_dev_width.csv",
+    "overnight_validation.csv"
+  ]
+}

@@ -78,3 +78,13 @@ scratch/
 data/dhan_scrip_master_*.csv
 data/raw/**/.consolidated_*.parquet
 data/paper_session/
+
+# Large REBUILDABLE research caches (one command each, see reports/ACTIVE_RESEARCH_STATE.md):
+#   grid5m_{ce,pe}     -> stitched from data/raw/dhan/option_grid_5m, ~95MB
+#   equity_panel       -> src/research/equity_panel.py, ~53MB
+#   overnight_raw/put  -> intermediate probes, superseded by src/research/overnight.py
+# chain_panel.parquet is kept: it is 1.1MB and several tests key off it.
+data/derived/grid5m_*.parquet
+data/derived/equity_panel.parquet
+data/derived/overnight_raw.parquet
+data/derived/overnight_put.parquet

@@ -245,3 +245,138 @@ BOT6 **-14,587**, BOT7 +653 (n=7), BOT8 **0 trades**.
 Across two studies and ~130 tested implementations, **no strategy in this
 repository has a validated edge**. BOT6 and BOT8 should be retired. BOT1 and BOT2
 are profitable only in zero-breach regimes. `LIVE_TRADING_ENABLED` remains false.
+
+---
+
+## UPDATE 2026-09-19 — ONE-YEAR MONEY STUDY, OUTCOME B
+
+Full report: `reports/FINAL_ONE_YEAR_MONEY_STUDY.md`.
+Resume point: `reports/ACTIVE_RESEARCH_STATE.md`.
+Machine-readable state: `data/research_state/final_one_year_state.json`.
+
+Holdout **2025-09-18 → 2026-09-18 (248 sessions)**, measured once. Splits:
+DEV → 2024-09-17, VAL 2024-09-18 → 2025-09-17 (247), HOLDOUT 248.
+**No candidate promoted.** ~90 new implementations this run, ~220 across all three
+studies.
+
+### Money result (frozen five-bot system, equal sleeves, whole lots)
+
+| Account | Allocation | Net | Return | Max DD | Profitable days |
+|---|---|---|---|---|---|
+| Rs 20,000 | **nothing executable** | — | — | — | — |
+| Rs 50,000 | `{BOT8: 1}` | **+Rs 311** | **+0.62%** | 0.00% | **1 of 248 = 0.4%** |
+| Rs 1,00,000 | `{BOT8: 2, BOT1: 1}` | **+Rs 15,789** | **+15.79%** | 0.00% | 29 of 248 = 11.7% |
+
+Per lot on the holdout: BOT1 +15,166 (28/28 cycles won), BOT2 +30,241 (28/28),
+BOT6 −30,937 at 1 lot, BOT7 −17,391, BOT8 +311 from **one trade all year**.
+
+**The Rs 1,00,000 number is 96% BOT1 and it is the zero-breach artefact, now
+confirmed a third time.** BOT1's average win is Rs 542 against a Rs 14,630 maximum
+loss, so its break-even win rate is **96.43%** while the measured breach rate over
+259 cycles from 2019 is **8.5%**. A full year with zero drawdown from a
+short-premium strategy means the tail did not occur, not that it is absent.
+
+### The one thing this run established that the previous two did not
+
+NIFTY's directional edge is worth about **15 index points a night**:
+
+| Segment, DEV 2019-01 → 2024-09-17, n=1,409 | Mean | t | Win rate |
+|---|---|---|---|
+| close → next **open** | **+0.1350%** | **+7.02** | **68.6%** |
+| **open → close** (regular session) | **−0.0677%** | **−2.71** | 48.4% |
+
+Positive in each of six DEV years; +0.1245% at t=8.18 excluding 2020; removing the
+five best nights leaves 170.7 of 190.2 points. But only **+0.0907% (t=5.06)** is
+available at the 09:15 traded spot — 29% of the headline is in the pre-open
+auction print, which nobody can trade.
+
+**Every strategy previously built in this repository was flat by 15:15, and so held
+exposure only during the half of the day that loses money.**
+
+Why the drift still cannot be monetised at Rs 20k–Rs 1L: a near-ATM weekly option
+is the only instrument with a credible spread, it has delta ≈ 0.5 and pays ≈ **12
+points of overnight theta**, so 0.5 × 15 − 12 < 0. Measured: long ATM call
+overnight **+1.13 pts (t=0.75)**, ATM+1 **+0.65 (t=0.49)**. Structures that do
+capture the whole move need **Rs 169,481** of margin:
+
+| Structure | DEV exp | t | Capital/lot |
+|---|---|---|---|
+| naked short put ATM+2 | +5.29 pts | 2.45 | **Rs 169,481** |
+| synthetic long future | +4.48 pts | 1.44 | **Rs 169,481** |
+| put spread ATM+2, 400 wide | +4.71 pts | 2.73 | Rs 21,380 |
+
+The affordable defined-risk versions die under cost stress (t=0.47 at 2×, −3.08
+pts at 3×): the protective leg costs about two thirds of the edge.
+
+### Open interest was used for the first time
+
+`src/research/chain_panel.py` builds 1,903 sessions × 79 columns of point-in-time
+chain state from the 4.0M-row bhavcopy (OI at 100% coverage). Conditional overnight
+index move against an unconditional +15.97 points:
+
+| Condition | n | Mean | t | Win |
+|---|---|---|---|---|
+| **PCR_OI > 1.1** | 195 | **+31.65 pts** | **6.21** | 68.2% |
+| PCR_OI > 1.3 | 67 | +26.16 | 2.96 | 68.7% |
+| PCR_OI < 0.7 | 196 | +10.15 | 1.23 | 57.1% |
+| max pain > 0.5% below spot | 98 | +32.43 | 3.31 | 67.3% |
+| VRP < −2 | 43 | +40.93 | 2.80 | 74.4% |
+
+PCR_OI > 1.1 **doubles** the drift on a smooth threshold curve from 0.9 to 1.4.
+**The brief's direction is right and its level is wrong**: a high put-call ratio
+precedes *continued upward* drift, not reversal.
+
+It still failed. PCR > 1.1 fires on only ~20% of sessions since 2021, so the
+validation sample was 28 nights and no candidate reached the pre-registered
+t ≥ 2.0 gate (VAL t = 0.68–1.26, sign replicated). All six were negative on the
+holdout.
+
+### Three artefacts caught before they became results
+
+1. **Short put overnight, +6.52 pts → the ladder skip.** Pricing exits from the
+   ATM±6 grid deleted 12–29 nights per strike whose index move averaged **−185 to
+   −279 points** against +19 to +26 for the nights that priced. Repriced from the
+   bhavcopy with nothing dropped: **negative**.
+2. **Long call overnight, +3.49 pts (t=3.42) → the exit venue.** The entire edge
+   was the bhavcopy *opening print*. Exited five minutes later at the 09:20 grid
+   bar the same trade **loses 1.31 (t=−0.87)**.
+3. **Short straddle, +13.07 pts (t=6.59) → 34 unpriced nights.** Those nights
+   averaged **−231.34 points** with a mean |index move| of **468 vs 101**.
+   Completely priced: **−0.38 pts, t=−0.13.** This reproduces the repository's own
+   C6 artefact by an independent route.
+
+### Also closed
+
+- **Equity cross-section**, 20 ranked features × 4 horizons, 48 NSE names,
+  124,511 rows. A real short-term **reversal** effect (mom3 h=1 long-short
+  −0.0850%/day, t=−3.51) that is **smaller than STT**: delivery equity pays 0.1%
+  on *each* side and the best gross daily alpha is 0.085%. Also survivorship-
+  contaminated — the 48 names are the *current* NIFTY 50 and every index-removed
+  name has no price file.
+- **Long straddle** 1–4 day holds: −18.05 pts/day, t=−9.09, 29.1% win. Filtering
+  on "cheap" volatility makes it **worse** (−32.30 at VRP<0): VIX below realised
+  usually means realised just spiked and is about to fall.
+
+### Contamination disclosed
+
+While tabulating the drift year by year, the calendar-2025 and calendar-2026 rows
+were displayed; both lie inside the holdout (2025 +0.0366% t=1.11, 2026 −0.0107%
+t=−0.18). Disclosed in §3.4 of the report. It could only steer toward rejection,
+and every candidate had already failed the VAL gate. Independent corroboration:
+the **control** (bear call spread) is −5.76 pts (t=−4.54) on DEV and turns
+**+7.04 (t=+2.20)** on the holdout — the drift's sign reversed, and the engine
+tracks direction rather than costs.
+
+### Deliverables
+
+- `src/research/chain_panel.py`, `src/research/overnight.py`,
+  `src/research/equity_panel.py`
+- `scripts/research/`: chain_screen, overnight_dev, overnight_falsify,
+  overnight_validate, equity_screen, money_result_1y
+- `tests/test_research_overnight.py` — **25 tests** targeting silent skips, exit
+  venue, adverse marking, margin treatment, lookahead, split integrity, and a
+  mirror-sign check that fails if the engine measures costs instead of direction
+- README status note and results tables replaced with the one-year measurements
+
+`LIVE_TRADING_ENABLED` remains **false**. Nothing is promoted to paper trading.
+BOT1, BOT2, BOT6, BOT7 and BOT8 are all recommended for retirement.

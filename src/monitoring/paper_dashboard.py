@@ -29,6 +29,7 @@ logger = setup_logging("monitoring.paper_dashboard")
 app = FastAPI(title="Paper Session — Operational Dashboard", version="1.0.0")
 
 SESSION_ROOT = Path("data/paper_session")
+RESEARCH_STATE = Path("data/research_state/final_one_year_state.json")
 # The DISPLAY universe, not the active set. BOT6 and BOT8 are retired in
 # scripts/run_paper_session.py and are no longer evaluated, but their stored
 # trades must still render in the historical view, so they stay listed here.
@@ -211,6 +212,35 @@ def api_state(day: Optional[str] = None) -> JSONResponse:
     })
 
 
+@app.get("/api/research_status")
+def api_research_status() -> JSONResponse:
+    """
+    The standing research verdict, read verbatim from the state file the study
+    writes. It exists so the dashboard cannot be mistaken for evidence that these
+    bots are worth trading: no strategy in this repository has passed a
+    development -> validation -> holdout gate, and the operator should see that on
+    the same screen as the live marks. Nothing here is computed or inferred.
+    """
+    if not RESEARCH_STATE.exists():
+        return JSONResponse({"available": False,
+                             "reason": f"no state file at {RESEARCH_STATE}"})
+    try:
+        with RESEARCH_STATE.open(encoding="utf-8") as f:
+            st = json.load(f)
+    except (OSError, ValueError) as exc:
+        return JSONResponse({"available": False, "reason": f"unreadable: {exc}"})
+    return JSONResponse({
+        "available": True,
+        "run": st.get("run"), "closed": st.get("closed"),
+        "outcome": st.get("outcome"),
+        "promoted": st.get("promoted", []),
+        "live_trading_enabled": st.get("live_trading_enabled"),
+        "holdout": (st.get("splits") or {}).get("holdout"),
+        "money_result": st.get("money_result", {}),
+        "retired_bots": st.get("retired_bots", {}),
+    })
+
+
 @app.get("/api/historical")
 def api_historical(start: Optional[str] = None, end: Optional[str] = None,
                    bot: Optional[str] = None) -> JSONResponse:
@@ -361,6 +391,8 @@ border-radius:6px;padding:4px 6px;font:inherit}
 <main><div class="grid" id="bots"></div>
 <div class="card"><h2>TOTALS (PAPER)</h2><div id="tot"></div></div>
 <div class="card"><h2>REJECTIONS / ERRORS</h2><div id="err"></div></div>
+<div class="card" id="rscard" style="display:none"><h2>RESEARCH VERDICT</h2>
+<div id="rs"></div></div>
 <div class="card" id="histcard" style="display:none"><h2>HISTORICAL</h2>
 <div id="hist"></div></div></main>
 <script>
@@ -424,7 +456,27 @@ async function loadHist(){
      <td>${t.exit_reason??''}</td><td class="${cls(t.realized_pnl)}">${money(t.realized_pnl)}</td>
      <td>${money(t.mfe)}</td><td>${money(t.mae)}</td></tr>`).join('')+'</table>':'');
 }
-tick(); setInterval(tick,5000);
+async function research(){
+ const r=await fetch('/api/research_status'); const j=await r.json();
+ const c=document.getElementById('rscard'), t=document.getElementById('rs');
+ c.style.display='block';
+ if(!j.available){t.innerHTML='<span class="k">UNAVAILABLE \u2014 '+(j.reason||'')+'</span>';return;}
+ const prom=(j.promoted&&j.promoted.length)?j.promoted.join(', '):'NONE';
+ const mr=j.money_result||{};
+ const row=(k,lbl)=>{const v=mr[k]; if(!v) return '';
+   if(v.net===null||v.net===undefined) return `<tr><td>${lbl}</td><td colspan="3">${v.note||'not executable'}</td></tr>`;
+   return `<tr><td>${lbl}</td><td class="${cls(v.net)}">${money(v.net)}</td><td>${v.return_pct}%</td><td>${v.profitable_days_pct}% of sessions</td></tr>`;};
+ t.innerHTML=`<div class="row"><span class="k">run</span><span>${j.run||'N/A'} (closed ${j.closed||'N/A'})</span></div>`
+  +`<div class="row"><span class="k">outcome</span><span>${j.outcome||'N/A'}</span></div>`
+  +`<div class="row"><span class="k">strategies promoted</span><span class="${prom==='NONE'?'neg':'pos'}">${prom}</span></div>`
+  +`<div class="row"><span class="k">LIVE_TRADING_ENABLED</span><span>${j.live_trading_enabled}</span></div>`
+  +`<div class="row"><span class="k">holdout</span><span>${(j.holdout||[]).join(' \u2192 ')}</span></div>`
+  +`<table style="margin-top:8px"><tr><th>account</th><th>net</th><th>return</th><th>profitable days</th></tr>`
+  +row('20000','\u20b920,000')+row('50000','\u20b950,000')+row('100000','\u20b91,00,000')+`</table>`
+  +`<div class="row" style="margin-top:6px"><span class="k">retired</span><span>`
+  +Object.keys(j.retired_bots||{}).join(', ')+`</span></div>`;
+}
+research(); tick(); setInterval(tick,5000);
 </script></body></html>"""
 
 

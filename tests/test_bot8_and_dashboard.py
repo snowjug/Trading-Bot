@@ -363,3 +363,38 @@ def test_pacing_is_tracked_per_endpoint_family():
     t0 = time.time()
     c._apply_rate_limit(endpoint="marketfeed/quote")
     assert time.time() - t0 >= 0.5, "a marketfeed call must respect its own spacing"
+
+
+# ── research verdict panel (added by the one-year money study) ──
+
+def test_research_status_reports_the_standing_verdict_from_the_state_file():
+    """
+    The dashboard must never read as evidence that these bots are worth trading.
+    This endpoint surfaces the study's own verdict next to the live marks, read
+    verbatim from data/research_state/final_one_year_state.json.
+    """
+    from fastapi.testclient import TestClient
+    from src.monitoring.paper_dashboard import app
+
+    r = TestClient(app).get("/api/research_status")
+    assert r.status_code == 200
+    j = r.json()
+    if not j.get("available"):
+        # absent data is reported as absent, never invented
+        assert "reason" in j
+        return
+    assert j["promoted"] == [], "a promoted strategy would have to be justified here"
+    assert j["live_trading_enabled"] is False
+    assert j["holdout"] == ["2025-09-18", "2026-09-18"]
+    for acc in ("20000", "50000", "100000"):
+        assert acc in j["money_result"]
+
+
+def test_research_status_is_missing_data_tolerant(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from src.monitoring import paper_dashboard as PD
+
+    monkeypatch.setattr(PD, "RESEARCH_STATE", tmp_path / "absent.json")
+    j = TestClient(PD.app).get("/api/research_status").json()
+    assert j["available"] is False and "reason" in j

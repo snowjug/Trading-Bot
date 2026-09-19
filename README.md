@@ -1,8 +1,8 @@
 # ⚡ Apex Quant — Autonomous Indian Algorithmic Trading & Research Engine
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-530%2F530%20passing-brightgreen.svg)](tests/)
-[![Status](https://img.shields.io/badge/status-RESEARCH%20%7C%20NO%20VALIDATED%20EDGE-critical.svg)](reports/FINAL_6_MONTH_MONEY_STUDY.md)
+[![Tests](https://img.shields.io/badge/tests-576%2F576%20passing-brightgreen.svg)](tests/)
+[![Status](https://img.shields.io/badge/status-RESEARCH%20%7C%20NO%20VALIDATED%20EDGE-critical.svg)](reports/FINAL_ONE_YEAR_MONEY_STUDY.md)
 [![Market](https://img.shields.io/badge/market-NSE%20%7C%20NIFTY%2050%20%7C%20BANK%20NIFTY-orange.svg)](https://www.nseindia.com/)
 [![Broker](https://img.shields.io/badge/broker-DhanHQ%20v2%20REST%20API-purple.svg)](https://dhanhq.co/)
 [![Capital Tiers](https://img.shields.io/badge/capital-₹10%2C000%20to%20₹1%2C00%2C000%2B-blueviolet.svg)](#-the-5-production-trading-strategies)
@@ -15,12 +15,29 @@ stamp duty, slippage, ₹20 brokerage caps).
 
 > ## ⚠️ Current status: no strategy has a validated edge
 >
-> Two successive out-of-sample studies found **no strategy that clears a development → validation → holdout
-> gate**. The most recent — [`reports/FINAL_6_MONTH_MONEY_STUDY.md`](reports/FINAL_6_MONTH_MONEY_STUDY.md) —
-> searched 31 distinct concepts across ~100 implementations and promoted none.
+> Three successive out-of-sample studies found **no strategy that clears a development → validation → holdout
+> gate**. The most recent — [`reports/FINAL_ONE_YEAR_MONEY_STUDY.md`](reports/FINAL_ONE_YEAR_MONEY_STUDY.md)
+> — measured a frozen **one-year** holdout (2025-09-18 → 2026-09-18, 248 sessions) and promoted none of its
+> candidates. Across all three studies: roughly **220 implementations of 45 distinct concepts**.
 >
-> Over the six-month holdout (2026-03-18 → 2026-09-18) the frozen five-bot system returned
-> **−29.17% on ₹50,000** and **−17.96% on ₹1,00,000**, and **was not executable at all on ₹20,000**.
+> **What the one-year study did establish**, and it is the first quantitative reason this repository has for
+> its own failure rather than another instance of it:
+>
+> > NIFTY's directional edge is worth about **15 index points a night**. The index earns **+0.135% per night
+> > between the close and the next open** (t = 7.02, 68.6% of nights positive, positive in each of six
+> > development years) while **losing 0.068% during the regular session** (t = −2.71). Only +0.0907% of that
+> > drift is available at the 09:15 traded price; the rest sits in the pre-open auction print.
+> > A near-ATM weekly option — the only instrument a ₹20,000–₹1,00,000 account can trade at a credible spread
+> > — gives up about **12 points of theta** to hold it overnight and collects only half the move. The
+> > structures that collect the whole move (naked short put, synthetic future) need **₹1.7 lakh** of margin,
+> > outside every capital level tested. **Every strategy previously built here was flat by 15:15, and so held
+> > exposure only during the half of the day that loses money.**
+>
+> Also newly measured: **PCR_OI > 1.1 doubles the overnight drift** to +31.65 points (t = 6.21, n = 195), with
+> a smooth threshold curve from 0.9 to 1.4 rather than a cliff — a high put-call ratio precedes *continued
+> upward* drift, the opposite of the usual "PCR > 1.3 means reversal" claim. It still was not enough: the
+> signal fires on only ~20% of sessions since 2021, so validation had 28 nights and no candidate reached the
+> pre-registered t ≥ 2.0 gate.
 >
 > `LIVE_TRADING_ENABLED = false`. This repository is **not** ready for real money, and nothing here should be
 > read as a claim that it is.
@@ -111,7 +128,37 @@ All audit reports, test suites, and empirical proofs are published in [`reports/
 
 ## 🚀 The 5 Bots — Measured Results
 
-Measured once on a frozen six-month holdout, **2026-03-18 → 2026-09-18** (125 sessions, 17 weekly cycles),
+### One-year holdout: 2025-09-18 → 2026-09-18 (248 sessions, 28 weekly cycles)
+
+Measured once, per lot, under the same conservative execution model described below.
+
+| # | Bot | Family | Trades | Win% | **Net / lot** | Max DD | t | One lot needs | Verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| **1** | Apex VRP | weekly iron condor | 28 | **100%** | **+₹15,166** | ₹0 | 9.57 | ₹14,630 | **rejected — zero-breach artefact** |
+| **2** | Zen Curvature | weekly vertical | 28 | **100%** | **+₹30,241** | ₹0 | 10.56 | ₹44,366 | **rejected — zero-breach artefact** |
+| **6** | Micro Momentum | intraday long option | — | — | **−₹30,937** (1 lot, ₹50k) | 81.31% | — | ₹20,191 | **loss — retire** |
+| **7** | Displacement | intraday long option | — | — | **−₹17,391** (1 lot, ₹50k) | 41.52% | — | ₹20,872 | **loss — retire** |
+| **8** | Price Action | intraday structure | **1** | 100% | **+₹311** | ₹0 | — | ₹9,196 | **no frequency — 1 trade in 248 sessions** |
+
+**Bots 1 and 2 won 28 of 28 cycles with zero drawdown over a full year. That is the problem, not the result.**
+Bot 1's average winning cycle is ₹542 against a maximum loss of ₹14,630, so its break-even win rate is
+**96.43%**. The measured breach rate over 259 cycles from 2019 is **8.5%**, which puts the true win rate near
+91.5% and the expectancy below zero: **+0.15 points per cycle at t = 0.06**, with six of eight years losing
+money and six of 259 cycles losing ~95% of the wing width. The strategy's entire risk lives in a tail that did
+not occur in these twelve months.
+
+| Account | Allocation | Net P&L | Return | Max DD | Profitable days | % days ≥ +1% | % days ≥ +2% |
+|---|---|---|---|---|---|---|---|
+| **₹20,000** | nothing executable | **—** | — | — | — | — | — |
+| **₹50,000** | `{BOT8: 1}` | **+₹311** | **+0.62%** | 0.00% | **1 of 248 = 0.4%** | 0.0% | 0.0% |
+| **₹1,00,000** | `{BOT8: 2, BOT1: 1}` | **+₹15,789** | **+15.79%** | 0.00% | 29 of 248 = 11.7% | 0.4% | 0.0% |
+
+At ₹20,000 the cheapest bot needs ₹9,196 against a ₹4,000 equal sleeve; letting BOT8 take the whole account
+returns +₹311 from one trade all year. The ₹1,00,000 figure is 96% Bot 1, which is the rejected artefact above.
+
+### Six-month holdout: 2026-03-18 → 2026-09-18 (125 sessions, 17 weekly cycles)
+
+Measured once on a frozen six-month holdout,
 per lot, under a conservative execution model: each side pays `max(1 tick, 0.30% of premium)` of half-spread
 plus 2 ticks of slippage, on top of statutory charges.
 
@@ -357,7 +404,7 @@ LIVE_TRADING_ENABLED=False    # Keep False for paper trading!
 ### 3. Run the Test Suite
 ```bash
 python -m pytest tests/ -v
-# Output: 530 passed
+# Output: 576 passed
 ```
 
 ### 4. Run Backtests
@@ -418,11 +465,27 @@ python -m pytest tests/
 
 ### Splits (fixed before any candidate was written)
 
+**One-year study (current):**
+
+| Split | Range | Sessions |
+|---|---|---|
+| Development | data start → 2024-09-17 | 1,409 daily / 997 grid / 2,396 equity |
+| Validation | 2024-09-18 → 2025-09-17 | 247 |
+| **Holdout (frozen)** | **2025-09-18 → 2026-09-18** | **248** |
+
+The one-year holdout overlaps the *validation* window of the earlier six-month study
+(2024-09-18 → 2026-03-17). No candidate from that study was promoted, so nothing selected on the overlap is
+carried forward, but any concept reused from it is marked `PRIOR-VAL-OVERLAP` and is not presented as clean
+out-of-sample. One further contamination — calendar-2025/2026 index-level drift rows displayed before the
+holdout was run — is disclosed in §3.4 of the one-year study rather than buried.
+
+**Six-month study (earlier):**
+
 | Split | Range | Sessions |
 |---|---|---|
 | Development | 2020-09-01 → 2024-09-17 | 1,001 |
 | Validation | 2024-09-18 → 2026-03-17 | 371 |
-| **Holdout (frozen)** | **2026-03-18 → 2026-09-18** | **125** |
+| Holdout (frozen) | 2026-03-18 → 2026-09-18 | 125 |
 
 A candidate is promoted only if it is net positive on development **and** validation, has at least 20
 validation trades, and is still positive at 2× cost. Changing a strategy after seeing holdout results makes it
@@ -436,6 +499,19 @@ a new version that restarts validation.
 | NIFTY + India VIX daily OHLC | 2019-01 → 2026-09 |
 | NSE F&O bhavcopy (all strikes, settlement, expiry calendar) | 2019 → 2026, 4.0M rows |
 | Derived session → days-to-expiry map | all 1,497 sessions, from the bhavcopy expiry calendar |
+| **Option-chain panel** (PCR by OI and volume, ΔOI, OI walls, max pain, ATM straddle, VRP, trailing percentiles) | 1,903 sessions × 79 columns, 2019-01 → 2026-09 |
+| **Equity cross-section panel** | 124,511 rows, 48 NSE names, 2015-01 → 2026-09 |
+
+Three bhavcopy quirks were measured and are guarded in code, because each one changed an answer:
+
+1. On an **expiry** session the bhavcopy writes the *underlying's* settlement value into `SttlmPric` for every
+   contract. Reading it priced the ATM straddle at 2× spot.
+2. `ClsPric` is NSE's **30-minute weighted average**, not the closing print — a measured +0.80 points above
+   the 15:2x print for puts (median, n = 19,828). It is used only for a leg being *bought*, where paying more
+   is the conservative direction.
+3. `OpnPric` matches the grid's 09:15 open (median difference 0.000, corr 0.978, n = 19,358), but exiting *at*
+   the opening print is not tradable: a long ATM+1 call earns +3.49 points a night exited there and **loses
+   1.31** exited five minutes later. Every overnight exit here uses the later, tradable price.
 
 Dhan is used **read-only** for market data. No order, position, or other mutation endpoint is ever called.
 
@@ -459,6 +535,9 @@ about whether a stop or a target was touched first.
 | Gao, Han, Li & Zhou, "Market intraday momentum", *Journal of Financial Economics* 2018 (SSRN 2440866) | the sign rule (first half-hour return predicts last half-hour return), its volatility/volume conditioning, timed exit | **−₹123,679, t = −4.59, gross-negative** — does not transfer to NIFTY options |
 | Public NIFTY/BankNifty opening-range-breakout write-ups | OR window, stop at the opposite side, fixed-R target, square-off, "large-range sessions do better" | conditioning effect real on development, **failed validation** |
 | Published VWAP-pullback continuation framing | anchor side, pullback entry, stop through the anchor, 1.5–2R | −₹78,458, t = −2.45 |
+| Overnight-return / intraday-reversal literature (Cliff–Cooper–Gulen; Lou–Polk–Skouras) | the segment split itself — hold exposure close→open rather than open→close | **the effect is real in NIFTY** (+0.135%/night, t = 7.02) but not convertible at retail friction — see the status note |
+| Common Indian retail PCR framing ("PCR > 1.3 signals reversal") | the ratio and the threshold, as a hypothesis | **direction confirmed, level refuted**: a high PCR precedes *continued* upward overnight drift, +31.65 points at PCR > 1.1 (t = 6.21, n = 195) |
+| Variance-risk-premium framing ("buy volatility when IV is below realised") | VIX-vs-realised filters on a long straddle | **backwards**: −18.05 points/day unfiltered, **−32.30 at VRP < 0** (t = −7.04) |
 
 Only rules were taken from external sources. No performance claim from any source is reproduced as fact.
 
