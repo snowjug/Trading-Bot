@@ -1,0 +1,1082 @@
+{
+  "condor_1.8sd_w4": {
+    "name": "condor_1.8sd_w4",
+    "notes": "Bot 1 Iron Condor (Promoted)",
+    "legs": "condor",
+    "m_2y": {
+      "trades": 59,
+      "win_rate": 96.6,
+      "gross": 41259.1,
+      "costs": 7316.77,
+      "net": 33942.33,
+      "expectancy": 575.29,
+      "profit_factor": 13.42,
+      "max_dd": 1179.31,
+      "max_losing_streak": 1,
+      "avg_win": 643.43,
+      "avg_loss": -1366.49,
+      "avg_credit_pts": 11.78,
+      "avg_max_risk": 12180.16,
+      "max_max_risk": 14629.5,
+      "ret_on_risk": 4.723,
+      "ret_on_avg_risk_total": 278.67,
+      "tstat": 8.23
+    },
+    "m_full": {
+      "trades": 79,
+      "win_rate": 92.4,
+      "gross": 45161.1,
+      "costs": 9525.82,
+      "net": 35635.28,
+      "expectancy": 451.08,
+      "profit_factor": 8.173,
+      "max_dd": 3410.68,
+      "max_losing_streak": 2,
+      "avg_win": 556.21,
+      "avg_loss": -827.95,
+      "avg_credit_pts": 10.98,
+      "avg_max_risk": 10849.91,
+      "max_max_risk": 14629.5,
+      "ret_on_risk": 4.157,
+      "ret_on_avg_risk_total": 328.44,
+      "tstat": 6.86
+    },
+    "sim_50k": {
+      "start_capital": 50000.0,
+      "ending_capital": 91451.1,
+      "net_profit": 41451.1,
+      "cagr_pct": 35.24,
+      "max_drawdown": 1811.8,
+      "max_drawdown_pct": 1.98,
+      "min_balance": 48188.2,
+      "worst_losing_streak": 1,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 50000.0,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": -1553.67,
+          "cap_after": 48446.33
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 48446.33,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 394.0,
+          "cap_after": 48840.33
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 48840.33,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 168.88,
+          "cap_after": 49009.21
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 89176.02,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 797.3,
+          "cap_after": 89973.32
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 89973.32,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 344.84,
+          "cap_after": 90318.16
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 90318.16,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 1132.94,
+          "cap_after": 91451.1
+        }
+      ]
+    },
+    "sim_75k": {
+      "start_capital": 75000.0,
+      "ending_capital": 152507.81,
+      "net_profit": 77507.81,
+      "cagr_pct": 42.6,
+      "max_drawdown": 1811.8,
+      "max_drawdown_pct": 1.19,
+      "min_balance": 73188.2,
+      "worst_losing_streak": 1,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 75000.0,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": -1553.67,
+          "cap_after": 73446.33
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 73446.33,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 394.0,
+          "cap_after": 73840.33
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 73840.33,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 168.88,
+          "cap_after": 74009.21
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 149095.19,
+          "margin_req": 38000.0,
+          "lots": 3,
+          "net_pnl": 1195.95,
+          "cap_after": 150291.14
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 150291.14,
+          "margin_req": 38000.0,
+          "lots": 3,
+          "net_pnl": 517.26,
+          "cap_after": 150808.4
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 150808.4,
+          "margin_req": 38000.0,
+          "lots": 3,
+          "net_pnl": 1699.41,
+          "cap_after": 152507.81
+        }
+      ]
+    },
+    "sim_100k": {
+      "start_capital": 100000.0,
+      "ending_capital": 211550.12,
+      "net_profit": 111550.12,
+      "cagr_pct": 45.45,
+      "max_drawdown": 3623.6,
+      "max_drawdown_pct": 1.71,
+      "min_balance": 96376.4,
+      "worst_losing_streak": 1,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 100000.0,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": -3107.34,
+          "cap_after": 96892.66
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 96892.66,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 788.0,
+          "cap_after": 97680.66
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 97680.66,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 337.76,
+          "cap_after": 98018.42
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 205862.42,
+          "margin_req": 38000.0,
+          "lots": 5,
+          "net_pnl": 1993.25,
+          "cap_after": 207855.67
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 207855.67,
+          "margin_req": 38000.0,
+          "lots": 5,
+          "net_pnl": 862.1,
+          "cap_after": 208717.77
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 208717.77,
+          "margin_req": 38000.0,
+          "lots": 5,
+          "net_pnl": 2832.35,
+          "cap_after": 211550.12
+        }
+      ]
+    },
+    "costs": {
+      "gross": 41259.1,
+      "costs_1x": 7316.77,
+      "net_1x": 33942.33,
+      "net_2x": 26625.56,
+      "net_3x": 19308.79
+    },
+    "outliers": {
+      "base_net": 33942.33,
+      "rem_best1": 31424.59,
+      "rem_best3": 28492.69,
+      "rem_best5": 26181.48,
+      "rem_worst3": 36507.89
+    },
+    "risk": {
+      "worst_loss": -1553.67,
+      "avg_loss": -1366.49,
+      "stress_10_loss": -13664.9,
+      "stress_20_loss": -27329.8
+    }
+  },
+  "condor_2.2sd_w4": {
+    "name": "condor_2.2sd_w4",
+    "notes": "Wide Iron Condor (Promoted)",
+    "legs": "condor",
+    "m_2y": {
+      "trades": 59,
+      "win_rate": 100.0,
+      "gross": 23210.35,
+      "costs": 7238.52,
+      "net": 15971.83,
+      "expectancy": 270.71,
+      "profit_factor": null,
+      "max_dd": 0.0,
+      "max_losing_streak": 0,
+      "avg_win": 270.71,
+      "avg_loss": null,
+      "avg_credit_pts": 6.17,
+      "avg_max_risk": 12538.81,
+      "max_max_risk": 14815.5,
+      "ret_on_risk": 2.159,
+      "ret_on_avg_risk_total": 127.38,
+      "tstat": 8.1
+    },
+    "m_full": {
+      "trades": 79,
+      "win_rate": 87.3,
+      "gross": 26148.1,
+      "costs": 9435.67,
+      "net": 16712.43,
+      "expectancy": 211.55,
+      "profit_factor": 42.552,
+      "max_dd": 317.92,
+      "max_losing_streak": 5,
+      "avg_win": 248.04,
+      "avg_loss": -40.22,
+      "avg_credit_pts": 5.56,
+      "avg_max_risk": 11162.68,
+      "max_max_risk": 14815.5,
+      "ret_on_risk": 1.895,
+      "ret_on_avg_risk_total": 149.72,
+      "tstat": 7.5
+    },
+    "sim_50k": {
+      "start_capital": 50000.0,
+      "ending_capital": 65971.83,
+      "net_profit": 15971.83,
+      "cagr_pct": 14.87,
+      "max_drawdown": 0.0,
+      "max_drawdown_pct": 0.0,
+      "min_balance": 50000.0,
+      "worst_losing_streak": 0,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 50000.0,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 18.4,
+          "cap_after": 50018.4
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 50018.4,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 213.32,
+          "cap_after": 50231.72
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 50231.72,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 30.32,
+          "cap_after": 50262.04
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 65627.62,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 130.94,
+          "cap_after": 65758.56
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 65758.56,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 24.67,
+          "cap_after": 65783.23
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 65783.23,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 188.6,
+          "cap_after": 65971.83
+        }
+      ]
+    },
+    "sim_75k": {
+      "start_capital": 75000.0,
+      "ending_capital": 105911.29,
+      "net_profit": 30911.29,
+      "cagr_pct": 18.83,
+      "max_drawdown": 0.0,
+      "max_drawdown_pct": 0.0,
+      "min_balance": 75000.0,
+      "worst_losing_streak": 0,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 75000.0,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 18.4,
+          "cap_after": 75018.4
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 75018.4,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 213.32,
+          "cap_after": 75231.72
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 75231.72,
+          "margin_req": 38000.0,
+          "lots": 1,
+          "net_pnl": 30.32,
+          "cap_after": 75262.04
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 105222.87,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 261.88,
+          "cap_after": 105484.75
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 105484.75,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 49.34,
+          "cap_after": 105534.09
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 105534.09,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 377.2,
+          "cap_after": 105911.29
+        }
+      ]
+    },
+    "sim_100k": {
+      "start_capital": 100000.0,
+      "ending_capital": 140838.24,
+      "net_profit": 40838.24,
+      "cagr_pct": 18.68,
+      "max_drawdown": 0.0,
+      "max_drawdown_pct": 0.0,
+      "min_balance": 100000.0,
+      "worst_losing_streak": 0,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 100000.0,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 36.8,
+          "cap_after": 100036.8
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 100036.8,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 426.64,
+          "cap_after": 100463.44
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 100463.44,
+          "margin_req": 38000.0,
+          "lots": 2,
+          "net_pnl": 60.64,
+          "cap_after": 100524.08
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 139805.61,
+          "margin_req": 38000.0,
+          "lots": 3,
+          "net_pnl": 392.82,
+          "cap_after": 140198.43
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 140198.43,
+          "margin_req": 38000.0,
+          "lots": 3,
+          "net_pnl": 74.01,
+          "cap_after": 140272.44
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 140272.44,
+          "margin_req": 38000.0,
+          "lots": 3,
+          "net_pnl": 565.8,
+          "cap_after": 140838.24
+        }
+      ]
+    },
+    "costs": {
+      "gross": 23210.35,
+      "costs_1x": 7238.52,
+      "net_1x": 15971.83,
+      "net_2x": 8733.31,
+      "net_3x": 1494.79
+    },
+    "outliers": {
+      "base_net": 15971.83,
+      "rem_best1": 14458.96,
+      "rem_best3": 12644.81,
+      "rem_best5": 11308.61,
+      "rem_worst3": 15912.16
+    },
+    "risk": {
+      "worst_loss": 18.4,
+      "avg_loss": 0.0,
+      "stress_10_loss": 0.0,
+      "stress_20_loss": 0.0
+    }
+  },
+  "vert_put_1.8sd_w4": {
+    "name": "vert_put_1.8sd_w4",
+    "notes": "Bull Put Spread (Promoted)",
+    "legs": "vertical_put",
+    "m_2y": {
+      "trades": 59,
+      "win_rate": 100.0,
+      "gross": 24131.95,
+      "costs": 3690.01,
+      "net": 20441.94,
+      "expectancy": 346.47,
+      "profit_factor": null,
+      "max_dd": 0.0,
+      "max_losing_streak": 0,
+      "avg_win": 346.47,
+      "avg_loss": null,
+      "avg_credit_pts": 6.44,
+      "avg_max_risk": 12523.19,
+      "max_max_risk": 14871.0,
+      "ret_on_risk": 2.767,
+      "ret_on_avg_risk_total": 163.23,
+      "tstat": 10.53
+    },
+    "m_full": {
+      "trades": 79,
+      "win_rate": 98.7,
+      "gross": 25627.7,
+      "costs": 4798.68,
+      "net": 20829.02,
+      "expectancy": 263.66,
+      "profit_factor": 10.21,
+      "max_dd": 2261.6,
+      "max_losing_streak": 1,
+      "avg_win": 296.03,
+      "avg_loss": -2261.6,
+      "avg_credit_pts": 6.15,
+      "avg_max_risk": 11140.0,
+      "max_max_risk": 14871.0,
+      "ret_on_risk": 2.367,
+      "ret_on_avg_risk_total": 186.98,
+      "tstat": 6.26
+    },
+    "sim_50k": {
+      "start_capital": 50000.0,
+      "ending_capital": 76774.32,
+      "net_profit": 26774.32,
+      "cagr_pct": 23.91,
+      "max_drawdown": 0.0,
+      "max_drawdown_pct": 0.0,
+      "min_balance": 50000.0,
+      "worst_losing_streak": 0,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 50000.0,
+          "margin_req": 32000.0,
+          "lots": 1,
+          "net_pnl": 95.53,
+          "cap_after": 50095.53
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 50095.53,
+          "margin_req": 32000.0,
+          "lots": 1,
+          "net_pnl": 182.6,
+          "cap_after": 50278.13
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 50278.13,
+          "margin_req": 32000.0,
+          "lots": 1,
+          "net_pnl": 121.25,
+          "cap_after": 50399.38
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 75414.48,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 333.76,
+          "cap_after": 75748.24
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 75748.24,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 202.4,
+          "cap_after": 75950.64
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 75950.64,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 823.68,
+          "cap_after": 76774.32
+        }
+      ]
+    },
+    "sim_75k": {
+      "start_capital": 75000.0,
+      "ending_capital": 125573.98,
+      "net_profit": 50573.98,
+      "cagr_pct": 29.4,
+      "max_drawdown": 0.0,
+      "max_drawdown_pct": 0.0,
+      "min_balance": 75000.0,
+      "worst_losing_streak": 0,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 75000.0,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 191.06,
+          "cap_after": 75191.06
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 75191.06,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 365.2,
+          "cap_after": 75556.26
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 75556.26,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 242.5,
+          "cap_after": 75798.76
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 123534.22,
+          "margin_req": 32000.0,
+          "lots": 3,
+          "net_pnl": 500.64,
+          "cap_after": 124034.86
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 124034.86,
+          "margin_req": 32000.0,
+          "lots": 3,
+          "net_pnl": 303.6,
+          "cap_after": 124338.46
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 124338.46,
+          "margin_req": 32000.0,
+          "lots": 3,
+          "net_pnl": 1235.52,
+          "cap_after": 125573.98
+        }
+      ]
+    },
+    "sim_100k": {
+      "start_capital": 100000.0,
+      "ending_capital": 175104.6,
+      "net_profit": 75104.6,
+      "cagr_pct": 32.33,
+      "max_drawdown": 0.0,
+      "max_drawdown_pct": 0.0,
+      "min_balance": 100000.0,
+      "worst_losing_streak": 0,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 100000.0,
+          "margin_req": 32000.0,
+          "lots": 3,
+          "net_pnl": 286.59,
+          "cap_after": 100286.59
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 100286.59,
+          "margin_req": 32000.0,
+          "lots": 3,
+          "net_pnl": 547.8,
+          "cap_after": 100834.39
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 100834.39,
+          "margin_req": 32000.0,
+          "lots": 3,
+          "net_pnl": 363.75,
+          "cap_after": 101198.14
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 171705.0,
+          "margin_req": 32000.0,
+          "lots": 5,
+          "net_pnl": 834.4,
+          "cap_after": 172539.4
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 172539.4,
+          "margin_req": 32000.0,
+          "lots": 5,
+          "net_pnl": 506.0,
+          "cap_after": 173045.4
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 173045.4,
+          "margin_req": 32000.0,
+          "lots": 5,
+          "net_pnl": 2059.2,
+          "cap_after": 175104.6
+        }
+      ]
+    },
+    "costs": {
+      "gross": 24131.95,
+      "costs_1x": 3690.01,
+      "net_1x": 20441.94,
+      "net_2x": 16751.93,
+      "net_3x": 13061.92
+    },
+    "outliers": {
+      "base_net": 20441.94,
+      "rem_best1": 19315.67,
+      "rem_best3": 17260.54,
+      "rem_best5": 15669.87,
+      "rem_worst3": 20245.14
+    },
+    "risk": {
+      "worst_loss": 47.63,
+      "avg_loss": 0.0,
+      "stress_10_loss": 0.0,
+      "stress_20_loss": 0.0
+    }
+  },
+  "vert_auto_1.8sd_w8": {
+    "name": "vert_auto_1.8sd_w8",
+    "notes": "Auto Credit Spread Wide (Promoted)",
+    "legs": "vertical_auto",
+    "m_2y": {
+      "trades": 59,
+      "win_rate": 96.6,
+      "gross": 28170.4,
+      "costs": 3645.0,
+      "net": 24525.4,
+      "expectancy": 415.68,
+      "profit_factor": 9.702,
+      "max_dd": 1187.81,
+      "max_losing_streak": 1,
+      "avg_win": 479.71,
+      "avg_loss": -1409.12,
+      "avg_credit_pts": 8.35,
+      "avg_max_risk": 25334.21,
+      "max_max_risk": 29796.0,
+      "ret_on_risk": 1.641,
+      "ret_on_avg_risk_total": 96.81,
+      "tstat": 6.21
+    },
+    "m_full": {
+      "trades": 79,
+      "win_rate": 94.9,
+      "gross": 32559.65,
+      "costs": 4748.37,
+      "net": 27811.28,
+      "expectancy": 352.04,
+      "profit_factor": 10.453,
+      "max_dd": 2167.2,
+      "max_losing_streak": 1,
+      "avg_win": 410.05,
+      "avg_loss": -735.52,
+      "avg_credit_pts": 7.71,
+      "avg_max_risk": 22535.81,
+      "max_max_risk": 29796.0,
+      "ret_on_risk": 1.562,
+      "ret_on_avg_risk_total": 123.41,
+      "tstat": 6.76
+    },
+    "sim_50k": {
+      "start_capital": 50000.0,
+      "ending_capital": 84729.3,
+      "net_profit": 34729.3,
+      "cagr_pct": 30.18,
+      "max_drawdown": 2167.2,
+      "max_drawdown_pct": 2.56,
+      "min_balance": 47832.8,
+      "worst_losing_streak": 1,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 50000.0,
+          "margin_req": 32000.0,
+          "lots": 1,
+          "net_pnl": -1630.44,
+          "cap_after": 48369.56
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 48369.56,
+          "margin_req": 32000.0,
+          "lots": 1,
+          "net_pnl": 353.21,
+          "cap_after": 48722.77
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 48722.77,
+          "margin_req": 32000.0,
+          "lots": 1,
+          "net_pnl": 85.15,
+          "cap_after": 48807.92
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 82680.46,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 691.18,
+          "cap_after": 83371.64
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 83371.64,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 247.8,
+          "cap_after": 83619.44
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 83619.44,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 1109.86,
+          "cap_after": 84729.3
+        }
+      ]
+    },
+    "sim_75k": {
+      "start_capital": 75000.0,
+      "ending_capital": 141279.93,
+      "net_profit": 66279.93,
+      "cagr_pct": 37.25,
+      "max_drawdown": 4334.4,
+      "max_drawdown_pct": 3.07,
+      "min_balance": 70665.6,
+      "worst_losing_streak": 1,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 75000.0,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": -3260.88,
+          "cap_after": 71739.12
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 71739.12,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 706.42,
+          "cap_after": 72445.54
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 72445.54,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 170.3,
+          "cap_after": 72615.84
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 137182.25,
+          "margin_req": 32000.0,
+          "lots": 4,
+          "net_pnl": 1382.36,
+          "cap_after": 138564.61
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 138564.61,
+          "margin_req": 32000.0,
+          "lots": 4,
+          "net_pnl": 495.6,
+          "cap_after": 139060.21
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 139060.21,
+          "margin_req": 32000.0,
+          "lots": 4,
+          "net_pnl": 2219.72,
+          "cap_after": 141279.93
+        }
+      ]
+    },
+    "sim_100k": {
+      "start_capital": 100000.0,
+      "ending_capital": 188205.78,
+      "net_profit": 88205.78,
+      "cagr_pct": 37.19,
+      "max_drawdown": 7061.28,
+      "max_drawdown_pct": 3.75,
+      "min_balance": 92938.72,
+      "worst_losing_streak": 1,
+      "executed_trades": 59,
+      "skipped_trades": 0,
+      "total_signals": 59,
+      "ledger_sample": [
+        {
+          "sess": "2024-09-19",
+          "expiry": "2024-09-26",
+          "cap_before": 100000.0,
+          "margin_req": 32000.0,
+          "lots": 3,
+          "net_pnl": -4891.32,
+          "cap_after": 95108.68
+        },
+        {
+          "sess": "2024-10-03",
+          "expiry": "2024-10-10",
+          "cap_before": 95108.68,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 706.42,
+          "cap_after": 95815.1
+        },
+        {
+          "sess": "2024-10-10",
+          "expiry": "2024-10-17",
+          "cap_before": 95815.1,
+          "margin_req": 32000.0,
+          "lots": 2,
+          "net_pnl": 170.3,
+          "cap_after": 95985.4
+        },
+        {
+          "sess": "2026-08-18",
+          "expiry": "2026-08-25",
+          "cap_before": 183083.68,
+          "margin_req": 32000.0,
+          "lots": 5,
+          "net_pnl": 1727.95,
+          "cap_after": 184811.63
+        },
+        {
+          "sess": "2026-08-25",
+          "expiry": "2026-09-01",
+          "cap_before": 184811.63,
+          "margin_req": 32000.0,
+          "lots": 5,
+          "net_pnl": 619.5,
+          "cap_after": 185431.13
+        },
+        {
+          "sess": "2026-09-01",
+          "expiry": "2026-09-08",
+          "cap_before": 185431.13,
+          "margin_req": 32000.0,
+          "lots": 5,
+          "net_pnl": 2774.65,
+          "cap_after": 188205.78
+        }
+      ]
+    },
+    "costs": {
+      "gross": 28170.4,
+      "costs_1x": 3645.0,
+      "net_1x": 24525.4,
+      "net_2x": 20880.4,
+      "net_3x": 17235.4
+    },
+    "outliers": {
+      "base_net": 24525.4,
+      "rem_best1": 22246.76,
+      "rem_best3": 19414.68,
+      "rem_best5": 17520.33,
+      "rem_worst3": 27258.5
+    },
+    "risk": {
+      "worst_loss": -1630.44,
+      "avg_loss": -1409.12,
+      "stress_10_loss": -14091.25,
+      "stress_20_loss": -28182.5
+    }
+  }
+}
