@@ -18,7 +18,7 @@ stamp duty, slippage, ₹20 brokerage caps).
 > Three successive out-of-sample studies found **no strategy that clears a development → validation → holdout
 > gate**. The most recent — [`reports/FINAL_ONE_YEAR_MONEY_STUDY.md`](reports/FINAL_ONE_YEAR_MONEY_STUDY.md)
 > — measured a frozen **one-year** holdout (2025-09-18 → 2026-09-18, 248 sessions) and promoted none of its
-> candidates. Across all three studies: roughly **220 implementations of 45 distinct concepts**.
+> candidates. Across all three studies: roughly **226 implementations of 46 distinct concepts**.
 >
 > **What the one-year study did establish**, and it is the first quantitative reason this repository has for
 > its own failure rather than another instance of it:
@@ -530,6 +530,14 @@ about whether a stop or a target was touched first.
 
 ### External references used
 
+Every externally sourced idea is treated as a hypothesis, and no performance claim
+from any source is reproduced as fact. Retail blog and tool listings surfaced by
+search (niftytrader, icfmindia, stockmojo, optionbacktesting and similar) were read
+and **not** pursued: they describe the same near-ATM directional and OI
+support/resistance setups already closed by the 31 concepts in the previous study,
+none states rules deterministic enough to reproduce, and none addresses the binding
+constraint, which is instrument economics rather than signal choice.
+
 | Source | What was taken | Result |
 |---|---|---|
 | Gao, Han, Li & Zhou, "Market intraday momentum", *Journal of Financial Economics* 2018 (SSRN 2440866) | the sign rule (first half-hour return predicts last half-hour return), its volatility/volume conditioning, timed exit | **−₹123,679, t = −4.59, gross-negative** — does not transfer to NIFTY options |
@@ -538,6 +546,8 @@ about whether a stop or a target was touched first.
 | Overnight-return / intraday-reversal literature (Cliff–Cooper–Gulen; Lou–Polk–Skouras) | the segment split itself — hold exposure close→open rather than open→close | **the effect is real in NIFTY** (+0.135%/night, t = 7.02) but not convertible at retail friction — see the status note |
 | Common Indian retail PCR framing ("PCR > 1.3 signals reversal") | the ratio and the threshold, as a hypothesis | **direction confirmed, level refuted**: a high PCR precedes *continued* upward overnight drift, +31.65 points at PCR > 1.1 (t = 6.21, n = 195) |
 | Variance-risk-premium framing ("buy volatility when IV is below realised") | VIX-vs-realised filters on a long straddle | **backwards**: −18.05 points/day unfiltered, **−32.30 at VRP < 0** (t = −7.04) |
+| Durgia, "Weekly Behavior of the Nifty Index", SSRN 5353404 (2015–2025) | the expiry-cycle anchor — session after one expiry to the next expiry — for systematic weekly option selling | **rejected**: ±2% strangle +8.76 points/cycle at **t = 0.87**, and **one cycle of 241 carries 49% of all profit** (worst cycle −1,039 points). The ATM straddle costs **1.66% of spot** at entry while only **41.7%** of cycles finish inside ±1% — the market already prices the weekly distribution. Measured with **exact expiry settlement**, so no exit price is involved at all. |
+| Expiry-day-effect literature (Indian evidence; NSE / arXiv) | expiry-session return and volatility conditioning | weak: expiry-day overnight drift **t = 2.09**; days-to-expiry gating improved no candidate |
 
 Only rules were taken from external sources. No performance claim from any source is reproduced as fact.
 

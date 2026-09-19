@@ -69,7 +69,13 @@
     "bot1_breakeven_winrate_pct": 96.43,
     "bot1_measured_breach_rate_pct": 8.5,
     "bot1_full_history_pts_per_cycle": 0.15,
-    "bot1_full_history_t": 0.06
+    "bot1_full_history_t": 0.06,
+    "weekly_cycle_move_mean_pct": 0.318,
+    "weekly_cycle_move_std_pct": 2.472,
+    "weekly_cycle_move_min_pct": -16.99,
+    "weekly_cycle_inside_1pct": 41.7,
+    "weekly_cycle_inside_2pct": 76.9,
+    "weekly_atm_straddle_pct_of_spot": 1.66
   },
   "rejected_families": [
     {
@@ -121,6 +127,11 @@
       "family": "short straddle incl. rich-vol filters",
       "impl": 9,
       "reason": "+13.07 collapses to -0.38 once all 34 unpriced nights are priced"
+    },
+    {
+      "family": "weekly short strangle/straddle, full expiry cycle, exact settlement (Durgia SSRN 5353404)",
+      "impl": 6,
+      "reason": "+-2% gives +8.76 pts/cycle t=0.87; one cycle of 241 is 49% of all profit; worst cycle -1039 pts; ATM straddle costs 1.66% of spot while only 41.7% of cycles finish inside +-1%"
     }
   ],
   "retired_bots": {
@@ -148,5 +159,40 @@
     "overnight_dev_conditional.csv",
     "overnight_dev_width.csv",
     "overnight_validation.csv"
-  ]
+  ],
+  "external_sources": [
+    {
+      "source": "Cliff-Cooper-Gulen; Lou-Polk-Skouras overnight-return literature",
+      "taken": "hold close->open rather than open->close",
+      "result": "effect confirmed in NIFTY (+0.1350%/night, t=7.02) but not convertible at retail friction"
+    },
+    {
+      "source": "Durgia, SSRN 5353404, weekly NIFTY option selling",
+      "taken": "expiry-cycle anchor for systematic weekly selling",
+      "result": "rejected: t=0.87, one of 241 cycles is 49% of profit",
+      "note": "paper returns HTTP 403 to automated fetch; only rules implied by title/abstract reproduced"
+    },
+    {
+      "source": "retail PCR framing 'PCR>1.3 signals reversal'",
+      "taken": "the ratio and thresholds as hypotheses",
+      "result": "direction refuted, information confirmed: high PCR precedes continued UPWARD overnight drift, +31.65 pts at PCR>1.1 (t=6.21)"
+    },
+    {
+      "source": "VRP framing 'buy vol when IV<realised'",
+      "taken": "VIX-vs-realised filters on a long straddle",
+      "result": "backwards: -18.05 pts/day unfiltered, -32.30 at VRP<0"
+    },
+    {
+      "source": "expiry-day-effect literature (Indian evidence, NSE/arXiv)",
+      "taken": "expiry-session conditioning",
+      "result": "weak: expiry-day overnight drift t=2.09; dte gating improved nothing"
+    },
+    {
+      "source": "retail blog/tool listings (niftytrader, icfmindia, stockmojo, optionbacktesting)",
+      "taken": "none",
+      "result": "not pursued - same near-ATM directional and OI support/resistance setups already closed by the previous study's 31 concepts; none addresses the instrument-economics constraint"
+    }
+  ],
+  "implementations_this_run": 96,
+  "implementations_all_studies": 226
 }

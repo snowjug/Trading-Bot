@@ -380,3 +380,40 @@ tracks direction rather than costs.
 
 `LIVE_TRADING_ENABLED` remains **false**. Nothing is promoted to paper trading.
 BOT1, BOT2, BOT6, BOT7 and BOT8 are all recommended for retirement.
+
+### Addendum — external discovery pass, weekly cycle rejected
+
+An external search pass surfaced one deterministic hypothesis this repository had
+not tested: **Durgia, "Weekly Behavior of the Nifty Index", SSRN 5353404** — an
+expiry-cycle anchor (session after one expiry → next expiry) for systematic weekly
+option selling. Tested in `scripts/research/weekly_cycle_study.py`.
+
+This is the **cleanest measurement in the repository**: settling at expiry needs no
+exit price at all, because the bhavcopy writes the underlying's final settlement
+value into `SttlmPric` on every expiry session. Ladder truncation, opening prints,
+stale marks and silent skips are all structurally absent. One cycle of 242 lacked an
+entry price and is the only exclusion. Entry is priced from the bhavcopy 30-minute
+VWAP with the measured +0.80-point bias **subtracted** from every short leg.
+
+| Variant | n | exp pts | t | win% | breach% | worst |
+|---|---|---|---|---|---|---|
+| strangle ±1.0% | 241 | +10.42 | 0.84 | 70.1 | 55.6 | −1,110 |
+| strangle ±1.5% | 241 | +11.02 | 0.99 | 76.3 | 38.2 | −1,061 |
+| **strangle ±2.0%** | 241 | **+8.76** | **0.87** | 82.6 | 23.7 | **−1,039** |
+| strangle ±2.5% | 241 | +6.61 | 0.73 | 88.4 | 14.5 | −1,012 |
+| strangle ±3.0% | 241 | +3.99 | 0.48 | 90.9 | 10.4 | −979 |
+| straddle ATM | 241 | +7.45 | 0.53 | 61.0 | 100.0 | −1,124 |
+
+**Rejected.** Win rates of 70–91% at t < 1 are the "high win rate, no expectancy"
+pattern the brief says to reject. **One cycle of 241 accounts for 49% of all profit**
+(net 2,111 points; 3,150 with the single worst cycle removed). By year the ±2%
+variant runs −13.32 / +5.51 / +19.68 / +1.56 / +36.63 — no stability.
+
+And the calendar claim does not support selling in the first place: the ATM straddle
+costs **1.66% of spot** at entry while only **41.7%** of cycles finish inside ±1% and
+76.9% inside ±2%. The weekly move is mean +0.318%, std 2.472%, min −16.99%. The
+market prices the weekly distribution about right; the residual is a fat left tail.
+
+Full source ledger in §5b of `reports/FINAL_ONE_YEAR_MONEY_STUDY.md`. Running totals
+after this pass: **~96 implementations this run, ~226 across all three studies, 46
+distinct concepts.**

@@ -263,6 +263,16 @@ reversed (holdout, t = +2.20). The engine measures direction, not costs.
 
 ### Rejected in this run
 
+Row 14 deserves a note on method, because it is the cleanest measurement in the
+whole study: settling at expiry needs **no exit price at all**. The bhavcopy writes
+the underlying's final settlement value into `SttlmPric` on every expiry session, so
+each cycle's payoff is exact arithmetic on an authentic print, and every failure mode
+that faked a number elsewhere here — ladder truncation, opening prints, stale marks,
+silent skips — is structurally absent. One cycle of 242 lacked an entry price and is
+the only exclusion. Entry is priced from the bhavcopy 30-minute VWAP with the measured
++0.80-point bias **subtracted** from every short leg on top of spread and slippage. If
+a weekly short-premium edge existed, this is where it would have shown.
+
 | # | Concept | Implementations | Verdict and exact reason |
 |---|---|---|---|
 | 1 | Overnight long call, ATM−1/ATM/+1/+2 | 4 | +0.65 to +1.98 pts, t ≤ 1.11. Delta 0.5 × 15 points of drift loses to ~12 points of theta. |
@@ -278,6 +288,7 @@ reversed (holdout, t = +2.20). The engine measures direction, not costs.
 | 11 | Long straddle filtered on cheap volatility (VRP<0, VRP<−2, IV percentile, rv>VIX) | 6 | **Worse, not better: −32.30 pts, t = −7.04 at VRP<0.** The hypothesis is backwards — VIX below realised vol usually means realised vol just spiked and is about to fall. |
 | 12 | Short ATM straddle, 1-day hold | 5 | **+13.07 pts (t = 6.59) with 34 nights unpriced → −0.38 pts (t = −0.13) once every night is priced.** The 34 dropped nights averaged **−231.34 points** with a mean absolute index move of **468 points against 101** for the nights that priced. This is the repository's C6 artefact reproduced by an independent route. |
 | 13 | Short straddle filtered on rich volatility / high VIX / dte≥4 | 4 | −1.43 to −10.62 pts once completely priced. |
+| 14 | **Weekly short strangle / straddle over a full expiry cycle**, settled exactly at expiry (Durgia, SSRN 5353404) | 6 | **Best variant ±2%: +8.76 pts/cycle, t = 0.87, 82.6% win — and one cycle out of 241 accounts for 49% of all profit.** Worst cycle **−1,039 points** (≈ −₹67,535 at lot 65). By year: −13.32 / +5.51 / +19.68 / +1.56 / +36.63. The calendar claim itself does not support selling: the ATM straddle costs **1.66% of spot** at entry while only **41.7%** of cycles finish inside ±1% and 76.9% inside ±2% — the market already prices the weekly distribution. |
 
 ### Retired earlier, reconfirmed here
 
@@ -288,6 +299,28 @@ reversed (holdout, t = +2.20). The engine measures direction, not costs.
 | BOT6 micro momentum | −61.87% over the holdout at ₹1L; 81.31% max drawdown. Gross edge ~₹59/trade against ~₹75/trade of cost. | **retire** |
 | BOT7 displacement | −34.78% over the holdout; 41.52% max drawdown. Seven pre-registered candidates, no survivor. | **retire** |
 | BOT8 price action | 1 trade in 248 sessions (+₹311). Not an edge; not enough frequency to be one. | **retire** |
+
+---
+
+## 5b. EXTERNAL SOURCE LEDGER (this run)
+
+Every externally sourced idea is treated as a hypothesis. No performance claim from
+any source is reproduced as fact.
+
+| Source | Original market / horizon | Rules taken | Claim | Result here |
+|---|---|---|---|---|
+| Overnight-return / intraday-reversal literature (Cliff–Cooper–Gulen 2008; Lou–Polk–Skouras 2019) | US equities, daily | the segment split: hold close→open, not open→close | overnight returns dominate total returns | **effect confirmed in NIFTY** at +0.1350%/night, t = 7.02; **not convertible** at retail friction (§3.3) |
+| Durgia, "Weekly Behavior of the Nifty Index", SSRN 5353404 | NIFTY weekly, 2015-2025 | expiry-cycle anchor (session after one expiry → next expiry) for systematic option selling | a decade-long statistical basis for weekly option selling | **rejected**: ±2% strangle +8.76 pts/cycle at **t = 0.87**, one of 241 cycles is 49% of profit, worst cycle −1,039 pts. Paper returns HTTP 403 to automated fetch, so only rules implied by its title and abstract were reproduced. |
+| Common Indian retail PCR framing ("PCR > 1.3 → reversal") | NIFTY, intraday/daily | the ratio and the thresholds, as hypotheses | high PCR precedes a fall | **direction refuted, information confirmed**: high PCR precedes *continued upward* overnight drift, +31.65 pts at PCR > 1.1 (t = 6.21) |
+| Variance-risk-premium framing ("buy vol when IV < realised") | general | VIX-vs-realised filters on a long straddle | cheap vol is a buy | **backwards**: −18.05 pts/day unfiltered, **−32.30 at VRP < 0** (t = −7.04) |
+| Expiry-day-effect literature (Indian evidence; NSE/arXiv) | NIFTY/BankNifty | expiry-session return, volume and volatility conditioning | returns and volatility are elevated on expiry | weak: expiry-day overnight drift +0.0927%, **t = 2.09**; dte-based gating did not improve any candidate |
+
+Searched and **not** pursued, with the reason: retail blog and tool listings
+(niftytrader, icfmindia, stockmojo, optionbacktesting and similar) describe the same
+near-ATM directional and OI-support/resistance setups already covered by the 31
+concepts closed in the previous study, and offer no rule this run had not tested. No
+claim from them is deterministic enough to reproduce, and none addresses the binding
+constraint identified in §3.3, which is instrument economics rather than signal choice.
 
 ---
 
@@ -331,6 +364,7 @@ python scripts/research/overnight_dev.py                # 31 structures, DEV
 python scripts/research/overnight_falsify.py            # concentration/regime/venue/cost
 python scripts/research/equity_screen.py                # 80 cross-sectional tests
 python scripts/research/overnight_validate.py           # pre-registered gate, VAL
+python scripts/research/weekly_cycle_study.py            # weekly short strangle, exact expiry settlement
 python scripts/research/money_result_1y.py              # the numbers in section 1
 python -m pytest tests/test_research_overnight.py -q    # 25 regression tests
 ```
@@ -339,13 +373,13 @@ Artefacts: `reports/chain_screen_dev.csv`,
 `reports/chain_hypotheses_dev.csv`, `reports/overnight_dev.csv`,
 `reports/overnight_dev_width.csv`, `reports/overnight_dev_conditional.csv`,
 `reports/equity_screen_dev.csv`, `reports/overnight_validation.csv`,
-`reports/money_result_1y.json`.
+`reports/weekly_cycle_dev.csv`, `reports/money_result_1y.json`.
 
 ---
 
 ## 8. BOTTOM LINE
 
-Across two prior studies and this one — roughly **220 implementations of 45
+Across two prior studies and this one — roughly **226 implementations of 46
 distinct concepts** — no strategy in this repository has a validated edge, and
 this run establishes *why* rather than merely repeating *that*:
 
@@ -357,5 +391,11 @@ this run establishes *why* rather than merely repeating *that*:
 > repository has never found money, and closing it needs either futures (no data
 > here, and still ₹1.4 lakh of margin) or an edge several times larger than
 > anything measured.
+
+The multi-day version fails for the mirror-image reason. Holding premium over a full
+weekly cycle amortises the friction, but the ATM straddle costs **1.66% of spot** at
+entry while only 41.7% of cycles finish inside ±1% — the market prices the weekly
+distribution about right, and the residual is a fat left tail in which one cycle of
+241 carries half the profit.
 
 `LIVE_TRADING_ENABLED` remains **false**. Nothing is promoted to paper trading.

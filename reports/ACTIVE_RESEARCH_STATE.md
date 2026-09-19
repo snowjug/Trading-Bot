@@ -92,10 +92,19 @@ the *current* NIFTY 50 and is survivorship-contaminated.
 | Equity cross-section, 20 features × 4 horizons | 80 tests | rejected — real reversal effect, but alpha < STT (0.1% per side) |
 | Long straddle 1–4 day, and filtered on cheap vol | 10 | rejected — −18.05 pts/day t = −9.09; VRP filter makes it *worse* |
 | Short straddle 1-day, and filtered on rich vol | 9 | rejected — +13.07 collapses to −0.38 once all 34 unpriced nights are priced |
+| **Weekly short strangle/straddle, full expiry cycle, exact settlement** (Durgia SSRN 5353404) | 6 | rejected — ±2% gives +8.76 pts/cycle at t = 0.87; **one cycle of 241 is 49% of all profit**; worst cycle −1,039 pts; ATM straddle costs 1.66% of spot while only 41.7% of cycles finish inside ±1% |
 
 **Closed spaces:** intraday NIFTY option buying; intraday NIFTY premium selling;
 overnight NIFTY options (unconditional and chain-conditioned); weekly iron condor;
-0-DTE condor; long and short 1-day volatility; daily equity cross-section.
+weekly short strangle/straddle settled at expiry; 0-DTE condor; long and short 1-day
+volatility; daily equity cross-section.
+
+**External sources searched this run** (full ledger in §5b of the final report):
+overnight-return literature (Cliff–Cooper–Gulen; Lou–Polk–Skouras) — effect real,
+not convertible; Durgia SSRN 5353404 weekly selling — rejected; retail PCR framing
+— direction refuted, information confirmed; VRP "buy cheap vol" framing — backwards;
+expiry-day-effect literature — weak (t = 2.09). Retail blog/tool listings describe
+setups already closed by the previous study's 31 concepts and were not pursued.
 
 ---
 
@@ -116,6 +125,12 @@ overnight NIFTY options (unconditional and chain-conditioned); weekly iron condo
   (₹20/order brokerage alone is 1.23 points).
 - Delivery-equity round trip ≈ **0.23%**, of which 0.20% is STT. Best measured
   cross-sectional alpha 0.085%/day.
+- Weekly expiry-cycle move: mean **+0.318%**, std **2.472%**, min −16.99%; only
+  **41.7%** of cycles finish inside ±1% and 76.9% inside ±2%, against a mean ATM
+  straddle of **1.66% of spot** at entry.
+- On an expiry session `SttlmPric` carries the **underlying's final settlement
+  value** — which makes expiry-settled payoffs exact and is the cleanest measurement
+  surface in this repository.
 
 ---
 
@@ -124,7 +139,8 @@ overnight NIFTY options (unconditional and chain-conditioned); weekly iron condo
 `reports/overnight_dev.csv`, `reports/overnight_dev_width.csv`,
 `reports/overnight_dev_conditional.csv`, `reports/overnight_validation.csv`,
 `reports/chain_screen_dev.csv`, `reports/chain_hypotheses_dev.csv`,
-`reports/equity_screen_dev.csv`, `reports/money_result_1y.json`.
+`reports/equity_screen_dev.csv`, `reports/weekly_cycle_dev.csv`,
+`reports/money_result_1y.json`.
 
 ---
 
@@ -140,6 +156,7 @@ overnight NIFTY options (unconditional and chain-conditioned); weekly iron condo
 | `scripts/research/overnight_falsify.py` | concentration / regime / exit-venue / cost / entry-venue / calendar battery |
 | `scripts/research/overnight_validate.py` | pre-registered candidates and gate |
 | `scripts/research/equity_screen.py` | 80 cross-sectional tests |
+| `scripts/research/weekly_cycle_study.py` | weekly short strangle over a full expiry cycle, settled exactly — no exit price needed |
 | `scripts/research/money_result_1y.py` | one-year holdout money result + rejected-candidate disclosure |
 | `tests/test_research_overnight.py` | 25 regression tests: silent skips, exit venue, adverse marking, margin, lookahead, split integrity, mirror-sign check |
 

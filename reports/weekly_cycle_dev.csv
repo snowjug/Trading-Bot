@@ -1,0 +1,6 @@
+variant,split,n,exp_pts,t,skips
+strangle_1.0,DEV,241,10.418,0.84,{'NO_ENTRY_PRICE': 1}
+strangle_1.5,DEV,241,11.024,0.99,{'NO_ENTRY_PRICE': 1}
+strangle_2.0,DEV,241,8.76,0.87,{'NO_ENTRY_PRICE': 1}
+strangle_2.5,DEV,241,6.605,0.73,{'NO_ENTRY_PRICE': 1}
+strangle_3.0,DEV,241,3.987,0.48,{'NO_ENTRY_PRICE': 1}
