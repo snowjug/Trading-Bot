@@ -1,0 +1,25 @@
+candidate_id,candidate_name,year,trades,win_rate_pct,avg_win_inr,avg_loss_inr,payoff_ratio,profit_factor,net_pnl_inr,max_drawdown_inr
+Candidate A,10D Breakout ATM Debit Spread (W200),2019,18,38.9,4931.9,-3951.66,1.25,0.794,-8945.01,-26698.51
+Candidate A,10D Breakout ATM Debit Spread (W200),2020,20,40.0,7686.02,-4499.36,1.71,1.139,7495.82,-13527.07
+Candidate A,10D Breakout ATM Debit Spread (W200),2021,29,41.4,6418.62,-4410.65,1.46,1.027,2042.4,-48241.55
+Candidate A,10D Breakout ATM Debit Spread (W200),2022,27,51.9,5479.52,-3288.11,1.67,1.795,33967.82,-16905.46
+Candidate A,10D Breakout ATM Debit Spread (W200),2023,24,41.7,5483.86,-2929.9,1.87,1.337,13819.94,-15625.93
+Candidate A,10D Breakout ATM Debit Spread (W200),2024,32,53.1,2710.54,-2719.54,1.0,1.13,5286.06,-10842.56
+Candidate A,10D Breakout ATM Debit Spread (W200),2025,31,35.5,8260.32,-5112.12,1.62,0.889,-11378.91,-51300.56
+Candidate A,10D Breakout ATM Debit Spread (W200),2026,18,83.3,6608.27,-3413.0,1.94,9.681,88884.99,-4424.94
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",2019,18,16.7,6531.57,-2621.25,2.49,0.498,-19724.11,-23484.7
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",2020,20,40.0,7612.35,-4020.38,1.89,1.262,12654.24,-12548.59
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",2021,29,41.4,6224.1,-4396.1,1.42,0.999,-44.56,-49987.04
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",2022,27,48.1,7516.75,-3393.48,2.22,2.057,50209.01,-19673.59
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",2023,24,41.7,6089.06,-2852.23,2.13,1.525,20959.38,-11905.24
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",2024,32,43.8,3065.71,-2430.57,1.26,0.981,-830.21,-16192.83
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",2025,31,32.3,11173.04,-5168.16,2.16,1.029,3199.07,-46825.58
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",2026,18,66.7,7841.92,-2731.71,2.87,5.741,77712.74,-4562.08
+Candidate C,10D Breakout Squeeze Debit Spread (W150),2019,18,38.9,4847.27,-3343.2,1.45,0.923,-2844.3,-22821.98
+Candidate C,10D Breakout Squeeze Debit Spread (W150),2020,20,40.0,6016.98,-3785.24,1.59,1.06,2713.03,-11302.29
+Candidate C,10D Breakout Squeeze Debit Spread (W150),2021,29,41.4,5135.88,-3564.18,1.44,1.017,1039.39,-37509.62
+Candidate C,10D Breakout Squeeze Debit Spread (W150),2022,27,59.3,3551.52,-3093.16,1.15,1.67,22799.61,-12485.86
+Candidate C,10D Breakout Squeeze Debit Spread (W150),2023,24,41.7,4236.33,-2388.06,1.77,1.267,8930.42,-12938.73
+Candidate C,10D Breakout Squeeze Debit Spread (W150),2024,32,53.1,2370.93,-2178.9,1.09,1.233,7622.41,-8808.79
+Candidate C,10D Breakout Squeeze Debit Spread (W150),2025,31,38.7,5655.09,-4345.8,1.3,0.822,-14709.18,-44169.01
+Candidate C,10D Breakout Squeeze Debit Spread (W150),2026,18,83.3,5189.33,-2757.54,1.88,9.409,69567.26,-3620.22

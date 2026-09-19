@@ -1,0 +1,4 @@
+candidate_id,candidate_name,capital_tested,risk_pct,cagr_5th_pct,cagr_25th_pct,cagr_50th_pct_median,cagr_75th_pct,cagr_95th_pct,dd_5th_pct,dd_25th_pct,dd_50th_pct_median,dd_75th_pct,dd_95th_pct,prob_dd_gt_20pct,prob_dd_gt_30pct,prob_dd_gt_35pct,prob_dd_gt_50pct
+Candidate A,10D Breakout ATM Debit Spread (W200),100000.0,0.05,4.21,15.73,26.08,38.27,59.24,10.32,16.85,23.55,32.46,47.64,62.78,30.65,20.07,3.95
+Candidate B,"10D Breakout Convex OTM Debit Spread (W250, Off50)",100000.0,0.05,7.23,23.75,38.4,55.37,86.09,10.4,17.42,24.72,34.22,51.46,65.9,34.95,23.52,5.87
+Candidate C,10D Breakout Squeeze Debit Spread (W150),100000.0,0.05,0.9,12.24,21.76,32.74,50.95,10.86,17.61,24.2,33.2,48.9,65.59,32.72,21.47,4.28
