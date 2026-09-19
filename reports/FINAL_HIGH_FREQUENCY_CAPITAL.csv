@@ -1,0 +1,172 @@
+start_capital,sizing_type,param_val,ending_capital,cagr_pct,max_dd_inr,max_dd_pct,max_losing_streak,skipped_trades,risk_of_ruin,candidate_id,candidate_name,period
+50000.0,RISK_PCT,0.01,102731.91,15.49,28761.31,27.71,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+50000.0,RISK_PCT,0.01,62615.74,-99.99,51693.84,81.2,10,0,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.02,101781.27,15.28,28761.31,27.97,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+50000.0,RISK_PCT,0.02,62378.08,-99.99,51693.84,81.51,10,0,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.03,127692.11,20.63,28761.31,22.34,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+50000.0,RISK_PCT,0.03,61902.76,-99.99,51693.84,82.12,10,0,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.05,271392.72,40.26,54241.71,18.76,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+50000.0,RISK_PCT,0.05,61321.91,-99.99,51693.84,82.89,10,0,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.08,420203.67,53.07,131507.71,28.71,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+50000.0,RISK_PCT,0.08,204992.33,20.28,55184.52,24.65,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.1,544834.11,61.23,190592.95,31.1,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+50000.0,RISK_PCT,0.1,184004.99,-99.99,58645.19,28.28,10,0,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.12,504563.37,58.78,236529.66,40.5,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+50000.0,RISK_PCT,0.12,222.44,-99.99,71429.35,99.69,10,122,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.15,466837.24,56.33,310263.34,54.95,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+50000.0,RISK_PCT,0.15,281898.46,-99.99,149985.74,43.2,10,3,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,FIXED_LOT,1.0,62615.74,-99.99,51693.84,81.2,10,0,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,FIXED_FRACTION,0.15,281898.46,-99.99,149985.74,43.2,10,3,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,FIXED_FRACTION,0.25,107465.2,-99.99,238113.66,94.64,10,19,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.01,127256.59,11.15,28761.31,22.42,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+75000.0,RISK_PCT,0.01,87378.08,2.02,51693.84,58.46,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.02,134797.35,12.44,28761.31,21.17,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+75000.0,RISK_PCT,0.02,86665.1,1.91,51693.84,58.94,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.03,202045.54,21.92,30066.47,14.3,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+75000.0,RISK_PCT,0.03,89023.14,2.27,51693.84,57.39,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.05,388760.14,38.97,82155.08,20.1,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+75000.0,RISK_PCT,0.05,257386.6,17.52,60050.75,22.28,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.08,603122.59,51.73,203369.05,30.95,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+75000.0,RISK_PCT,0.08,366408.41,23.08,122681.45,30.43,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.1,779879.02,59.73,304181.22,34.71,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+75000.0,RISK_PCT,0.1,339288.62,21.84,121418.72,31.95,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.12,1029049.57,68.84,465273.18,38.94,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+75000.0,RISK_PCT,0.12,314251.4,20.63,134367.16,37.12,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.15,948221.45,66.1,578124.24,49.97,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+75000.0,RISK_PCT,0.15,290474.47,-99.99,149985.74,42.9,10,2,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,FIXED_LOT,1.0,87615.74,2.06,51693.84,58.31,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,FIXED_FRACTION,0.15,290474.47,-99.99,149985.74,42.9,10,2,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+75000.0,FIXED_FRACTION,0.25,107003.3,-99.99,269504.93,94.81,10,16,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.01,152018.93,8.74,28761.31,18.79,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+100000.0,RISK_PCT,0.01,111902.76,1.48,51693.84,45.77,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.02,196631.64,14.48,29061.28,14.7,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+100000.0,RISK_PCT,0.02,120537.29,2.48,51693.84,42.52,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.03,272857.5,22.23,39989.47,14.32,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+100000.0,RISK_PCT,0.03,156809.73,6.07,54025.73,34.2,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.05,421278.42,33.33,106031.72,23.94,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+100000.0,RISK_PCT,0.05,394210.73,19.67,92323.32,22.29,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.08,849491.91,53.4,283604.96,30.48,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+100000.0,RISK_PCT,0.08,466293.27,22.33,152043.64,29.83,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.1,1108669.17,61.79,437890.5,35.14,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+100000.0,RISK_PCT,0.1,545282.29,24.86,188686.88,30.76,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.12,1124764.85,62.26,558216.6,42.9,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+100000.0,RISK_PCT,0.12,403816.18,20.04,175563.76,37.37,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.15,1228758.41,65.16,776030.27,51.75,6,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),5Y_PRIMARY
+100000.0,RISK_PCT,0.15,478.17,-99.99,126610.49,99.62,10,70,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,FIXED_LOT,1.0,112615.74,1.57,51693.84,45.48,10,0,0,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,FIXED_FRACTION,0.15,478.17,-99.99,126610.49,99.62,10,70,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+100000.0,FIXED_FRACTION,0.25,107566.24,-99.99,264120.06,94.89,10,24,1,Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.01,82098.63,10.43,27631.73,33.66,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+50000.0,RISK_PCT,0.01,75846.41,5.61,27631.73,36.43,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.02,81385.65,10.23,27631.73,33.95,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+50000.0,RISK_PCT,0.02,75133.43,5.48,27631.73,36.78,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.03,86949.16,11.7,27631.73,31.78,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+50000.0,RISK_PCT,0.03,83635.83,6.97,27631.73,33.04,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.05,139831.79,22.84,41472.2,29.66,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+50000.0,RISK_PCT,0.05,163512.15,16.78,46893.03,28.68,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.08,202718.67,32.31,99729.36,49.2,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+50000.0,RISK_PCT,0.08,305165.8,26.71,168095.35,55.08,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.1,184860.78,29.89,166207.69,68.35,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+50000.0,RISK_PCT,0.1,365339.63,29.73,252321.55,65.82,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.12,175579.26,28.56,192258.77,77.11,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+50000.0,RISK_PCT,0.12,365282.81,29.73,381800.18,76.99,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.15,161241.64,26.39,278849.39,86.71,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+50000.0,RISK_PCT,0.15,267452.18,24.54,433936.59,85.93,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,FIXED_LOT,1.0,76084.07,5.65,27631.73,36.32,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,FIXED_FRACTION,0.15,267452.18,24.54,433936.59,85.93,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,FIXED_FRACTION,0.25,64699.69,3.43,491138.4,98.39,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.01,106860.97,7.34,27631.73,25.86,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+75000.0,RISK_PCT,0.01,100371.09,3.89,27631.73,27.53,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.02,112186.82,8.39,27631.73,24.63,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+75000.0,RISK_PCT,0.02,108873.49,5.0,27631.73,25.38,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.03,146912.53,14.39,28212.1,19.2,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+75000.0,RISK_PCT,0.03,150498.69,9.54,28212.1,18.75,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.05,197409.94,21.36,68338.69,34.62,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+75000.0,RISK_PCT,0.05,269859.4,18.25,99416.84,36.84,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.08,303661.79,32.27,168095.35,55.36,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+75000.0,RISK_PCT,0.08,416770.08,25.17,238802.7,57.3,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.1,337649.51,35.11,253741.21,66.35,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+75000.0,RISK_PCT,0.1,451603.58,26.49,348159.83,67.74,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.12,315362.25,33.28,320040.45,75.48,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+75000.0,RISK_PCT,0.12,434604.75,25.86,436836.58,76.18,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.15,268080.63,29.02,435120.86,85.86,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+75000.0,RISK_PCT,0.15,268058.88,18.14,435120.86,85.86,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,FIXED_LOT,1.0,101084.07,3.98,27631.73,27.34,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,FIXED_FRACTION,0.15,268058.88,18.14,435120.86,85.86,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+75000.0,FIXED_FRACTION,0.25,64397.7,-1.98,472799.48,98.39,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.01,131385.65,5.61,27631.73,21.03,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+100000.0,RISK_PCT,0.01,125133.43,2.98,27631.73,22.08,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.02,148613.47,8.25,31399.61,21.13,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+100000.0,RISK_PCT,0.02,149418.77,5.4,31399.61,21.01,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.03,198049.82,14.64,40331.29,20.36,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+100000.0,RISK_PCT,0.03,203264.65,9.73,38147.79,18.77,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.05,250177.86,20.13,83370.05,33.32,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+100000.0,RISK_PCT,0.05,390748.45,19.53,138497.01,35.44,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.08,381563.53,30.71,213047.4,55.84,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+100000.0,RISK_PCT,0.08,539818.49,24.69,332631.46,59.18,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.1,394259.67,31.57,324079.8,68.79,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+100000.0,RISK_PCT,0.1,546557.14,24.9,408017.87,67.3,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.12,434677.89,34.16,436836.58,76.17,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+100000.0,RISK_PCT,0.12,508311.53,23.72,547236.62,77.4,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.15,394492.11,31.59,629197.44,85.94,9,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),5Y_PRIMARY
+100000.0,RISK_PCT,0.15,493423.76,23.24,806891.62,86.67,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,FIXED_LOT,1.0,126084.07,3.08,27631.73,21.92,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,FIXED_FRACTION,0.15,493423.76,23.24,806891.62,86.67,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+100000.0,FIXED_FRACTION,0.25,99731.02,-0.04,737043.95,98.5,11,0,0,Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.01,844.83,-99.99,63733.72,98.69,7,171,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+50000.0,RISK_PCT,0.01,257.68,-99.99,62760.14,99.59,7,173,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.02,369.51,-99.99,63733.72,99.42,7,171,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+50000.0,RISK_PCT,0.02,-28.79,-99.99,63046.61,100.05,7,36,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.03,1320.21,-99.99,62439.83,98.13,7,59,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+50000.0,RISK_PCT,0.03,551.1,-99.99,63733.72,99.14,7,171,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.05,2171.85,-99.99,74346.21,97.16,7,22,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+50000.0,RISK_PCT,0.05,44048.35,-1.65,65415.26,67.25,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.08,100965.75,15.09,74863.27,50.56,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+50000.0,RISK_PCT,0.08,106557.7,10.41,86926.88,53.35,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.1,75395.04,8.56,117729.13,77.98,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+50000.0,RISK_PCT,0.1,106125.09,10.35,121501.5,65.23,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.12,108.17,-99.99,115018.66,99.91,7,46,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+50000.0,RISK_PCT,0.12,47687.68,-0.62,94429.64,81.41,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,RISK_PCT,0.15,365.75,-99.99,103121.45,99.65,7,58,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+50000.0,RISK_PCT,0.15,654.49,-99.99,104139.56,99.38,7,34,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,FIXED_LOT,1.0,257.68,-99.99,62760.14,99.59,7,173,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,FIXED_FRACTION,0.15,654.49,-99.99,104139.56,99.38,7,34,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+50000.0,FIXED_FRACTION,0.25,844.06,-99.99,54563.19,99.0,4,372,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.01,20692.32,-22.71,80841.93,90.49,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+75000.0,RISK_PCT,0.01,18410.34,-16.79,81800.84,92.94,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.02,19979.34,-23.25,80841.93,91.21,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+75000.0,RISK_PCT,0.02,27150.4,-12.45,80841.93,84.39,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.03,25542.85,-19.38,80841.93,85.83,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+75000.0,RISK_PCT,0.03,46098.34,-6.17,78015.96,69.71,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.05,161633.23,16.6,63647.38,30.77,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+75000.0,RISK_PCT,0.05,181153.0,12.24,105920.38,44.93,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.08,102226.72,6.39,120478.65,70.96,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+75000.0,RISK_PCT,0.08,191071.7,13.02,190893.97,63.67,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.1,115895.36,9.09,142070.68,65.56,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+75000.0,RISK_PCT,0.1,111223.98,5.29,190201.59,80.03,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.12,49155.37,-8.1,144347.34,85.21,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+75000.0,RISK_PCT,0.12,70730.81,-0.76,147730.54,84.36,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,RISK_PCT,0.15,660.49,-99.99,157745.02,99.58,7,57,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+75000.0,RISK_PCT,0.15,704.75,-99.99,102034.31,99.31,7,34,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,FIXED_LOT,1.0,18885.66,-16.52,81325.52,92.4,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,FIXED_FRACTION,0.15,704.75,-99.99,102034.31,99.31,7,34,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+75000.0,FIXED_FRACTION,0.25,75.47,-99.99,83486.2,99.91,4,396,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.01,45454.66,-14.59,80841.93,70.85,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+100000.0,RISK_PCT,0.01,46111.57,-9.64,80841.93,70.44,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.02,50780.51,-12.67,80841.93,67.69,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+100000.0,RISK_PCT,0.02,64851.06,-5.51,80841.93,60.56,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.03,103754.56,0.74,59334.99,42.34,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+100000.0,RISK_PCT,0.03,146288.08,5.11,57589.76,32.92,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.05,197742.65,14.61,91899.47,35.16,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+100000.0,RISK_PCT,0.05,247839.94,12.61,130088.45,40.59,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.08,201444.85,15.04,190500.95,62.69,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+100000.0,RISK_PCT,0.08,189952.34,8.76,198444.35,66.43,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.1,114680.52,2.78,224409.9,81.93,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+100000.0,RISK_PCT,0.1,111715.13,1.46,143118.66,67.35,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.12,88597.26,-2.39,209502.71,86.15,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+100000.0,RISK_PCT,0.12,48434.82,-9.05,144033.29,84.88,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,RISK_PCT,0.15,32423.34,-20.17,207280.48,93.85,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),5Y_PRIMARY
+100000.0,RISK_PCT,0.15,658.71,-99.99,107039.61,99.39,7,34,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,FIXED_LOT,1.0,43885.66,-10.22,81325.52,71.96,7,0,0,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,FIXED_FRACTION,0.15,658.71,-99.99,107039.61,99.39,7,34,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY
+100000.0,FIXED_FRACTION,0.25,56.66,-99.99,99943.34,99.94,4,399,1,Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),7.6Y_SECONDARY

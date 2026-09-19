@@ -1,0 +1,19 @@
+candidate_id,candidate_name,period,trades,win_rate_pct,profit_factor,payoff_ratio,net_pnl_inr
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),DEV 2019-2021,55,25.5,0.612,1.79,-44110.58
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),VAL 2022-2023,47,46.8,1.574,1.79,35393.42
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),OOS 2024,29,34.5,0.636,1.21,-12476.28
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),OOS 2025,23,39.1,1.137,1.77,6830.12
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),OOS 2026,15,60.0,3.257,2.17,26979.06
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),FULL 7.6Y,169,37.9,1.046,1.72,12615.74
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),DEV 2019-2021,36,27.8,0.793,2.06,-14474.34
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),VAL 2022-2023,35,45.7,1.555,1.85,26720.04
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),OOS 2024,16,18.8,0.357,1.55,-13131.95
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),OOS 2025,15,40.0,1.541,2.31,14748.17
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),OOS 2026,3,66.7,6.456,3.23,12222.15
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),FULL 7.6Y,105,35.2,1.155,2.12,26084.07
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),DEV 2019-2021,166,62.7,0.952,0.57,-9686.51
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),VAL 2022-2023,143,57.3,0.906,0.67,-16588.58
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),OOS 2024,80,58.8,0.783,0.55,-15443.4
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),OOS 2025,76,56.6,0.868,0.67,-18716.21
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),OOS 2026,48,56.2,1.064,0.83,4320.36
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),FULL 7.6Y,513,59.1,0.915,0.63,-56114.34

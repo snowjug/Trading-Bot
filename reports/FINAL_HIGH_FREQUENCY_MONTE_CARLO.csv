@@ -1,0 +1,4 @@
+candidate_id,candidate_name,simulations,cagr_p5,cagr_p25,cagr_p50,cagr_p75,cagr_p95,median_mdd_pct,prob_dd_gt_20,prob_dd_gt_30,prob_dd_gt_40,prob_dd_gt_50,prob_dd_gt_60,prob_dd_gt_70,prob_dd_gt_80
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),10000,-10.82,6.77,22.2,41.26,76.28,68.49,100.0,100.0,99.62,94.52,75.11,45.47,20.08
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),10000,-6.7,8.19,22.26,39.11,69.67,60.78,100.0,99.96,96.86,81.45,52.25,24.36,7.97
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),10000,-63.44,-18.45,3.9,20.69,53.7,84.16,100.0,100.0,99.99,99.79,97.0,84.44,60.89

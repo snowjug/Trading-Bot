@@ -1,0 +1,25 @@
+candidate_id,candidate_name,year,trades,win_rate_pct,profit_factor,payoff_ratio,gross_pnl_inr,costs_inr,net_pnl_inr,max_drawdown_inr
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),2019,18,16.7,0.436,2.18,-20456.25,964.43,-21420.68,-26000.87
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),2020,16,25.0,0.858,2.57,-3123.75,1165.44,-4289.19,-10639.1
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),2021,21,33.3,0.596,1.19,-17102.5,1298.21,-18400.71,-27723.21
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),2022,22,50.0,1.848,1.85,23620.0,1498.19,22121.81,-9504.72
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),2023,25,44.0,1.373,1.75,14800.0,1528.39,13271.61,-9965.01
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),2024,29,34.5,0.636,1.21,-10862.5,1613.78,-12476.28,-19661.96
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),2025,23,39.1,1.137,1.77,8472.5,1642.38,6830.12,-19020.64
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),2026,15,60.0,3.257,2.17,28174.25,1195.19,26979.06,-7232.87
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),2019,15,13.3,0.448,2.91,-16856.25,802.85,-17659.1,-23558.34
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),2020,8,50.0,2.871,2.87,17598.75,751.81,16846.94,-5830.69
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),2021,13,30.8,0.53,1.19,-12826.25,835.93,-13662.18,-18288.65
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),2022,14,50.0,1.954,1.95,18102.5,997.67,17104.83,-7581.41
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),2023,21,42.9,1.319,1.76,10887.5,1272.29,9615.21,-12486.81
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),2024,16,18.8,0.357,1.55,-12257.5,874.45,-13131.95,-14608.25
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),2025,15,40.0,1.541,2.31,15830.0,1081.83,14748.17,-13209.66
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),2026,3,66.7,6.456,3.23,12525.5,303.35,12222.15,0.0
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),2019,55,65.5,0.948,0.5,-60.0,3023.91,-3083.91,-17069.97
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),2020,45,62.2,1.191,0.72,12885.0,2911.22,9973.78,-22816.12
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),2021,66,60.6,0.815,0.53,-12416.25,4160.13,-16576.38,-33193.12
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),2022,67,56.7,0.937,0.71,-967.5,4434.01,-5401.51,-23374.9
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),2023,76,57.9,0.876,0.64,-6790.0,4397.07,-11187.07,-40560.72
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),2024,80,58.8,0.783,0.55,-10752.5,4690.9,-15443.4,-27473.93
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),2025,76,56.6,0.868,0.67,-12929.25,5786.96,-18716.21,-50110.91
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),2026,48,56.2,1.064,0.83,8193.25,3872.89,4320.36,-30915.02

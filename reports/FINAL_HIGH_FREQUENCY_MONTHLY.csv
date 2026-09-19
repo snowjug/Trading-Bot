@@ -1,0 +1,4 @@
+candidate_id,candidate_name,total_active_months,profitable_months,losing_months,win_month_pct,median_monthly_net_inr,best_month_net_inr,worst_month_net_inr,longest_monthly_losing_streak
+Candidate HF-1,HF Directional Breakout Debit Spread (ATR >= 0.25),84,40,44,47.6,-116.1,11642.85,-15271.37,5
+Candidate HF-2,Conviction Breakout Debit Spread (ATR >= 0.50),68,29,39,42.6,-809.98,11642.85,-10032.0,6
+Candidate HF-3,Multi-Strategy Portfolio (Breakout Debit + Trend Credit),87,44,43,50.6,125.22,15733.43,-16127.54,6
