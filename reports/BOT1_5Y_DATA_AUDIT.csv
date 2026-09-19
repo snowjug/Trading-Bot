@@ -1,0 +1,15 @@
+period,metric,value,notes
+5Y_PRIMARY,EXPECTED_TRADING_SESSIONS,1235,NSE index history sessions (2021-09-19 -> 2026-09-18)
+5Y_PRIMARY,AVAILABLE_BHAVCOPY_SESSIONS,1235,Authentic exchange daily bhavcopies in fo_bhavcopy/
+5Y_PRIMARY,MISSING_BHAVCOPY_SESSIONS,0,Zero missing bhavcopy sessions
+5Y_PRIMARY,EXPECTED_WEEKLY_EXPIRIES,268,Weekly Thursday/Tuesday expiries occurring in period
+5Y_PRIMARY,EXECUTED_CYCLES,139,Passed all filters and resolved 4 legs authentically
+5Y_PRIMARY,SKIPPED_VIX_GE_20,136,Filtered out by VIX < 20 regime rule
+5Y_PRIMARY,SKIPPED_RSI_OUT_OF_BAND,204,"Filtered out by RSI in [38.0, 70.0] rule"
+5Y_PRIMARY,SKIPPED_NOT_5D_ENTRY,272,Entry window rule: strictly 5 trading days to expiry
+5Y_PRIMARY,SKIPPED_EXPIRY_ALREADY_USED,484,Only 1 cycle entered per weekly expiry
+5Y_PRIMARY,DATA_LIMITED_LEG_UNTRADED,0,Zero trades skipped due to unpriced contracts in 5Y period
+7.6Y_FULL,EXPECTED_TRADING_SESSIONS,1903,All sessions from 2019-01-01 to 2026-09-18
+7.6Y_FULL,AVAILABLE_BHAVCOPY_SESSIONS,1904,Complete historical bhavcopy archive
+7.6Y_FULL,EXECUTED_CYCLES,169,All historical trades
+7.6Y_FULL,DATA_LIMITED_LEG_UNTRADED,9,9 cycles in 2019 had zero-volume or unpriced deep wings
