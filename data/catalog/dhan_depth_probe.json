@@ -1,0 +1,788 @@
+{
+  "probed_at": "2026-09-19T10:03:37.364039",
+  "token_exp": null,
+  "rollingoption": {
+    "NIFTY": {
+      "security_id": "13",
+      "segment": "NSE_FNO",
+      "recent": {
+        "http": 200,
+        "rows": 1001,
+        "sessions": 13,
+        "first": "2026-09-01 09:15:00",
+        "last": "2026-09-18 15:35:00",
+        "strikes": 21,
+        "iv_pop": 1.0,
+        "oi_pop": 1.0,
+        "spot_pop": 1.0
+      },
+      "floor": "2020-08",
+      "trail": [
+        {
+          "probe": "2019-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2020-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2021-06",
+          "http": 200,
+          "rows": 1425,
+          "sessions": 19
+        },
+        {
+          "probe": "2021-05",
+          "http": 200,
+          "rows": 1500,
+          "sessions": 20
+        },
+        {
+          "probe": "2021-04",
+          "http": 200,
+          "rows": 1425,
+          "sessions": 19
+        },
+        {
+          "probe": "2021-03",
+          "http": 200,
+          "rows": 1575,
+          "sessions": 21
+        },
+        {
+          "probe": "2021-02",
+          "http": 200,
+          "rows": 1500,
+          "sessions": 20
+        },
+        {
+          "probe": "2021-01",
+          "http": 200,
+          "rows": 1500,
+          "sessions": 20
+        },
+        {
+          "probe": "2020-12",
+          "http": 200,
+          "rows": 1650,
+          "sessions": 22
+        },
+        {
+          "probe": "2020-11",
+          "http": 200,
+          "rows": 1425,
+          "sessions": 19
+        },
+        {
+          "probe": "2020-10",
+          "http": 200,
+          "rows": 1575,
+          "sessions": 21
+        },
+        {
+          "probe": "2020-09",
+          "http": 200,
+          "rows": 1650,
+          "sessions": 22
+        },
+        {
+          "probe": "2020-08",
+          "http": 200,
+          "rows": 1575,
+          "sessions": 21
+        },
+        {
+          "probe": "2020-07",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        }
+      ]
+    },
+    "BANKNIFTY": {
+      "security_id": "25",
+      "segment": "NSE_FNO",
+      "recent": {
+        "http": 200,
+        "rows": 1001,
+        "sessions": 13,
+        "first": "2026-09-01 09:15:00",
+        "last": "2026-09-18 15:35:00",
+        "strikes": 20,
+        "iv_pop": 1.0,
+        "oi_pop": 1.0,
+        "spot_pop": 1.0
+      },
+      "floor": "2021-08",
+      "trail": [
+        {
+          "probe": "2019-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2020-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2021-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2022-06",
+          "http": 200,
+          "rows": 1350,
+          "sessions": 18
+        },
+        {
+          "probe": "2022-05",
+          "http": 200,
+          "rows": 1593,
+          "sessions": 21
+        },
+        {
+          "probe": "2022-04",
+          "http": 200,
+          "rows": 1444,
+          "sessions": 19
+        },
+        {
+          "probe": "2022-03",
+          "http": 200,
+          "rows": 1594,
+          "sessions": 21
+        },
+        {
+          "probe": "2022-02",
+          "http": 200,
+          "rows": 1516,
+          "sessions": 20
+        },
+        {
+          "probe": "2022-01",
+          "http": 200,
+          "rows": 1514,
+          "sessions": 20
+        },
+        {
+          "probe": "2021-12",
+          "http": 200,
+          "rows": 1747,
+          "sessions": 23
+        },
+        {
+          "probe": "2021-11",
+          "http": 200,
+          "rows": 1454,
+          "sessions": 20
+        },
+        {
+          "probe": "2021-10",
+          "http": 200,
+          "rows": 1518,
+          "sessions": 20
+        },
+        {
+          "probe": "2021-09",
+          "http": 200,
+          "rows": 1469,
+          "sessions": 20
+        },
+        {
+          "probe": "2021-08",
+          "http": 200,
+          "rows": 1272,
+          "sessions": 19
+        },
+        {
+          "probe": "2021-07",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        }
+      ]
+    },
+    "FINNIFTY": {
+      "security_id": "27",
+      "segment": "NSE_FNO",
+      "recent": {
+        "http": 200,
+        "rows": 958,
+        "sessions": 13,
+        "first": "2026-09-01 09:15:00",
+        "last": "2026-09-18 15:35:00",
+        "strikes": 21,
+        "iv_pop": 1.0,
+        "oi_pop": 0.99,
+        "spot_pop": 1.0
+      },
+      "floor": "2021-08",
+      "trail": [
+        {
+          "probe": "2019-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2020-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2021-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2022-06",
+          "http": 200,
+          "rows": 1239,
+          "sessions": 18
+        },
+        {
+          "probe": "2022-05",
+          "http": 200,
+          "rows": 1305,
+          "sessions": 20
+        },
+        {
+          "probe": "2022-04",
+          "http": 200,
+          "rows": 1130,
+          "sessions": 17
+        },
+        {
+          "probe": "2022-03",
+          "http": 200,
+          "rows": 1244,
+          "sessions": 20
+        },
+        {
+          "probe": "2022-02",
+          "http": 200,
+          "rows": 1210,
+          "sessions": 19
+        },
+        {
+          "probe": "2022-01",
+          "http": 200,
+          "rows": 1082,
+          "sessions": 19
+        },
+        {
+          "probe": "2021-12",
+          "http": 200,
+          "rows": 1097,
+          "sessions": 18
+        },
+        {
+          "probe": "2021-11",
+          "http": 200,
+          "rows": 711,
+          "sessions": 16
+        },
+        {
+          "probe": "2021-10",
+          "http": 200,
+          "rows": 913,
+          "sessions": 16
+        },
+        {
+          "probe": "2021-09",
+          "http": 200,
+          "rows": 963,
+          "sessions": 19
+        },
+        {
+          "probe": "2021-08",
+          "http": 200,
+          "rows": 365,
+          "sessions": 11
+        },
+        {
+          "probe": "2021-07",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        }
+      ]
+    },
+    "MIDCPNIFTY": {
+      "security_id": "442",
+      "segment": "NSE_FNO",
+      "recent": {
+        "http": 200,
+        "rows": 1001,
+        "sessions": 13,
+        "first": "2026-09-01 09:15:00",
+        "last": "2026-09-18 15:35:00",
+        "strikes": 32,
+        "iv_pop": 1.0,
+        "oi_pop": 1.0,
+        "spot_pop": 1.0
+      },
+      "floor": "2022-01",
+      "trail": [
+        {
+          "probe": "2019-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2020-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2021-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2022-06",
+          "http": 200,
+          "rows": 57,
+          "sessions": 3
+        },
+        {
+          "probe": "2022-05",
+          "http": 200,
+          "rows": 192,
+          "sessions": 7
+        },
+        {
+          "probe": "2022-04",
+          "http": 200,
+          "rows": 80,
+          "sessions": 3
+        },
+        {
+          "probe": "2022-03",
+          "http": 200,
+          "rows": 37,
+          "sessions": 3
+        },
+        {
+          "probe": "2022-02",
+          "http": 200,
+          "rows": 233,
+          "sessions": 9
+        },
+        {
+          "probe": "2022-01",
+          "http": 200,
+          "rows": 72,
+          "sessions": 1
+        },
+        {
+          "probe": "2021-12",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        }
+      ]
+    },
+    "NIFTYNXT50": {
+      "security_id": "38",
+      "segment": "NSE_FNO",
+      "recent": {
+        "http": 200,
+        "rows": 169,
+        "sessions": 8,
+        "first": "2026-09-03 09:25:00",
+        "last": "2026-09-18 15:35:00",
+        "strikes": 5,
+        "iv_pop": 1.0,
+        "oi_pop": 0.988,
+        "spot_pop": 1.0
+      },
+      "floor": "2025-11",
+      "trail": [
+        {
+          "probe": "2019-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2020-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2021-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2022-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2023-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2024-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2025-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2026-06",
+          "http": 200,
+          "rows": 397,
+          "sessions": 15
+        },
+        {
+          "probe": "2026-05",
+          "http": 200,
+          "rows": 529,
+          "sessions": 19
+        },
+        {
+          "probe": "2026-04",
+          "http": 200,
+          "rows": 412,
+          "sessions": 13
+        },
+        {
+          "probe": "2026-03",
+          "http": 200,
+          "rows": 780,
+          "sessions": 17
+        },
+        {
+          "probe": "2026-02",
+          "http": 200,
+          "rows": 1407,
+          "sessions": 21
+        },
+        {
+          "probe": "2026-01",
+          "http": 200,
+          "rows": 1351,
+          "sessions": 20
+        },
+        {
+          "probe": "2025-12",
+          "http": 200,
+          "rows": 1183,
+          "sessions": 19
+        },
+        {
+          "probe": "2025-11",
+          "http": 200,
+          "rows": 171,
+          "sessions": 3
+        },
+        {
+          "probe": "2025-10",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        }
+      ]
+    },
+    "SENSEX": {
+      "security_id": "51",
+      "segment": "BSE_FNO",
+      "recent": {
+        "http": 200,
+        "rows": 1001,
+        "sessions": 13,
+        "first": "2026-09-01 09:15:00",
+        "last": "2026-09-18 15:35:00",
+        "strikes": 29,
+        "iv_pop": 1.0,
+        "oi_pop": 1.0,
+        "spot_pop": 1.0
+      },
+      "floor": "2023-05",
+      "trail": [
+        {
+          "probe": "2019-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2020-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2021-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2022-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2023-06",
+          "http": 200,
+          "rows": 1274,
+          "sessions": 17
+        },
+        {
+          "probe": "2023-05",
+          "http": 200,
+          "rows": 936,
+          "sessions": 13
+        },
+        {
+          "probe": "2023-04",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        }
+      ]
+    },
+    "BANKEX": {
+      "security_id": "69",
+      "segment": "BSE_FNO",
+      "recent": {
+        "http": 200,
+        "rows": 780,
+        "sessions": 13,
+        "first": "2026-09-01 09:20:00",
+        "last": "2026-09-18 15:35:00",
+        "strikes": 21,
+        "iv_pop": 1.0,
+        "oi_pop": 0.999,
+        "spot_pop": 1.0
+      },
+      "floor": "2023-05",
+      "trail": [
+        {
+          "probe": "2019-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2020-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2021-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2022-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2023-06",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        },
+        {
+          "probe": "2024-06",
+          "http": 200,
+          "rows": 1190,
+          "sessions": 16
+        },
+        {
+          "probe": "2024-05",
+          "http": 200,
+          "rows": 1596,
+          "sessions": 22
+        },
+        {
+          "probe": "2024-04",
+          "http": 200,
+          "rows": 1499,
+          "sessions": 20
+        },
+        {
+          "probe": "2024-03",
+          "http": 200,
+          "rows": 1371,
+          "sessions": 19
+        },
+        {
+          "probe": "2024-02",
+          "http": 200,
+          "rows": 1575,
+          "sessions": 21
+        },
+        {
+          "probe": "2024-01",
+          "http": 200,
+          "rows": 1630,
+          "sessions": 22
+        },
+        {
+          "probe": "2023-12",
+          "http": 200,
+          "rows": 1497,
+          "sessions": 20
+        },
+        {
+          "probe": "2023-11",
+          "http": 200,
+          "rows": 1507,
+          "sessions": 21
+        },
+        {
+          "probe": "2023-10",
+          "http": 200,
+          "rows": 825,
+          "sessions": 14
+        },
+        {
+          "probe": "2023-09",
+          "http": 200,
+          "rows": 211,
+          "sessions": 5
+        },
+        {
+          "probe": "2023-08",
+          "http": 200,
+          "rows": 53,
+          "sessions": 1
+        },
+        {
+          "probe": "2023-07",
+          "http": 200,
+          "rows": 101,
+          "sessions": 3
+        },
+        {
+          "probe": "2023-06",
+          "http": 200,
+          "rows": 213,
+          "sessions": 4
+        },
+        {
+          "probe": "2023-05",
+          "http": 200,
+          "rows": 444,
+          "sessions": 9
+        },
+        {
+          "probe": "2023-04",
+          "http": 200,
+          "rows": 0,
+          "sessions": null
+        }
+      ]
+    }
+  },
+  "futures": {
+    "listed_nifty_futures": 3,
+    "probes": [
+      {
+        "symbol": "NIFTY-Sep2026-FUT",
+        "security_id": "68407",
+        "expiry": "2026-09-29 14:30:00",
+        "http": 400,
+        "rows": 0
+      },
+      {
+        "symbol": "NIFTY-Oct2026-FUT",
+        "security_id": "48704",
+        "expiry": "2026-10-27 14:30:00",
+        "http": 400,
+        "rows": 0
+      },
+      {
+        "symbol": "NIFTY-Nov2026-FUT",
+        "security_id": "61471",
+        "expiry": "2026-11-23 14:30:00",
+        "http": 400,
+        "rows": 0
+      },
+      {
+        "symbol": "(unlisted id 55000)",
+        "security_id": "55000",
+        "expiry": null,
+        "http": 200,
+        "rows": 0
+      },
+      {
+        "symbol": "(unlisted id 60000)",
+        "security_id": "60000",
+        "expiry": null,
+        "http": 200,
+        "rows": 0
+      },
+      {
+        "symbol": "(unlisted id 65000)",
+        "security_id": "65000",
+        "expiry": null,
+        "http": 200,
+        "rows": 0
+      }
+    ],
+    "rollingoption_with_FUTIDX": {
+      "http": 400,
+      "body": "{'errorType': 'Input_Exception', 'errorCode': 'DH-905', 'errorMessage': 'strike is required'}"
+    }
+  },
+  "ladder": {
+    "NIFTY": {
+      "max_positive_offset": 10
+    },
+    "BANKNIFTY": {
+      "max_positive_offset": 10
+    },
+    "FINNIFTY": {
+      "max_positive_offset": 10
+    },
+    "MIDCPNIFTY": {
+      "max_positive_offset": 10
+    },
+    "NIFTYNXT50": {
+      "max_positive_offset": 10
+    },
+    "SENSEX": {
+      "max_positive_offset": 10
+    },
+    "BANKEX": {
+      "max_positive_offset": 10
+    }
+  }
+}

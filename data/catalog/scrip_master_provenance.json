@@ -1,0 +1,8 @@
+{
+  "source": "DhanHQ official scrip master",
+  "url": "https://images.dhan.co/api-data/api-scrip-master.csv",
+  "retrieved": "2026-09-19T09:18:36.940778",
+  "rows": 207159,
+  "sha256": "f656aa8afa2976311a5839305a6f5e0e7651beb360850759bf8c082dae0387ea",
+  "path": "data/raw/dhan/scrip_master/api-scrip-master.csv"
+}

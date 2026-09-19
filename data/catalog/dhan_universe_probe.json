@@ -1,0 +1,284 @@
+{
+  "probed_at": "2026-09-19T09:22:43.191296",
+  "underlyings": {
+    "NIFTY": {
+      "security_id": "13",
+      "exchange": "NSE",
+      "expirylist": {
+        "ok": true,
+        "n": 18,
+        "first": "2026-09-22",
+        "last": "2031-06-24"
+      },
+      "daily_index": {
+        "rows": 0
+      },
+      "intraday_index": {
+        "rows": 0
+      },
+      "rolling_recent": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      },
+      "rolling_2021": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      }
+    },
+    "BANKNIFTY": {
+      "security_id": "25",
+      "exchange": "NSE",
+      "expirylist": {
+        "ok": true,
+        "n": 6,
+        "first": "2026-09-29",
+        "last": "2027-06-29"
+      },
+      "daily_index": {
+        "rows": 0
+      },
+      "intraday_index": {
+        "rows": 0
+      },
+      "rolling_recent": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      },
+      "rolling_2021": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      }
+    },
+    "FINNIFTY": {
+      "security_id": "27",
+      "exchange": "NSE",
+      "expirylist": {
+        "ok": true,
+        "n": 3,
+        "first": "2026-09-29",
+        "last": "2026-11-23"
+      },
+      "daily_index": {
+        "rows": 0
+      },
+      "intraday_index": {
+        "rows": 0
+      },
+      "rolling_recent": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      },
+      "rolling_2021": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      }
+    },
+    "MIDCPNIFTY": {
+      "security_id": "442",
+      "exchange": "NSE",
+      "expirylist": {
+        "ok": true,
+        "n": 3,
+        "first": "2026-09-29",
+        "last": "2026-11-23"
+      },
+      "daily_index": {
+        "rows": 0
+      },
+      "intraday_index": {
+        "rows": 0
+      },
+      "rolling_recent": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      },
+      "rolling_2021": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      }
+    },
+    "NIFTYNXT50": {
+      "security_id": "38",
+      "exchange": "NSE",
+      "expirylist": {
+        "ok": true,
+        "n": 3,
+        "first": "2026-09-29",
+        "last": "2026-11-23"
+      },
+      "daily_index": {
+        "rows": 0
+      },
+      "intraday_index": {
+        "rows": 0
+      },
+      "rolling_recent": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      },
+      "rolling_2021": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      }
+    },
+    "SENSEX": {
+      "security_id": "51",
+      "exchange": "BSE",
+      "expirylist": {
+        "ok": true,
+        "n": 19,
+        "first": "2026-09-24",
+        "last": "2031-06-26"
+      },
+      "daily_index": {
+        "rows": 0
+      },
+      "intraday_index": {
+        "rows": 0
+      },
+      "rolling_recent": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      },
+      "rolling_2021": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      }
+    },
+    "BANKEX": {
+      "security_id": "69",
+      "exchange": "BSE",
+      "expirylist": {
+        "ok": true,
+        "n": 3,
+        "first": "2026-09-24",
+        "last": "2026-11-26"
+      },
+      "daily_index": {
+        "rows": 0
+      },
+      "intraday_index": {
+        "rows": 0
+      },
+      "rolling_recent": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      },
+      "rolling_2021": {
+        "ce": {
+          "rows": 0
+        },
+        "pe": {
+          "rows": 0
+        }
+      }
+    }
+  },
+  "futures": {
+    "NIFTY": {
+      "listed": 3,
+      "probe_security_id": "68407",
+      "probe_symbol": "NIFTY-Sep2026-FUT",
+      "expiry": "2026-09-29 14:30:00",
+      "lot": 65.0,
+      "daily": {
+        "rows": 0
+      },
+      "intraday": {
+        "rows": 0
+      }
+    },
+    "BANKNIFTY": {
+      "listed": 3,
+      "probe_security_id": "68390",
+      "probe_symbol": "BANKNIFTY-Sep2026-FUT",
+      "expiry": "2026-09-29 14:30:00",
+      "lot": 30.0,
+      "daily": {
+        "rows": 0
+      },
+      "intraday": {
+        "rows": 0
+      }
+    },
+    "FINNIFTY": {
+      "listed": 3,
+      "probe_security_id": "68391",
+      "probe_symbol": "FINNIFTY-Sep2026-FUT",
+      "expiry": "2026-09-29 14:30:00",
+      "lot": 60.0,
+      "daily": {
+        "rows": 0
+      },
+      "intraday": {
+        "rows": 0
+      }
+    },
+    "MIDCPNIFTY": {
+      "listed": 3,
+      "probe_security_id": "68406",
+      "probe_symbol": "MIDCPNIFTY-Sep2026-FUT",
+      "expiry": "2026-09-29 14:30:00",
+      "lot": 120.0,
+      "daily": {
+        "rows": 0
+      },
+      "intraday": {
+        "rows": 0
+      }
+    }
+  },
+  "notes": []
+}
