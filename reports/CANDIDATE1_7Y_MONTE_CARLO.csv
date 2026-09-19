@@ -1,0 +1,3 @@
+candidate_id,simulations,cagr_p5,cagr_p25,cagr_p50,cagr_p75,cagr_p95,median_mdd_pct,prob_dd_gt_20,prob_dd_gt_25,prob_dd_gt_30,prob_dd_gt_35,prob_dd_gt_50
+Baseline_7Y,10000,-48.7,0.28,9.96,21.93,42.53,59.63,100.0,99.99,99.84,98.7,75.71
+Upgraded_7Y,10000,2.75,9.79,15.52,22.06,32.51,21.85,61.16,33.9,16.08,7.42,0.38

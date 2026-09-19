@@ -1,0 +1,11 @@
+candidate,regime_dimension,regime,trades,win_rate_pct,net_pnl_inr,profit_factor
+Baseline,TREND,BEAR,43,41.9,33105.44,1.529
+Baseline,TREND,BULL,112,33.0,-48397.29,0.752
+Baseline,TREND,SIDEWAYS,73,37.0,8182.01,1.066
+Upgraded,TREND,BEAR,10,60.0,29185.72,3.453
+Upgraded,TREND,BULL,20,40.0,934.94,1.03
+Upgraded,TREND,SIDEWAYS,15,46.7,8474.18,1.372
+Baseline,VIX,HIGH_VIX (>19),43,32.6,-27394.06,0.693
+Baseline,VIX,LOW_VIX (<14),97,41.2,42817.82,1.288
+Baseline,VIX,MID_VIX (14-19),88,31.8,-22533.6,0.842
+Upgraded,VIX,LOW_VIX (<14),45,46.7,38594.84,1.59
