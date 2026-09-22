@@ -1,0 +1,6 @@
+underlying,sessions,median_range_pct,median_straddle_pct,range_over_premium
+SENSEX,78,0.568,0.885,0.641
+NIFTY,77,0.555,0.912,0.608
+BANKNIFTY,77,0.736,2.364,0.311
+MIDCPNIFTY,78,0.739,2.483,0.298
+FINNIFTY,78,0.706,2.429,0.29

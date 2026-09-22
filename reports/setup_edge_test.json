@@ -1,0 +1,219 @@
+{
+  "window": {
+    "start": "2022-01-01",
+    "end": "2023-12-31"
+  },
+  "bars": 37186,
+  "candidate_events": 4749,
+  "distinct_bars": 4452,
+  "unconditional_drift_pts": {
+    "15m": -0.004,
+    "30m": 0.081,
+    "60m": -0.033,
+    "120m": -0.105
+  },
+  "option_friction_reference_pts": 4.4,
+  "cells_tested": 20,
+  "families": [
+    {
+      "family": "BREAKOUT",
+      "direction": -1,
+      "horizon": "15m",
+      "n": 834,
+      "raw_pts": 1.06,
+      "excess_pts": 1.05,
+      "t": 1.22,
+      "win_pct": 49.8
+    },
+    {
+      "family": "BREAKOUT",
+      "direction": -1,
+      "horizon": "30m",
+      "n": 667,
+      "raw_pts": 1.94,
+      "excess_pts": 2.02,
+      "t": 1.46,
+      "win_pct": 49.0
+    },
+    {
+      "family": "BREAKOUT",
+      "direction": -1,
+      "horizon": "60m",
+      "n": 451,
+      "raw_pts": 1.7,
+      "excess_pts": 1.67,
+      "t": 0.76,
+      "win_pct": 50.6
+    },
+    {
+      "family": "BREAKOUT",
+      "direction": -1,
+      "horizon": "120m",
+      "n": 276,
+      "raw_pts": 2.59,
+      "excess_pts": 2.48,
+      "t": 0.63,
+      "win_pct": 52.5
+    },
+    {
+      "family": "BREAKOUT",
+      "direction": 1,
+      "horizon": "15m",
+      "n": 1241,
+      "raw_pts": 0.49,
+      "excess_pts": 0.5,
+      "t": 0.88,
+      "win_pct": 52.5
+    },
+    {
+      "family": "BREAKOUT",
+      "direction": 1,
+      "horizon": "30m",
+      "n": 919,
+      "raw_pts": 0.09,
+      "excess_pts": 0.01,
+      "t": 0.01,
+      "win_pct": 52.2
+    },
+    {
+      "family": "BREAKOUT",
+      "direction": 1,
+      "horizon": "60m",
+      "n": 597,
+      "raw_pts": 1.3,
+      "excess_pts": 1.33,
+      "t": 0.83,
+      "win_pct": 54.1
+    },
+    {
+      "family": "BREAKOUT",
+      "direction": 1,
+      "horizon": "120m",
+      "n": 367,
+      "raw_pts": -0.62,
+      "excess_pts": -0.51,
+      "t": -0.18,
+      "win_pct": 52.3
+    },
+    {
+      "family": "VOLATILITY_EXPANSION",
+      "direction": 0,
+      "horizon": "15m",
+      "n": 714,
+      "raw_pts": 0.97,
+      "excess_pts": 0.97,
+      "t": 1.2,
+      "win_pct": 53.4
+    },
+    {
+      "family": "VOLATILITY_EXPANSION",
+      "direction": 0,
+      "horizon": "30m",
+      "n": 615,
+      "raw_pts": 1.87,
+      "excess_pts": 1.87,
+      "t": 1.52,
+      "win_pct": 55.6
+    },
+    {
+      "family": "VOLATILITY_EXPANSION",
+      "direction": 0,
+      "horizon": "60m",
+      "n": 453,
+      "raw_pts": 3.28,
+      "excess_pts": 3.28,
+      "t": 1.76,
+      "win_pct": 55.2
+    },
+    {
+      "family": "VOLATILITY_EXPANSION",
+      "direction": 0,
+      "horizon": "120m",
+      "n": 330,
+      "raw_pts": -0.54,
+      "excess_pts": -0.54,
+      "t": -0.17,
+      "win_pct": 52.4
+    },
+    {
+      "family": "VWAP_REVERSION",
+      "direction": -1,
+      "horizon": "15m",
+      "n": 291,
+      "raw_pts": -3.24,
+      "excess_pts": -3.24,
+      "t": -2.96,
+      "win_pct": 41.6
+    },
+    {
+      "family": "VWAP_REVERSION",
+      "direction": -1,
+      "horizon": "30m",
+      "n": 224,
+      "raw_pts": -4.4,
+      "excess_pts": -4.32,
+      "t": -2.54,
+      "win_pct": 37.5
+    },
+    {
+      "family": "VWAP_REVERSION",
+      "direction": -1,
+      "horizon": "60m",
+      "n": 160,
+      "raw_pts": -7.22,
+      "excess_pts": -7.25,
+      "t": -2.55,
+      "win_pct": 38.1
+    },
+    {
+      "family": "VWAP_REVERSION",
+      "direction": -1,
+      "horizon": "120m",
+      "n": 115,
+      "raw_pts": -10.52,
+      "excess_pts": -10.62,
+      "t": -1.95,
+      "win_pct": 37.4
+    },
+    {
+      "family": "VWAP_REVERSION",
+      "direction": 1,
+      "horizon": "15m",
+      "n": 191,
+      "raw_pts": 5.77,
+      "excess_pts": 5.77,
+      "t": 2.44,
+      "win_pct": 56.0
+    },
+    {
+      "family": "VWAP_REVERSION",
+      "direction": 1,
+      "horizon": "30m",
+      "n": 152,
+      "raw_pts": 5.15,
+      "excess_pts": 5.07,
+      "t": 1.57,
+      "win_pct": 48.0
+    },
+    {
+      "family": "VWAP_REVERSION",
+      "direction": 1,
+      "horizon": "60m",
+      "n": 125,
+      "raw_pts": 3.16,
+      "excess_pts": 3.19,
+      "t": 0.74,
+      "win_pct": 53.6
+    },
+    {
+      "family": "VWAP_REVERSION",
+      "direction": 1,
+      "horizon": "120m",
+      "n": 93,
+      "raw_pts": 3.84,
+      "excess_pts": 3.94,
+      "t": 0.54,
+      "win_pct": 53.8
+    }
+  ]
+}
