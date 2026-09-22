@@ -1,0 +1,36 @@
+# Deterministic risk policy. NOTHING here is writable by the AI.
+# Every value is read by src/risk/structure_risk.RiskLimits.
+risk:
+  allow_naked_short: false          # naked short volatility is forbidden outright
+  allowed_structures:
+    - LONG_CALL
+    - LONG_PUT
+    - BULL_CALL_SPREAD
+    - BEAR_PUT_SPREAD
+    - BULL_PUT_SPREAD
+    - BEAR_CALL_SPREAD
+    - IRON_FLY
+    - IRON_CONDOR
+    - LONG_STRADDLE
+    - LONG_STRANGLE
+  risk_per_trade_pct: 0.01          # research range 0.01 / 0.02 / 0.03 / 0.05
+  max_deployed_pct: 0.60
+  max_open_positions: 1
+  max_trades_per_day: 3
+  daily_loss_limit_pct: 0.03
+  max_data_age_seconds: 300
+  no_entry_before: "09:30"
+  no_entry_after:  "15:00"
+  min_leg_volume: 1.0
+  max_leg_spread_pct: 0.06
+  min_expected_edge_pts: 0.0
+  max_lots: 10
+
+account:
+  # Deterministic hard stops, enforced by the position monitor.
+  max_hold_minutes: 120
+  session_exit_time: "15:15"
+  emergency:
+    on_data_loss: NO_NEW_ENTRY_ATTEMPT_SAFE_EXIT
+    on_broker_disconnect: HALT_NEW_ENTRIES
+    on_reconciliation_mismatch: HALT_TRADING

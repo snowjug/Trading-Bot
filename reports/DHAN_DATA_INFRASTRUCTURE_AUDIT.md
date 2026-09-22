@@ -47,7 +47,7 @@ While recent code hardening added real-time Bid/Ask execution for active option 
 
 ## 3. Dhan API Verification Matrix (Official Documentation vs Live Capability)
 
-Verified against official DhanHQ v2 API specs and authenticated live queries on client ID `1111273920`:
+Verified against official DhanHQ v2 API specs and authenticated live queries on client ID `1000000000`:
 
 | Endpoint | HTTP Method | Verified Status | Payload / Parameters | Fields Returned | Rate Limit |
 | :--- | :---: | :---: | :--- | :--- | :--- |

@@ -96,7 +96,7 @@ def test_missing_market_data_leads_to_no_trade(tmp_path):
 def test_missing_option_quote_leads_to_no_trade(tmp_path):
     """Verify orders are rejected if real executable option quote is unavailable."""
     sandbox = DhanPaperSandbox(
-        client_id="1111273920",
+        client_id="1000000000",
         access_token="test_token",
         env="prod",
         state_dir=str(tmp_path),
@@ -123,7 +123,7 @@ def test_missing_option_quote_leads_to_no_trade(tmp_path):
 def test_invalid_security_id_leads_to_no_trade(tmp_path):
     """Verify empty or invalid security ID is rejected."""
     sandbox = DhanPaperSandbox(
-        client_id="1111273920",
+        client_id="1000000000",
         access_token="test_token",
         env="prod",
         state_dir=str(tmp_path),
@@ -148,7 +148,7 @@ def test_invalid_security_id_leads_to_no_trade(tmp_path):
 def test_realistic_paper_fill_using_executable_quotes(tmp_path):
     """Verify BUY fills at Ask + 0.50 slippage and SELL fills at Bid - 0.50 slippage."""
     sandbox = DhanPaperSandbox(
-        client_id="1111273920",
+        client_id="1000000000",
         access_token="test_token",
         env="prod",
         state_dir=str(tmp_path),
@@ -207,7 +207,7 @@ def test_realistic_paper_fill_using_executable_quotes(tmp_path):
 def test_exit_and_pnl_calculation(tmp_path):
     """Verify dynamic P&L accounting with statutory friction (STT, brokerage, taxes)."""
     sandbox = DhanPaperSandbox(
-        client_id="1111273920",
+        client_id="1000000000",
         access_token="test_token",
         env="prod",
         state_dir=str(tmp_path),
@@ -251,8 +251,8 @@ def test_exit_and_pnl_calculation(tmp_path):
 # ─── 8. PRODUCTION /ORDERS HARD SAFETY BARRIER ───
 def test_production_orders_safety_barrier():
     """Verify fail-safe interceptor strictly raises RuntimeError on any production POST /orders attempt."""
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod")
-    adapter = DhanBrokerAdapter(client_id="1111273920", access_token="test_token")
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod")
+    adapter = DhanBrokerAdapter(client_id="1000000000", access_token="test_token")
 
     # A: DhanPaperSandbox session POST to api.dhan.co/v2/orders MUST be blocked
     with pytest.raises(RuntimeError, match="CRITICAL SAFETY LOCK TRIGGERED"):
@@ -272,8 +272,8 @@ def test_production_orders_safety_barrier():
 # ─── 9. SANDBOX VS PRODUCTION ENVIRONMENT SEPARATION ───
 def test_sandbox_and_production_environment_separation():
     """Verify sandbox routes to https://sandbox.dhan.co/v2 while prod routes locally in paper mode."""
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="sandbox")
-    prod_paper = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod")
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="sandbox")
+    prod_paper = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod")
 
     assert sandbox.use_sandbox_server is True
     assert sandbox.base_url == "https://sandbox.dhan.co/v2"
@@ -448,7 +448,7 @@ def test_invalid_contract_metadata_causes_no_trade():
 # ─── 15. BUY WITH VALID ASK -> EXECUTES AT ASK + SLIPPAGE ───
 def test_buy_with_valid_ask_executes_at_ask_plus_slippage(tmp_path):
     """BUY orders must fill at authentic Ask + configured slippage (0.50 pts)."""
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod", state_dir=str(tmp_path))
     now_iso = datetime.now().isoformat()
 
     quote = {
@@ -477,7 +477,7 @@ def test_buy_with_valid_ask_executes_at_ask_plus_slippage(tmp_path):
 # ─── 16. BUY WITH MISSING ASK + VALID LTP -> NO EXECUTION ───
 def test_buy_with_missing_ask_valid_ltp_no_execution(tmp_path):
     """BUY orders with missing Ask must NEVER fall back to LTP; must fail closed."""
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod", state_dir=str(tmp_path))
     now_iso = datetime.now().isoformat()
 
     # LTP exists and is valid (150.0), but Ask is None
@@ -507,7 +507,7 @@ def test_buy_with_missing_ask_valid_ltp_no_execution(tmp_path):
 # ─── 17. SELL WITH VALID BID -> EXECUTES AT BID - SLIPPAGE ───
 def test_sell_with_valid_bid_executes_at_bid_minus_slippage(tmp_path):
     """SELL orders must fill at authentic Bid - configured slippage (0.50 pts)."""
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod", state_dir=str(tmp_path))
     now_iso = datetime.now().isoformat()
 
     quote = {
@@ -536,7 +536,7 @@ def test_sell_with_valid_bid_executes_at_bid_minus_slippage(tmp_path):
 # ─── 18. SELL WITH MISSING BID + VALID LTP -> NO EXECUTION ───
 def test_sell_with_missing_bid_valid_ltp_no_execution(tmp_path):
     """SELL orders with missing Bid must NEVER fall back to LTP; must fail closed."""
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod", state_dir=str(tmp_path))
     now_iso = datetime.now().isoformat()
 
     # LTP exists (160.0), but Bid is None
@@ -677,7 +677,7 @@ def test_short_valuation_with_missing_ask_data_unavailable(tmp_path):
 # ─── 21. INVALID / ZERO / NEGATIVE BID OR ASK -> REJECTED ───
 def test_invalid_zero_or_negative_bid_ask_rejected(tmp_path):
     """Orders with zero, negative, or non-numeric Bid or Ask must be rejected with DATA_UNAVAILABLE."""
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod", state_dir=str(tmp_path))
     now_iso = datetime.now().isoformat()
 
     invalid_values = [0.0, 0, -1.0, -100.5, "INVALID", None]
@@ -723,7 +723,7 @@ def test_stale_quote_rejected(tmp_path):
     assert is_quote_fresh((datetime.now() - timedelta(seconds=600)).isoformat()) is False
 
     # Verify order rejection in DhanPaperSandbox
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod", state_dir=str(tmp_path))
     stale_iso = (datetime.now() - timedelta(seconds=600)).isoformat()
 
     stale_quote = {
@@ -751,7 +751,7 @@ def test_stale_quote_rejected(tmp_path):
 # ─── 23. LTP IS NEVER USED AS AN EXECUTABLE SUBSTITUTE ───
 def test_ltp_is_never_used_as_executable_substitute(tmp_path):
     """Verify both functionally and structurally that LTP never substitutes for Bid or Ask."""
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod", state_dir=str(tmp_path))
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod", state_dir=str(tmp_path))
     now_iso = datetime.now().isoformat()
 
     # Pass ONLY LTP (ask and bid are None)
@@ -901,7 +901,7 @@ def test_exit_slippage_applied_symmetrically():
     """Verify BUY adds slippage (ask + 0.50) and SELL subtracts slippage (bid - 0.50)."""
     from src.execution.dhan_paper_trader import DhanPaperSandbox
     
-    sandbox = DhanPaperSandbox(client_id="1111273920", access_token="test_token", env="prod")
+    sandbox = DhanPaperSandbox(client_id="1000000000", access_token="test_token", env="prod")
     now_iso = datetime.now().isoformat()
     quote = {
         "security_id": "56983",

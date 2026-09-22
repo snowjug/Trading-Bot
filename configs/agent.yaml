@@ -1,0 +1,25 @@
+# Agent wiring. Default is the deterministic baseline: no model calls at all.
+agent:
+  mode: REPLAY                      # REPLAY | PAPER   (LIVE is not selectable)
+  decider: heuristic                # heuristic | llm
+  prompt_version: agent-brief-v1
+  heuristic:
+    min_score: 2
+    min_move_pts: 15.0
+  llm:
+    model: ""                       # set explicitly when enabling
+    max_calls: 2000                 # hard budget per run
+    cache: true
+  reassess:
+    on_structure_change: true
+    on_vol_regime_change: true
+    on_stop_or_target_proximity: true
+    on_invalidation: true
+    min_minutes_between_calls: 15   # never re-ask about the same position faster
+
+structures:
+  width_steps: 4                    # protective leg distance, in strike steps
+  otm_steps: 0
+  strike_step:
+    NIFTY: 50
+    BANKNIFTY: 100

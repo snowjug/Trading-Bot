@@ -1,6 +1,6 @@
 """
 Regression tests for defects found by VERIFYING AGAINST THE LIVE DHAN API
-(2026-09-17, account 1111273920, strictly read-only).
+(2026-09-17, account 1000000000, strictly read-only).
 
 Two real defects were discovered that no amount of reading the repo would have
 revealed:
@@ -234,7 +234,7 @@ def test_broker_position_schema_matches_official_docs():
     assert parse_broker_payload([]).status is BrokerStateStatus.AVAILABLE_FLAT
 
     row = {
-        "dhanClientId": "1111273920", "tradingSymbol": "NIFTY-Sep2026-23250-CE",
+        "dhanClientId": "1000000000", "tradingSymbol": "NIFTY-Sep2026-23250-CE",
         "securityId": "56983", "positionType": "LONG", "exchangeSegment": "NSE_FNO",
         "productType": "INTRADAY", "buyAvg": 150.0, "buyQty": 65, "costPrice": 150.0,
         "sellAvg": 0.0, "sellQty": 0, "netQty": 65, "realizedProfit": 0.0,
