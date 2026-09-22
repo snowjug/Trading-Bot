@@ -123,6 +123,7 @@ class HeuristicDecider:
             setup_quality=best.quality_hint,
             direction_score=round(min(1.0, 0.45 + 0.15 * score), 3),
             expected_move_points=round(em, 1),
+            expected_move_horizon_minutes=int(best.expected_move_horizon_minutes),
             estimated_horizon_minutes=60,
             max_hold_minutes=min(120, max(30, st.minutes_to_close)),
             stop_type="UNDERLYING_STRUCTURE",

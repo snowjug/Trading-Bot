@@ -47,6 +47,10 @@ class AgentDecision:
     setup_quality: str
     direction_score: float              # 0..1, NOT treated as calibrated
     expected_move_points: float
+    # The horizon `expected_move_points` is measured over. The risk gate scales the
+    # move to the ACTUAL holding period using this, so a daily-scale estimate cannot
+    # be silently used to justify a two-hour trade.
+    expected_move_horizon_minutes: int
     estimated_horizon_minutes: int
     max_hold_minutes: int
     stop_type: str                      # UNDERLYING_STRUCTURE | R_MULTIPLE | PREMIUM_PCT
@@ -79,7 +83,8 @@ class ValidationResult:
 NO_TRADE = AgentDecision(
     action="HOLD", decision="SKIP", underlying="", direction="NEUTRAL",
     structure="NONE", setup_quality="LOW", direction_score=0.0,
-    expected_move_points=0.0, estimated_horizon_minutes=0, max_hold_minutes=0,
+    expected_move_points=0.0, expected_move_horizon_minutes=0,
+    estimated_horizon_minutes=0, max_hold_minutes=0,
     stop_type="R_MULTIPLE", stop_value=0.0, take_profit_type="R_MULTIPLE",
     take_profit_value=0.0, invalidation_conditions=[], reason_codes=["NO_TRADE"],
     rationale="default no-trade",
@@ -168,6 +173,7 @@ def validate(obj: Optional[dict], expected_underlying: Optional[str] = None
 
     ds = _num(obj, "direction_score", 0.0, 0.0, 1.0, errs)
     em = _num(obj, "expected_move_points", 0.0, 0.0, 5000.0, errs)
+    emh = int(_num(obj, "expected_move_horizon_minutes", 0, 0, 3000, errs))
     hz = int(_num(obj, "estimated_horizon_minutes", 0, 0, 3000, errs))
     mh = int(_num(obj, "max_hold_minutes", 0, 0, 3000, errs))
 
@@ -192,6 +198,9 @@ def validate(obj: Optional[dict], expected_underlying: Optional[str] = None
             errs.append("EXECUTE without a structure")
         if em <= 0:
             errs.append("EXECUTE without a positive expected_move_points")
+        if emh <= 0:
+            errs.append("EXECUTE without expected_move_horizon_minutes; an expected "
+                        "move with no horizon cannot be compared to a premium")
         if st_val <= 0:
             errs.append("EXECUTE without a stop_loss value")
         if mh <= 0:
@@ -209,6 +218,7 @@ def validate(obj: Optional[dict], expected_underlying: Optional[str] = None
         underlying=(underlying or (expected_underlying or "")),
         direction=direction, structure=structure, setup_quality=quality,
         direction_score=ds, expected_move_points=em,
+        expected_move_horizon_minutes=emh,
         estimated_horizon_minutes=hz, max_hold_minutes=mh,
         stop_type=st_type, stop_value=st_val,
         take_profit_type=tp_type, take_profit_value=tp_val,

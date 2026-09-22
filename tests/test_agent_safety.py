@@ -90,7 +90,8 @@ def _decision(**kw):
     base = dict(action="BUY", decision="EXECUTE", underlying="NIFTY",
                 direction="BULLISH", structure="BULL_PUT_SPREAD",
                 setup_quality="HIGH", direction_score=0.7,
-                expected_move_points=80.0, estimated_horizon_minutes=60,
+                expected_move_points=80.0, expected_move_horizon_minutes=5,
+                estimated_horizon_minutes=60,
                 max_hold_minutes=120, stop_type="UNDERLYING_STRUCTURE",
                 stop_value=40.0, take_profit_type="R_MULTIPLE",
                 take_profit_value=2.0, invalidation_conditions=["x"],
@@ -119,7 +120,7 @@ def test_model_may_not_name_a_naked_short_structure():
         r = validate({"action": "SELL", "decision": "EXECUTE", "underlying": "NIFTY",
                       "direction": "NEUTRAL", "structure": s,
                       "setup_quality": "HIGH", "expected_move_points": 100,
-                      "max_hold_minutes": 60,
+                      "expected_move_horizon_minutes": 5, "max_hold_minutes": 60,
                       "stop_loss": {"type": "R_MULTIPLE", "value": 1}}, "NIFTY")
         assert not r.ok
         assert any("banned" in e for e in r.errors), r.errors
@@ -129,11 +130,12 @@ def test_execute_missing_any_required_field_is_refused():
     full = {"action": "BUY", "decision": "EXECUTE", "underlying": "NIFTY",
             "direction": "BULLISH", "structure": "BULL_CALL_SPREAD",
             "setup_quality": "HIGH", "expected_move_points": 90,
-            "max_hold_minutes": 60,
+            "expected_move_horizon_minutes": 5, "max_hold_minutes": 60,
             "stop_loss": {"type": "R_MULTIPLE", "value": 1.0}}
     assert validate(dict(full), "NIFTY").ok
     for drop, why in (("structure", "no structure"),
                       ("expected_move_points", "no move"),
+                      ("expected_move_horizon_minutes", "no move horizon"),
                       ("max_hold_minutes", "no hold")):
         d = dict(full); d.pop(drop)
         assert not validate(d, "NIFTY").ok, f"{why} should have been refused"
@@ -145,7 +147,7 @@ def test_model_cannot_claim_a_different_underlying():
     r = validate({"action": "BUY", "decision": "EXECUTE", "underlying": "BANKNIFTY",
                   "direction": "BULLISH", "structure": "BULL_CALL_SPREAD",
                   "setup_quality": "HIGH", "expected_move_points": 90,
-                  "max_hold_minutes": 60,
+                  "expected_move_horizon_minutes": 5, "max_hold_minutes": 60,
                   "stop_loss": {"type": "R_MULTIPLE", "value": 1}}, "NIFTY")
     assert not r.ok
 
@@ -154,7 +156,7 @@ def test_directional_structure_with_neutral_direction_is_refused():
     r = validate({"action": "BUY", "decision": "EXECUTE", "underlying": "NIFTY",
                   "direction": "NEUTRAL", "structure": "BULL_CALL_SPREAD",
                   "setup_quality": "HIGH", "expected_move_points": 90,
-                  "max_hold_minutes": 60,
+                  "expected_move_horizon_minutes": 5, "max_hold_minutes": 60,
                   "stop_loss": {"type": "R_MULTIPLE", "value": 1}}, "NIFTY")
     assert not r.ok
 
@@ -163,7 +165,8 @@ def test_out_of_range_numbers_are_clamped_and_reported():
     r = validate({"action": "BUY", "decision": "EXECUTE", "underlying": "NIFTY",
                   "direction": "BULLISH", "structure": "BULL_CALL_SPREAD",
                   "setup_quality": "HIGH", "direction_score": 9.9,
-                  "expected_move_points": 90, "max_hold_minutes": 60,
+                  "expected_move_points": 90, "expected_move_horizon_minutes": 5,
+                  "max_hold_minutes": 60,
                   "stop_loss": {"type": "R_MULTIPLE", "value": 1}}, "NIFTY")
     assert not r.ok and any("direction_score" in e for e in r.errors)
 
@@ -464,6 +467,43 @@ def test_lots_scale_with_equity_and_never_exceed_the_risk_budget():
 def test_lots_are_capped_by_max_lots():
     v = evaluate(**_ok_args(equity=50_000_000.0, limits=_limits(max_lots=3)))
     assert v.approved and v.lots == 3
+
+
+def test_a_daily_scale_expected_move_cannot_justify_a_two_hour_debit_trade():
+    """
+    The false positive this rule removes. A long straddle costing ~94 points was
+    approved because the candidate reported the DAILY ATR (~250 pts) as its expected
+    move while max_hold_minutes was 120. Scaling by sqrt(hold/horizon) makes the
+    comparison honest and the trade is refused.
+    """
+    from src.options.structures import Leg
+    legs = [PricedLeg(Leg("long_call", "CE", "BUY", 23500.0), 47.0, 47.6, 5000.0, 0.01),
+            PricedLeg(Leg("long_put", "PE", "BUY", 23500.0), 47.0, 47.6, 5000.0, 0.01)]
+    daily = _decision(structure="LONG_STRADDLE", direction="NEUTRAL", action="BUY",
+                      expected_move_points=250.0, expected_move_horizon_minutes=375,
+                      max_hold_minutes=120)
+    v = evaluate(**_ok_args(decision=daily, legs=legs))
+    assert not v.approved and v.gate_failed == "NO_EDGE_AFTER_COST", v.rejections
+
+    # Stating the SAME move over the holding period it is actually available in
+    # would pass — the rule is about honesty of the horizon, not a blanket ban.
+    honest = _decision(structure="LONG_STRADDLE", direction="NEUTRAL", action="BUY",
+                       expected_move_points=250.0, expected_move_horizon_minutes=120,
+                       max_hold_minutes=120)
+    v2 = evaluate(**_ok_args(decision=honest, legs=legs))
+    assert v2.expected_edge_pts > v.expected_edge_pts
+
+
+def test_expected_move_is_never_scaled_up_beyond_its_horizon():
+    from src.options.structures import Leg
+    legs = [PricedLeg(Leg("long_call", "CE", "BUY", 23500.0), 47.0, 47.6, 5000.0, 0.01),
+            PricedLeg(Leg("long_put", "PE", "BUY", 23500.0), 47.0, 47.6, 5000.0, 0.01)]
+    d = _decision(structure="LONG_STRADDLE", direction="NEUTRAL", action="BUY",
+                  expected_move_points=100.0, expected_move_horizon_minutes=5,
+                  max_hold_minutes=3000)
+    v = evaluate(**_ok_args(decision=d, legs=legs))
+    # sqrt(3000/5) would be 24x; the cap keeps it at 1x
+    assert any("x1.00" in n for n in v.notes), v.notes
 
 
 def test_model_setting_a_huge_expected_move_cannot_increase_size():

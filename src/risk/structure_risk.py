@@ -175,10 +175,28 @@ def evaluate(
 
     # The edge test the directive insists on: an expected move that does not clear
     # the modelled friction is not a trade, however good the setup looked.
+    #
+    # A DEBIT structure must be judged on the move available over the ACTUAL holding
+    # period, not over whatever horizon the estimate happened to be measured on. This
+    # caught a real false positive: `options_vol_setup` reports the DAILY ATR (~250
+    # points) as the expected move, and against a 94-point straddle that looked like
+    # +30 points of edge — but `max_hold_minutes` was 120, so the position could only
+    # ever see a fraction of a daily range. 47 of 66 replay trades were approved this
+    # way and the strategy lost Rs 132,496.
+    #
+    # Moves scale with the square root of time, so the estimate is scaled by
+    # sqrt(hold / horizon) and never scaled UP.
+    hold = max(1.0, float(decision.max_hold_minutes or 0) or 1.0)
+    horizon = max(1.0, float(getattr(decision, "expected_move_horizon_minutes", 0) or 0))
+    scale = min(1.0, (hold / horizon) ** 0.5) if horizon > 0 else 0.0
+    move_over_hold = float(decision.expected_move_points) * scale
+    v.notes.append(f"expected move {decision.expected_move_points:.1f} pts over "
+                   f"{horizon:.0f}min scaled to {move_over_hold:.1f} pts over the "
+                   f"{hold:.0f}min hold (x{scale:.2f})")
     if is_credit(s):
         edge = net_credit - cost_pts
     else:
-        edge = float(decision.expected_move_points) * 0.5 - abs(net_credit) - cost_pts
+        edge = move_over_hold * 0.5 - abs(net_credit) - cost_pts
     v.expected_edge_pts = round(edge, 2)
     if edge <= limits.min_expected_edge_pts:
         return v.reject("NO_EDGE_AFTER_COST",

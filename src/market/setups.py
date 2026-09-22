@@ -29,9 +29,17 @@ class CandidateSetup:
     reason_codes: List[str]
     level: Optional[float] = None         # the level that matters, if any
     expected_move_pts: Optional[float] = None
+    # The horizon `expected_move_pts` refers to. Without this the number is
+    # meaningless: a 250-point daily ATR and a 16-point 5-minute ATR are both "the
+    # expected move", and comparing either against an option premium without knowing
+    # which one it is produced a real false positive here (see the risk gate).
+    expected_move_horizon_minutes: int = 5
     invalidation: Optional[float] = None  # price at which the premise is wrong
     evidence: Dict[str, Any] = field(default_factory=dict)
 
+
+# One NSE session, 09:15 to 15:30.
+SESSION_MINUTES = 375
 
 DEFAULTS: Dict[str, float] = {
     "min_bars_primary": 60,
@@ -109,6 +117,7 @@ def detect(st: MarketState, cfg: Optional[Dict[str, float]] = None
                 kind="TREND_CONTINUATION", direction=d,
                 quality_hint=("HIGH" if score >= 3 else "MEDIUM"),
                 reason_codes=codes, level=st.vwap, expected_move_pts=round(em, 1),
+                expected_move_horizon_minutes=5,
                 invalidation=(prim.swing_low if d > 0 else prim.swing_high),
                 evidence={"regime_strength": st.regime_strength,
                           "htf_alignment": st.htf_alignment, "volume_ratio": vr}))
@@ -131,7 +140,8 @@ def detect(st: MarketState, cfg: Optional[Dict[str, float]] = None
                 kind="BREAKOUT", direction=1,
                 quality_hint=("HIGH" if (vol_ok and st.htf_alignment >= 1) else "MEDIUM"),
                 reason_codes=codes, level=b.get("level_high"),
-                expected_move_pts=round(em, 1), invalidation=b.get("level_high"),
+                expected_move_pts=round(em, 1), expected_move_horizon_minutes=5,
+                invalidation=b.get("level_high"),
                 evidence={"break_points": bp, "volume_ratio": vr,
                           "compression": prim.compression}))
     if b.get("new_break_low") and bp is not None and bp >= break_clear:
@@ -147,7 +157,8 @@ def detect(st: MarketState, cfg: Optional[Dict[str, float]] = None
                 kind="BREAKOUT", direction=-1,
                 quality_hint=("HIGH" if (vol_ok and st.htf_alignment <= -1) else "MEDIUM"),
                 reason_codes=codes, level=b.get("level_low"),
-                expected_move_pts=round(em, 1), invalidation=b.get("level_low"),
+                expected_move_pts=round(em, 1), expected_move_horizon_minutes=5,
+                invalidation=b.get("level_low"),
                 evidence={"break_points": bp, "volume_ratio": vr,
                           "compression": prim.compression}))
 
@@ -157,7 +168,7 @@ def detect(st: MarketState, cfg: Optional[Dict[str, float]] = None
             kind="FAILED_BREAK_REVERSAL", direction=-1, quality_hint="MEDIUM",
             reason_codes=["FAILED_BREAK_HIGH", "UPPER_WICK_REJECTION"],
             level=b.get("level_high"), expected_move_pts=round(em, 1),
-            invalidation=st.session_high,
+            expected_move_horizon_minutes=5, invalidation=st.session_high,
             evidence={"upper_wick_frac": c.get("upper_wick_frac"),
                       "close_position": c.get("close_position")}))
     if b.get("failed_break_low") and (c.get("is_rejection_down") or c.get("is_pin_bar")):
@@ -165,7 +176,7 @@ def detect(st: MarketState, cfg: Optional[Dict[str, float]] = None
             kind="FAILED_BREAK_REVERSAL", direction=1, quality_hint="MEDIUM",
             reason_codes=["FAILED_BREAK_LOW", "LOWER_WICK_REJECTION"],
             level=b.get("level_low"), expected_move_pts=round(em, 1),
-            invalidation=st.session_low,
+            expected_move_horizon_minutes=5, invalidation=st.session_low,
             evidence={"lower_wick_frac": c.get("lower_wick_frac"),
                       "close_position": c.get("close_position")}))
 
@@ -186,6 +197,7 @@ def detect(st: MarketState, cfg: Optional[Dict[str, float]] = None
                                   *(["RSI_EXTREME"] if rsi_extreme else []),
                                   *(["REJECTION_CANDLE"] if rejecting else [])],
                     level=st.vwap, expected_move_pts=round(stretch_pts * 0.6, 1),
+                    expected_move_horizon_minutes=30,
                     invalidation=(st.session_high if d < 0 else st.session_low),
                     evidence={"dist_vwap_pct": st.dist_vwap_pct, "rsi14": prim.rsi14,
                               "stretch_atr": round(stretch_pts / atr, 2)}))
@@ -196,7 +208,8 @@ def detect(st: MarketState, cfg: Optional[Dict[str, float]] = None
         out.append(CandidateSetup(
             kind="VOLATILITY_EXPANSION", direction=0, quality_hint="MEDIUM",
             reason_codes=["COMPRESSION", "VOLUME_EXPANSION"],
-            level=st.spot, expected_move_pts=round(em * 1.5, 1), invalidation=None,
+            level=st.spot, expected_move_pts=round(em * 1.5, 1),
+            expected_move_horizon_minutes=15, invalidation=None,
             evidence={"compression": prim.compression, "volume_ratio": vr,
                       "vol_bucket": st.regime_vol_bucket}))
 
@@ -227,14 +240,16 @@ def options_vol_setup(st: MarketState, atm_straddle_pts: Optional[float],
         return CandidateSetup(
             kind="OPTIONS_VOL_RICH", direction=0, quality_hint="MEDIUM",
             reason_codes=["STRADDLE_ABOVE_REALISED", f"RATIO_{ratio:.2f}"],
-            level=st.spot, expected_move_pts=round(ref_atr, 1), invalidation=None,
+            level=st.spot, expected_move_pts=round(ref_atr, 1),
+            expected_move_horizon_minutes=SESSION_MINUTES, invalidation=None,
             evidence={"atm_straddle_pts": atm_straddle_pts, "daily_atr": ref_atr,
                       "ratio": round(ratio, 3), "iv_atm": iv_atm})
     if ratio <= 0.75:
         return CandidateSetup(
             kind="OPTIONS_VOL_CHEAP", direction=0, quality_hint="MEDIUM",
             reason_codes=["STRADDLE_BELOW_REALISED", f"RATIO_{ratio:.2f}"],
-            level=st.spot, expected_move_pts=round(ref_atr, 1), invalidation=None,
+            level=st.spot, expected_move_pts=round(ref_atr, 1),
+            expected_move_horizon_minutes=SESSION_MINUTES, invalidation=None,
             evidence={"atm_straddle_pts": atm_straddle_pts, "daily_atr": ref_atr,
                       "ratio": round(ratio, 3), "iv_atm": iv_atm})
     return None
