@@ -522,3 +522,37 @@ target here — `retrospective.PROTECTED` refuses them and a test enforces it.
 **Operator decision:** _(unfilled)_
 
 ---
+
+## VALIDATION EVIDENCE — appended 2026-09-27 (measurement only, no decision taken)
+
+The batch above was produced from DEV 2022-01-01 → 2023-12-31. Its `INVERT_FAMILY`
+entries each require re-scoring "on a DEV window that excludes the one that produced
+this finding". That has now been run on **2024-01-01 → 2025-09-17** (18,916 forecasts);
+full analysis in `reports/CALIBRATION_DEV_VS_VAL.md`, raw numbers in
+`reports/calibration_val_2024_2025.json`.
+
+| proposal | DEV | VAL | validation verdict |
+|---|---|---|---|
+| INVERT `VWAP_REVERSION` (family) | 41.9%, z=+2.73 | 39.9%, z=+2.86 | **REPLICATES** — criterion 2 ("sign holds in two separate years") met at family level |
+| INVERT `VWAP_REVERSION\|dir=-1` | 37.1%, z=+3.26 | 42.1%, z=+1.71 | **WEAKENED**; and criterion 4 (long vs short separately) **FAILS** — see below |
+| DISABLE `BREAKOUT` (all scopes) | no skill | no skill | **REPLICATES** |
+| RECALIBRATE_CONFIDENCE | gap +0.28/+0.33 | gap +0.33/+0.30 | **REPLICATES** |
+| RETUNE magnitude | BREAKOUT 0.322x | BREAKOUT 0.323x | **REPLICATES** to 3 decimals |
+
+**The side-specific inversion fails its own criterion 4.** The wrong side swapped
+between windows: `dir=+1` was z=+0.04 in DEV and z=+2.48 in VAL. Promoting a
+side-specific inversion off DEV would have been fitting that window. The family-level
+inversion is the only directional form of this proposal that survived, and it still has
+no P&L test behind it.
+
+Criterion 3 of the INVERT proposals — "the excess move clears the measured option
+friction (~4.4 points per 2-leg round trip)" — is **NOT MET / NOT TESTED.** A hit rate
+is not a profit, and `VWAP_REVERSION`'s own magnitude estimate is 1.2–1.3x too large and
+less accurate than the ATM straddle's.
+
+Every proposal above therefore remains **PROPOSED**. No target file has been edited.
+The 2025-09-18 → 2026-09-18 holdout is untouched.
+
+**Operator decision:** _(unfilled — this section records a measurement, not a promotion)_
+
+---

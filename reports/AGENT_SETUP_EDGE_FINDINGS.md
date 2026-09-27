@@ -57,6 +57,28 @@ express a view with no measurable forward content.
 
 ### 2.2 VWAP_REVERSION's short side is systematically BACKWARDS
 
+> ### ⚠️ §2.2 AND §3.3 ARE PARTLY REFUTED — CORRECTION 2026-09-27
+>
+> Measured on a validation window that did not produce this finding
+> (2024-01-01 → 2025-09-17), reported in `reports/CALIBRATION_DEV_VS_VAL.md`:
+>
+> - **The family-level result HELD.** `VWAP_REVERSION` is wrong in both windows
+>   (41.9% then 39.9% hit rate, z = +2.73 then +2.86 on independent samples).
+> - **The side attribution did NOT.** The wrong side swapped. `dir=−1` weakened from
+>   z = +3.26 to +1.71, while `dir=+1` — nothing at all in DEV at z = +0.04 — became
+>   the worse side at **z = +2.48**.
+> - **The mechanism proposed below is dead.** "Fading a move down works because the
+>   index drifts up" predicts `dir=+1` is the reliable side. It is now the worst one.
+>   What fits both windows is simpler and needs no drift: after a VWAP stretch, NIFTY
+>   **continues** rather than reverting, on either side, at a 60-minute horizon.
+> - **`BREAKOUT dir=+1`'s 56% long side also failed to replicate** (56.0% → 50.8%,
+>   z = −2.93 → −0.36). It was the most attractive number in the table and it was noise.
+>
+> The sentence below calling the inverted short side "the one concrete, testable lead"
+> was correct to demand a fresh window and wrong about which side carries the signal.
+> Kept in the record rather than deleted.
+
+
 This is the strongest result in the table and the most useful one.
 
 When the setup said **short** — price stretched above VWAP in a range regime, with an

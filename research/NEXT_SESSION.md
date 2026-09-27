@@ -63,11 +63,55 @@ this work writes it.
 ## EXACT NEXT TASK
 
 Cycle 1 is closed. Full findings and the truth table: `reports/CLEAN_ROOM_CYCLE1_FINDINGS.md`.
+The agent build and its §34 learning loop are in place; the forecast calibration result
+across two windows is `reports/CALIBRATION_DEV_VS_VAL.md`.
 
-The Dhan token in `.env` expires **2026-09-20 10:00:13**. Check it first; if it has
-lapsed, see the blocker section above.
+Check the token first — it expires **2026-09-28 09:23:15** (see the credential section
+above).
 
-### Highest-value untested work, in order
+### THE TWO THINGS TO DO NEXT, IN THIS ORDER
+
+**1. P&L-test the family-level VWAP_REVERSION inversion. This is the only surviving
+directional lead in the repository.**
+
+`VWAP_REVERSION` is wrong as a family in two independent multi-year windows — 41.9%
+(z=+2.73) on 2022–2023 and 39.9% (z=+2.86) on 2024–2025. Inverted, that is ~60%
+directional accuracy. What is **missing** is the only thing that matters: whether the
+move is large enough to pay for the structure. Three facts to respect:
+
+- the family's own `expected_move_pts` is 1.19–1.29× too large and **less accurate than
+  the ATM straddle's implied move**, so do not size off it
+- a 2-leg NIFTY structure costs ~4.4 points per round trip (measured, not assumed)
+- **do NOT invert a single side.** The side attribution failed validation: `dir=-1` was
+  z=+3.26 in DEV and +1.71 in VAL, while `dir=+1` went from +0.04 to +2.48. The wrong
+  side swapped. Only the family-level form replicated
+
+Run it on DEV first, then VAL. The 2025-09-18 → 2026-09-18 holdout is **untouched** and
+stays that way until a specific rule is frozen.
+
+**2. Fix the confidence mapping — the most reproducible defect in the system.**
+
+`src/agent/deciders.py` computes `direction_score = 0.45 + 0.15 * score`, reaching
+0.90–1.00 for an aligned MEDIUM/HIGH setup. Measured gap between asserted confidence and
+delivered hit rate: **+0.28 / +0.33 on DEV, +0.33 / +0.30 on VAL.** It asserts ~0.83 on
+coin flips, and that number is consumed downstream as a probability. Proposal
+`RECALIBRATE_CONFIDENCE` in `journal/proposals.md` has the validation list; note the
+trap recorded there — re-fitting the mapping on the window that measured the gap
+produces fitted noise wearing a calibration label, and check the gap per
+`quality_hint` bucket before applying one shrink factor.
+
+Related and cheap: every family's magnitude estimate is beaten by the ATM straddle's
+implied move, and `BREAKOUT`'s bias reproduces as **0.322× then 0.323×** — a
+deterministic scaling error, not a market fact.
+
+### DO NOT REDO THESE — measured and closed
+
+- **`BREAKOUT dir=+1`'s 56% long side.** z = −2.93 in DEV, z = −0.36 in VAL. Noise.
+- **The drift mechanism for VWAP_REVERSION's asymmetry.** Refuted; see §3.2 of
+  `CALIBRATION_DEV_VS_VAL.md`. What fits both windows is that after a VWAP stretch
+  NIFTY continues rather than reverting, on either side.
+
+### Other untested work, in order
 
 1. **FINNIFTY / MIDCPNIFTY / SENSEX 5-minute grids.** Dhan serves them (floors
    2021-08, 2022-01, 2023-05, all ATM±10 with iv/oi/spot at 100%). Acquire with

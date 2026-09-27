@@ -16,7 +16,7 @@ Full findings: `reports/CLEAN_ROOM_CYCLE1_FINDINGS.md` (truth table in §1)
 | 3 | External research and hypotheses | **DONE for this pass** → `research/EXTERNAL_SOURCES.md` |
 | 4 | Research-engine regression testing | **DONE** → `tests/test_research_integrity.py`, 31 passed / 1 skipped |
 | 5 | Core strategy-family discovery on DEV | **DONE** — futures overnight/intraday, stock-futures cross-section (19 features × 6 horizons), BANKNIFTY expiry-settled premium |
-| 6 | Validation | **DONE** — no candidate reached a gate; the one that came closest is unrunnable (its expiry cycle was abolished) |
+| 6 | Validation | **DONE** — no candidate reached a gate; the one that came closest is unrunnable (its expiry cycle was abolished). **Forecast-level validation added 2026-09-27**: `VWAP_REVERSION` is wrong as a family in both DEV and VAL (z=+2.73, +2.86) but its side attribution and `BREAKOUT`'s 56% long side both failed to replicate → `reports/CALIBRATION_DEV_VS_VAL.md` |
 | 7 | Falsification | **DONE** — concentration, regime, tail, cost stress, roll-artefact and margin checks all applied |
 | 8 | Freeze candidate set | NOT STARTED |
 | 9 | FINAL HOLDOUT (one run) | NOT STARTED |
