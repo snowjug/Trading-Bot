@@ -116,7 +116,18 @@ def derived_lot(row: pd.Series) -> float:
     """
     Lot size from the exchange's own turnover, usable in BOTH eras.
     Returns NaN rather than a guess when the inputs are absent.
+
+    FUTURES ONLY. A futures row's value column is `ClsPric x contracts x lot`, so
+    dividing by `ClsPric` is right. An OPTION row's value column is the NOTIONAL, based
+    on the STRIKE, so the same division overstates the lot by roughly strike/premium —
+    about 190x on a 20,000 strike with a 105-point premium. An option row is therefore
+    refused here rather than answered wrongly; use
+    `src/research/option_lots.implied_option_lot`, which divides by the strike and agrees
+    with `chain_panel`'s authentic lot on 24 of 24 months.
     """
+    if (pd.notna(row.get("StrkPric")) and float(row.get("StrkPric") or 0) > 0
+            and str(row.get("OptnTp") or "").upper() in ("CE", "PE")):
+        return float("nan")
     if pd.notna(row.get("NewBrdLotQty")) and float(row.get("NewBrdLotQty") or 0) > 0:
         return float(row["NewBrdLotQty"])
     turn = row.get("TtlTrfVal")
