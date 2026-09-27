@@ -71,23 +71,24 @@ above).
 
 ### THE TWO THINGS TO DO NEXT, IN THIS ORDER
 
-**1. P&L-test the family-level VWAP_REVERSION inversion. This is the only surviving
-directional lead in the repository.**
+**1. ~~P&L-test the family-level VWAP_REVERSION inversion~~ — DONE 2026-09-27. NO SURVIVOR.**
 
-`VWAP_REVERSION` is wrong as a family in two independent multi-year windows — 41.9%
-(z=+2.73) on 2022–2023 and 39.9% (z=+2.86) on 2024–2025. Inverted, that is ~60%
-directional accuracy. What is **missing** is the only thing that matters: whether the
-move is large enough to pay for the structure. Three facts to respect:
+Tested on authentic traded premium, both windows, per-leg statutory friction:
+`reports/VWAP_INVERSION_PNL.md`. The signal is **real** — the selection edge is +Rs 52/trade
+on DEV and +Rs 129 on VAL (larger out of sample, the opposite of over-fitting) — but it is a
+fraction of the cost of carrying the option: ~1.04 premium points of edge against ~3.56 points
+of theta plus friction on DEV, a **3.4x shortfall**. Negative in all four years, at every
+spread assumption including zero, in both a long ATM option and an ATM debit vertical. The
+vertical is worse, not better (t = -13.18, 12% win), because it caps the upside while paying
+four legs.
 
-- the family's own `expected_move_pts` is 1.19–1.29× too large and **less accurate than
-  the ATM straddle's implied move**, so do not size off it
-- a 2-leg NIFTY structure costs ~4.4 points per round trip (measured, not assumed)
-- **do NOT invert a single side.** The side attribution failed validation: `dir=-1` was
-  z=+3.26 in DEV and +1.71 in VAL, while `dir=+1` went from +0.04 to +2.48. The wrong
-  side swapped. Only the family-level form replicated
+**The number to carry forward:** an intraday directional signal on NIFTY must be worth more
+than roughly **3.5 premium points per 60-minute round trip** before an option can carry it.
+Nothing measured in this repository comes close. Do not test another option expression of a
+sub-1-point signal.
 
-Run it on DEV first, then VAL. The 2025-09-18 → 2026-09-18 holdout is **untouched** and
-stays that way until a specific rule is frozen.
+That closes the last directional lead. What remains below is the confidence-mapping defect,
+which is worth fixing on its own terms because it is a bug rather than a strategy.
 
 **2. Fix the confidence mapping — the most reproducible defect in the system.**
 
@@ -105,6 +106,10 @@ implied move, and `BREAKOUT`'s bias reproduces as **0.322× then 0.323×** — a
 deterministic scaling error, not a market fact.
 
 ### DO NOT REDO THESE — measured and closed
+
+- **Any option expression of the VWAP_REVERSION inversion.** Priced on both windows and
+  negative everywhere; the edge is ~1 point against ~3.6 points of cost. A different
+  structure cannot close a 3.4x gap.
 
 - **`BREAKOUT dir=+1`'s 56% long side.** z = −2.93 in DEV, z = −0.36 in VAL. Noise.
 - **The drift mechanism for VWAP_REVERSION's asymmetry.** Refuted; see §3.2 of

@@ -1,0 +1,173 @@
+{
+  "window": {
+    "start": "2022-01-01",
+    "end": "2023-12-31"
+  },
+  "hold_minutes": 60,
+  "signals_priced": 616,
+  "skipped": {
+    "CROSSES_SESSION": 5928,
+    "NO_LOT": 0,
+    "UNPRICEABLE_OPTION": 2,
+    "UNPRICEABLE_SPREAD": 0
+  },
+  "cost_model_version": "2026.1",
+  "results": {
+    "LONG_ATM_OPTION|half_spread=0.0": {
+      "INVERTED": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -76.27,
+        "t_independent": -1.15,
+        "win_pct_all": 47.2,
+        "total_rs_all": -27353.0
+      },
+      "AS_IS": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -179.95,
+        "t_independent": -2.73,
+        "win_pct_all": 28.7,
+        "total_rs_all": -140682.0
+      },
+      "UNCONDITIONAL": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -128.11,
+        "t_independent": -6.94,
+        "win_pct_all": 19.0,
+        "total_rs_all": -84017.0
+      }
+    },
+    "LONG_ATM_OPTION|half_spread=0.5": {
+      "INVERTED": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -126.27,
+        "t_independent": -1.9,
+        "win_pct_all": 44.6,
+        "total_rs_all": -58153.0
+      },
+      "AS_IS": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -229.95,
+        "t_independent": -3.48,
+        "win_pct_all": 26.5,
+        "total_rs_all": -171482.0
+      },
+      "UNCONDITIONAL": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -178.11,
+        "t_independent": -9.65,
+        "win_pct_all": 15.6,
+        "total_rs_all": -114817.0
+      }
+    },
+    "LONG_ATM_OPTION|half_spread=1.0": {
+      "INVERTED": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -176.27,
+        "t_independent": -2.65,
+        "win_pct_all": 42.7,
+        "total_rs_all": -88953.0
+      },
+      "AS_IS": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -279.95,
+        "t_independent": -4.24,
+        "win_pct_all": 24.7,
+        "total_rs_all": -202282.0
+      },
+      "UNCONDITIONAL": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -228.11,
+        "t_independent": -12.35,
+        "win_pct_all": 13.0,
+        "total_rs_all": -145617.0
+      }
+    },
+    "ATM_DEBIT_VERTICAL|half_spread=0.0": {
+      "INVERTED": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -122.04,
+        "t_independent": -7.25,
+        "win_pct_all": 24.5,
+        "total_rs_all": -72603.0
+      },
+      "AS_IS": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -151.99,
+        "t_independent": -8.49,
+        "win_pct_all": 16.4,
+        "total_rs_all": -95806.0
+      },
+      "UNCONDITIONAL": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -137.01,
+        "t_independent": -28.34,
+        "win_pct_all": 2.3,
+        "total_rs_all": -84205.0
+      }
+    },
+    "ATM_DEBIT_VERTICAL|half_spread=0.5": {
+      "INVERTED": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -222.04,
+        "t_independent": -13.18,
+        "win_pct_all": 12.0,
+        "total_rs_all": -134203.0
+      },
+      "AS_IS": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -251.99,
+        "t_independent": -14.08,
+        "win_pct_all": 9.3,
+        "total_rs_all": -157406.0
+      },
+      "UNCONDITIONAL": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -237.01,
+        "t_independent": -49.02,
+        "win_pct_all": 1.3,
+        "total_rs_all": -145805.0
+      }
+    },
+    "ATM_DEBIT_VERTICAL|half_spread=1.0": {
+      "INVERTED": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -322.04,
+        "t_independent": -19.12,
+        "win_pct_all": 6.3,
+        "total_rs_all": -195803.0
+      },
+      "AS_IS": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -351.99,
+        "t_independent": -19.67,
+        "win_pct_all": 4.9,
+        "total_rs_all": -219006.0
+      },
+      "UNCONDITIONAL": {
+        "trades": 616,
+        "n_independent": 285,
+        "mean_rs_independent": -337.01,
+        "t_independent": -69.7,
+        "win_pct_all": 1.0,
+        "total_rs_all": -207405.0
+      }
+    }
+  }
+}

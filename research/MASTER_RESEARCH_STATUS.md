@@ -23,6 +23,7 @@ Full findings: `reports/CLEAN_ROOM_CYCLE1_FINDINGS.md` (truth table in §1)
 | 10 | Capital study | NOT STARTED |
 | 11 | Clean-room reproduction | NOT STARTED |
 | 12 | Paper-trading candidate selection | NOT STARTED |
+| 14 | Pricing the one surviving lead | **DONE — NO SURVIVOR** → `reports/VWAP_INVERSION_PNL.md`. The VWAP inversion's selection edge is real (+Rs 52/trade DEV, +Rs 129 VAL) and ~1 premium point against ~3.6 points of option cost: a 3.4x shortfall, negative in all four years at every spread including zero |
 | 13 | §34 learning loop (record → analyse → propose → **manual** promotion) | **BUILT** → `src/research/calibration.py`, `src/research/retrospective.py`, `journal/proposals.md`, 36 guardrail tests. It can only propose; protected files raise `ProtectedFileError` |
 
 **Nothing may skip to Phase 5 while Phase 2 is incomplete**, except work that does

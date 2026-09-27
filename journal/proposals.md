@@ -556,3 +556,42 @@ The 2025-09-18 → 2026-09-18 holdout is untouched.
 **Operator decision:** _(unfilled — this section records a measurement, not a promotion)_
 
 ---
+
+## PRICING EVIDENCE — appended 2026-09-27 (measurement only, no decision taken)
+
+The `INVERT_FAMILY` entries above each require, as criterion 3, that "the excess move clears
+the measured option friction (~4.4 points per 2-leg round trip)". That has now been tested on
+authentic traded premium with per-leg statutory friction, on both windows. Full analysis in
+`reports/VWAP_INVERSION_PNL.md`; raw numbers in `reports/vwap_inversion_pnl_{dev,val}.json`.
+
+**Criterion 3: FAILED.** Family-level inversion, long ATM option, 60-minute hold:
+
+| | DEV 2022-2023 | VAL 2024-2025 |
+|---|---|---|
+| priced signals | 616 | 437 |
+| `INVERTED` mean, 0.5 half-spread | −Rs 126 (t=-1.90) | −Rs 103 (t=-0.76) |
+| `UNCONDITIONAL` (random side) | −Rs 178 | −Rs 232 |
+| **selection edge** | **+Rs 52** | **+Rs 129** |
+| net | **negative** | **negative** |
+
+The signal is REAL — the selection edge is positive in both windows and *larger* out of
+sample, which is the opposite of an over-fitted result. It is simply far smaller than the cost
+of the instrument: on DEV, ~1.04 premium points of edge against ~3.56 points of theta plus
+friction, a shortfall of 3.4x. Negative in all four individual years, at every spread
+assumption including zero, in both declared expressions. The defined-risk vertical is worse,
+not better (t = -13.18, 12% win rate), because it caps the upside while paying four legs.
+
+Consequence for these proposals: the family-level inversion satisfied criterion 2
+(replication across windows) but **fails criterion 3 (clears friction)**. It is therefore not
+promotable in any option expression tested. Criterion 4 was already failed by the per-side
+form.
+
+The `RECALIBRATE_CONFIDENCE` and `RETUNE` proposals are untouched by this result; both
+replicated across windows and neither depends on a tradeable edge existing.
+
+Every proposal remains **PROPOSED**. No target file has been edited. The
+2025-09-18 -> 2026-09-18 holdout is untouched.
+
+**Operator decision:** _(unfilled - this section records a measurement, not a promotion)_
+
+---
