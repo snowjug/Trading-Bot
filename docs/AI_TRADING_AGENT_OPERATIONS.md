@@ -236,6 +236,51 @@ separate backtest-only execution model.
 
 ---
 
+## 7A. THE LEARNING LOOP — HOW TO RUN IT AND WHAT YOUR JOB IS
+
+```bash
+python scripts/research/run_calibration.py --start 2022-01-01 --end 2023-12-31
+```
+
+Writes `reports/calibration_*.json` and appends a batch to `journal/proposals.md`.
+It places no orders, touches no risk file, and changes no behaviour — a proposal
+reaches the agent only when **you** edit the target file.
+
+### Reading the table
+
+| column | meaning |
+|---|---|
+| `n` | forecast records. **Not a sample size** — overlapping windows inflate it ~12× |
+| `indep` | non-overlapping observations. This is the sample size; every threshold uses it |
+| `hit%` | how often the market moved the way the setup pointed |
+| `score` | the confidence the decider **asserted**. Compare it to `hit%` |
+| `vs coin` / `vs base` | Brier improvement over p=0.50 and over the realised base rate. Both must be positive to claim skill |
+| `mag bias` | stated expected move ÷ realised move. `2.44x` means it overstated by 2.4× |
+| `beats mkt` | is its magnitude estimate more accurate than the ATM straddle's |
+
+`score` next to `hit%` is the column to read first. A family asserting **0.86** and
+delivering **53.7%** is not wrong about direction — it is wrong about how much to
+believe itself, and every consumer of `direction_score` inherits that error.
+
+### Your job on a proposal
+
+Each entry carries a `validation_required` list. **Run it before promoting, on a
+window that did not produce the finding.** An `INVERT_FAMILY` entry is the most
+dangerous to act on: inverting a rule doubles the multiple-testing surface, because the
+same data now supports two hypotheses. The entry says so in its own risk note.
+
+Then record the outcome under **Operator decision** in the journal, including a
+rejection. A rejected proposal with a reason is what stops the loop re-proposing it
+every cycle and stops a later reader mistaking silence for agreement.
+
+### What it cannot do
+
+Naming `src/risk/`, `src/execution/`, `src/config.py`, `configs/risk.yaml`, the decision
+schema, the structure catalogue or `.env` as a target raises `ProtectedFileError`. There
+is no flag to override it and no code path from the journal back into the agent.
+
+---
+
 ## 8. WHAT WILL GO WRONG
 
 | Symptom | Cause | What to do |

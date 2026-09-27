@@ -9,25 +9,32 @@ Read this first. Do not restart from scratch.
 
 ---
 
-## BLOCKER THAT NEEDS THE ACCOUNT HOLDER
+## CREDENTIAL STATUS — CLEARED 2026-09-27
 
-**The Dhan access token expired at 2026-09-19 08:43:45.**
+The token was renewed by the account holder on **2026-09-27 09:23:15** and verified
+read-only the same minute:
 
 ```
-charts/historical / charts/intraday / charts/rollingoption / fundlimit  ->  HTTP 401 DH-901
-optionchain/expirylist                                                 ->  HTTP 200
+charts/historical        HTTP 200   18 daily bars
+charts/intraday          HTTP 200   75 five-minute bars
+optionchain/expirylist   HTTP 200   next expiries 2026-09-29, 2026-10-06, 2026-10-13
 ```
 
-Read from the JWT itself: `iat 2026-09-18 08:43:45`, `exp 2026-09-19 08:43:45`.
-
-Renew it in the Dhan console and set `DHAN_ACCESS_TOKEN` in `.env`. Verify with:
+**It is a 24-hour token: it expires 2026-09-28 09:23:15.** Dhan issues `SELF`-consumer
+tokens with a one-day life, so assume it is dead at the start of any later session and
+re-verify before drawing a conclusion from an empty response:
 
 ```bash
-python -c "import sys;sys.path.insert(0,'.');import requests;from src.config import Config;print(requests.post('https://api.dhan.co/v2/charts/historical',json={'securityId':'13','exchangeSegment':'IDX_I','instrument':'INDEX','fromDate':'2026-08-01','toDate':'2026-09-18'},headers={'access-token':Config.DHAN_ACCESS_TOKEN,'client-id':Config.DHAN_CLIENT_ID,'Content-Type':'application/json'},timeout=30).status_code)"
+python -c "import sys;sys.path.insert(0,'.');import requests;from src.config import Config;print(requests.post('https://api.dhan.co/v2/charts/intraday',json={'securityId':'13','exchangeSegment':'IDX_I','instrument':'INDEX','interval':'5','fromDate':'2026-09-25','toDate':'2026-09-26'},headers={'access-token':Config.DHAN_ACCESS_TOKEN,'client-id':Config.DHAN_CLIENT_ID,'Content-Type':'application/json'},timeout=90).status_code)"
 ```
 
-Expect `200`. Until then all intraday work is NIFTY-only, and that is
-**UNTESTABLE — CREDENTIAL EXPIRED**, never "no data".
+Expect `200`. A `401 DH-901` means **UNTESTABLE — CREDENTIAL EXPIRED**, never "no data".
+A TLS handshake timeout means **UNTESTABLE — NETWORK**, which is also not a data verdict;
+retry with a 90-second timeout before concluding anything.
+
+Credentials live in `.env` only (`DHAN_ACCESS_TOKEN`, `DHAN_CLIENT_ID`). `.env` is
+gitignored at `.gitignore:23`. `LIVE_TRADING_ENABLED` is `False` and no module added in
+this work writes it.
 
 ---
 

@@ -117,6 +117,8 @@ safety question is answered after it, by code, in `structure_risk.py`.
 | `src/risk/structure_risk.py` | the deterministic boundary |
 | `src/execution/agent_paper_executor.py` | paper execution on the canonical path |
 | `src/research/agent_replay.py` | replay engine with decision cache |
+| `src/research/calibration.py` | scores the **forecast** against the option market's own implied move, independently of P&L |
+| `src/research/retrospective.py` | §34 learning loop — reads calibration evidence and may only **propose** |
 | `configs/agent.yaml`, `risk.yaml`, `market.yaml` | all thresholds live here, not in code |
 
 ### Replaced / quarantined
@@ -239,6 +241,79 @@ not to inherit a claim.
 
 ---
 
+## 7A. THE LEARNING LOOP (§34) — RECORD, ANALYSE, PROPOSE, STOP
+
+The directive requires that the agent never change itself after losses. It is
+implemented as a one-way pipeline that terminates in a document a human reads.
+
+```
+replay / paper  ->  ForecastRecord        (calibration.py)   what was asserted, what happened
+                ->  CalibrationResult     (calibration.py)   graded vs TWO baselines + the market
+                ->  Proposal              (retrospective.py) a hypothesis + the tests it must pass
+                ->  journal/proposals.md                     documentation; nothing reads it back
+                ->  a human edits the target file            the only way a change reaches the agent
+```
+
+### Why score the forecast and not the P&L
+
+Replay P&L is the noisiest possible instrument: the agent lost ₹131,883 at t = −5.62,
+and that one number cannot separate *"it has no view"* from *"it has a view it cannot
+afford to express"*. Calibration separates them by grading the assertion itself, with
+the option market's own ATM straddle as the opposing forecast — the `brier_delta` idea
+taken from the `bennyjo/phil` reference, adapted to instruments this repository already
+prices authentically.
+
+Two scores, kept separate because they fail for different reasons and have different
+remedies:
+
+| score | baseline | a failure means |
+|---|---|---|
+| **direction** (Brier) | a coin flip **and** the realised base rate | beating only the coin flip means it found the index's drift, not an edge — so skill requires **both** |
+| **magnitude** | the ATM straddle's implied move over the same horizon | the `expected_move_points` that justifies a debit structure is less accurate than the price the market is quoting |
+
+### Four findings, four different remedies
+
+The distinctions here were forced by defects in the first real run, not designed in
+advance:
+
+| finding | test | remedy | target |
+|---|---|---|---|
+| `INVERT_FAMILY` | hit rate below 50% by more than `z·0.5/√n` | the sign is reversed | `src/market/setups.py` |
+| `RECALIBRATE_CONFIDENCE` | Brier worse than a coin flip while hit rate ≥ 50% | the sign is right, the stated confidence is not | `src/agent/deciders.py` |
+| `DISABLE_FAMILY` | beats neither baseline | it pays friction for nothing | `configs/market.yaml` |
+| `RETUNE` | magnitude MAE worse than the straddle's | stop using that figure to justify a debit | `src/market/setups.py` |
+
+`INVERT_FAMILY` and `RECALIBRATE_CONFIDENCE` are the pair that matters. A Brier worse
+than a coin flip conflates two faults, and only one is an inversion. The first
+authentic run proposed inverting `BREAKOUT|dir=+1`, which hits **53.7%** — flipping it
+would have made the forecast worse; it is merely overconfident, because the decider
+asserts `0.45 + 0.15·score` and so states 0.90–1.00 on setups that resolve near 0.50.
+The same run proposed inverting `BREAKOUT` on a **49.5%** hit rate, where one standard
+error is 5.5 percentage points. Both are now separate findings with a materiality bar,
+and both cases are pinned by tests.
+
+Every threshold is applied to `n_independent`, not the record count: with a 60-minute
+hold on 5-minute bars, consecutive observations share 11/12 of their forward window, so
+the raw count overstates the sample by about 12×.
+
+### The mechanical guarantee
+
+`retrospective.PROTECTED` lists the files that carry the safety argument — the risk
+boundary, the kill switch, the decision schema, the structure catalogue, the executor,
+the cost model, `LIVE_TRADING_ENABLED`, every risk limit, and `.env`. A proposal naming
+any of them raises `ProtectedFileError` instead of being queued. `PROPOSABLE` is a
+short allow-list of sensing and pacing files. `tests/test_retrospective_guardrails.py`
+(36 tests) enforces this, including a static AST check that the module has no write
+path other than the journal itself, so a future edit that adds one fails in CI rather
+than in production. This is the local equivalent of the reference repo's check that
+fails any agent commit touching its protected core.
+
+**What is deliberately NOT borrowed from the reference:** it rewrites its own strategy
+after every resolved bet. §34 forbids that. This loop writes a document and stops —
+there is no code path from a proposal to a file change.
+
+---
+
 ## 8. SUCCESS CRITERIA FOR THIS BUILD
 
 Not "the backtest made money". This build is complete when:
@@ -249,6 +324,7 @@ Not "the backtest made money". This build is complete when:
 4. every risk gate is individually tested
 5. paper and replay share one execution path
 6. the agent is measured against the six required baselines
-7. limitations are stated plainly
+7. the §34 loop can only propose, and a test proves it (§7A)
+8. limitations are stated plainly
 
 Profitability is a later question and will not be claimed before evidence.

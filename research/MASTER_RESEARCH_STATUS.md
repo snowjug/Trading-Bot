@@ -23,6 +23,7 @@ Full findings: `reports/CLEAN_ROOM_CYCLE1_FINDINGS.md` (truth table in §1)
 | 10 | Capital study | NOT STARTED |
 | 11 | Clean-room reproduction | NOT STARTED |
 | 12 | Paper-trading candidate selection | NOT STARTED |
+| 13 | §34 learning loop (record → analyse → propose → **manual** promotion) | **BUILT** → `src/research/calibration.py`, `src/research/retrospective.py`, `journal/proposals.md`, 36 guardrail tests. It can only propose; protected files raise `ProtectedFileError` |
 
 **Nothing may skip to Phase 5 while Phase 2 is incomplete**, except work that does
 not need the missing data.
@@ -62,6 +63,10 @@ Ingest ledger: `data/catalog/fo_full_ingest_ledger.csv` (+ failure ledger).
 | 6 | The claim that historical lot size is "not derivable from VAL_INLAKH/CONTRACTS" is **itself wrong** | MEDIUM | **DISPROVED** — see below |
 | 7 | **My own new ingester** matched only the legacy instrument-type codes. UDiFF uses `IDF`/`STF`/`IDO`/`STO`, not `FUTIDX`/`OPTIDX`, so 670 sessions captured **zero rows** and each was logged `OK` | **HIGH** | **FIXED** — unified `InstrmClass`, plus an explicit `EMPTY_BOTH_BUCKETS` status so a day that captures nothing can never be recorded as a success |
 | 8 | The ingester's resume set came from the ledger alone, so deleting an output file did not force a re-parse — 1,235 days were skipped with no files on disk | MEDIUM | **FIXED** — resume now requires the parquet to exist |
+| 9 | A **fail-closed safety test** never reached its own assertions. `test_short_valuation_with_missing_ask_data_unavailable` mocked `fetch_option_quote` with the parameter named `sec_id`, but one production caller passes `security_id=` as a keyword, so the mock raised `TypeError` first. The property it exists to verify — that a short position's cost to close is never fabricated when the Ask is missing — was uncovered | **HIGH** (a safety claim with no test behind it) | **FIXED** — mock parameter renamed to match the real signature; the assertions now run and production passes them |
+| 10 | The same test performs a **live HTTP call** to `api.dhan.co/v2/charts/intraday`, so its control flow depends on whether the access token is valid. That is why it passed at 704/0 with a live token and failed with an expired one | MEDIUM | **OPEN** — flagged for a dedicated pass; the network boundary needs an autouse stub that fails on any real socket |
+| 11 | `inverted_families` in my own new calibration module used `brier_delta < 0` as the inversion test. Brier conflates discrimination with calibration, so the first authentic run proposed **inverting a family with a 53.7% hit rate** — a change that would have made the forecast worse — and another at 49.5%, which is 0.1 standard errors from a coin flip | **HIGH** (the loop's first real output was wrong) | **FIXED** — the test is now the hit rate with a materiality bar of `z·0.5/√n_independent`; overconfidence is a separate finding with a different target; both cases pinned by tests |
+| 12 | The same module applied sample-size thresholds to the raw record count. With a 60-minute hold on 5-minute bars consecutive observations share 11/12 of their forward window, so `n=202` was really 84 | **HIGH** — every threshold was ~12× too loose | **FIXED** — `independent_count()` computes a maximal non-overlapping set and every gate uses it |
 
 ### Defect 7 detail — I committed the defect I was auditing for
 

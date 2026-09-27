@@ -654,8 +654,13 @@ def test_short_valuation_with_missing_ask_data_unavailable(tmp_path):
         "timestamp": now_iso,
     }
 
-    def mock_fetch(sec_id, **kwargs):
-        if sec_id == "57379":
+    # The parameter MUST be named `security_id`, matching the real signature: eight
+    # call sites pass it positionally but `DhanContractResolver.resolve_option_contract`
+    # passes it as a keyword, and a mock named otherwise raises TypeError there —
+    # before this test reaches a single assertion, so the safety property it exists to
+    # verify would be silently uncovered.
+    def mock_fetch(security_id, **kwargs):
+        if security_id == "57379":
             return call_quote
         return put_quote
 
